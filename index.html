@@ -2550,7 +2550,8 @@ var TELAS=[
   {k:"motivos",lb:"Motivos",ic:"ti-tags"},
   {k:"relatorio",lb:"Relatorios",ic:"ti-chart-bar",soVer:true},
   {k:"calendario",lb:"Aniversarios",ic:"ti-calendar-heart",soVer:true},
-  {k:"backup",lb:"Backup",ic:"ti-database"}
+  {k:"backup",lb:"Backup",ic:"ti-database"},
+  {k:"acessos",lb:"Permissoes de Usuarios",ic:"ti-shield-lock"}
 ];
 var ACESSO=null;
 function isMasterEmail(e){return e?_sha256(String(e).trim().toLowerCase()).then(function(h){return h===MASTER_HASH;}):Promise.resolve(false);}
@@ -2569,7 +2570,6 @@ function carregarAcesso(user){
 function permTela(p){
   if(!ACESSO)return "nenhum";
   if(ACESSO.master)return "editar";
-  if(p==="acessos")return "nenhum";
   var v=ACESSO.perms[p];
   var t=TELAS.find(function(x){return x.k===p;});
   if(t&&t.soVer&&v==="editar")v="ver";
@@ -2583,7 +2583,7 @@ function primeiraTela(){
 // Mostra/oculta os itens do menu conforme as permissoes
 function aplicarPermissoes(){
   TELAS.forEach(function(t){var b=document.getElementById("nb-"+t.k);if(b)b.style.display=permTela(t.k)==="nenhum"?"none":"";});
-  var a=document.getElementById("nb-acessos");if(a)a.style.display=ACESSO&&ACESSO.master?"":"none";
+
   var u=document.getElementById("sb-user");
   if(u)u.innerHTML=ACESSO?"<i class='ti "+(ACESSO.master?"ti-crown":"ti-user")+"'></i><span class='nl'>"+esc(ACESSO.master?ACESSO.email+" (master)":ACESSO.nome)+"</span>":"";
 }
@@ -2591,7 +2591,7 @@ function aplicarPermissoes(){
 var ACS_LISTA=null,ACS_ERRO="";
 function rAcessos(){
   var el=document.getElementById("p-acessos");
-  if(!ACESSO||!ACESSO.master){el.innerHTML="<div class='empty'><i class='ti ti-lock'></i>Somente o usuario master gerencia acessos.</div>";return;}
+  if(permTela("acessos")==="nenhum"){el.innerHTML="<div class='empty'><i class='ti ti-lock'></i>Voce nao tem acesso a esta tela.</div>";return;}
   if(ACS_LISTA===null){
     el.innerHTML="<div class='empty'><i class='ti ti-loader'></i>Carregando usuarios...</div>";
     _sb.from("timbo_usuarios").select("email,nome,ativo,perms,atualizado").order("email").then(function(r){
@@ -2604,7 +2604,7 @@ function rAcessos(){
     var ed=0,vr=0;TELAS.forEach(function(t){var v=(p||{})[t.k];if(v==="editar"&&!t.soVer)ed++;else if(v==="ver"||v==="editar")vr++;});
     return "<span class='bdg bdg-ok'>"+ed+" editar</span> <span class='bdg' style='background:#e6edf8;color:#00348F'>"+vr+" ver</span> <span class='bdg bdg-off'>"+(TELAS.length-ed-vr)+" sem acesso</span>";
   }
-  var rows="<tr class='acs-master'><td class='nm'><i class='ti ti-crown' style='color:#e6a817'></i> "+esc(ACESSO.email)+"</td><td>Master</td>"
+  var rows="<tr class='acs-master'><td class='nm'><i class='ti ti-crown' style='color:#e6a817'></i> "+(ACESSO.master?esc(ACESSO.email):"Usuario master")+"</td><td>Master</td>"
     +"<td class='c'><span class='bdg bdg-ok'>ATIVO</span></td><td><span class='bdg' style='background:#fdf3e1;color:#8a5a00'>ACESSO TOTAL + GERENCIA ACESSOS</span></td><td class='c'>—</td><td class='act'><span style='color:#b0b8c1;font-size:11px'>fixo</span></td></tr>"
     +ACS_LISTA.map(function(u){
       return "<tr class='"+(u.ativo===false?"off":"")+"'><td class='nm'>"+esc(u.email)+"</td><td>"+esc(u.nome||"")+"</td>"
@@ -2660,7 +2660,8 @@ function acsTodos(v){TELAS.forEach(function(t){var val=t.soVer&&v==="editar"?"ve
 function acsSalvar(){
   var email=gv("acs-email").trim().toLowerCase(),nome=gv("acs-nome").trim(),ativo=gv("acs-ativo")!=="0";
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert("Informe um e-mail valido.");return;}
-  if(email===ACESSO.email){alert("Este e-mail ja e o master.");return;}
+  if(ACESSO.master&&email===ACESSO.email){alert("Este e-mail ja e o master.");return;}
+  if(!ACESSO.master&&email===ACESSO.email&&!confirm("Voce esta alterando as suas proprias permissoes. Continuar?"))return;
   var perms={};TELAS.forEach(function(t){var r=document.querySelector("input[name='acs-"+t.k+"']:checked");var v=r?r.value:"nenhum";if(v!=="nenhum")perms[t.k]=v;});
   var novo=!ACS_LISTA.some(function(x){return x.email===email;});
   var s1=gv("acs-senha"),s2=gv("acs-senha2");
