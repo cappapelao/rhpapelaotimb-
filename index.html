@@ -24,9 +24,10 @@ if(window.top!==window.self){try{window.top.location=window.self.location;}catch
 // NUNCA coloque aqui a chave "service_role".
 var SUPABASE_URL = "https://peqyuaubbvpedvmwzgtb.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlcXl1YXViYnZwZWR2bXd6Z3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MTExMTksImV4cCI6MjEwNjM4NzExOX0.llaqZqBDMaStu6swUxA4AzuVqdWArvyBwEqyew3aUs8";
-// E-mail autorizado guardado apenas como hash SHA-256 (o endereco nao fica exposto no codigo publico).
+// Usuario MASTER guardado apenas como hash SHA-256 (o e-mail nao fica exposto no codigo publico).
+// Os demais usuarios e permissoes ficam na tabela timbo_usuarios (tela Acessos e Permissoes).
 // A protecao real e o RLS no Supabase (arquivo supabase_setup.sql).
-var EMAIL_HASH = "ef6dae3f6fe14a393040475943990c78bb23ff9d3e614dc80b0c7cb578c9b7b6";
+var MASTER_HASH = "ef6dae3f6fe14a393040475943990c78bb23ff9d3e614dc80b0c7cb578c9b7b6";   // rhpapelao@gmail.com.br
 var TABELA = "timbo_dados";
 var MINUTOS_INATIVIDADE = 30;                   // sai sozinho apos X minutos parado
 
@@ -45,8 +46,7 @@ function _sha256(s){
     return Array.prototype.map.call(new Uint8Array(b),function(x){return ("0"+x.toString(16)).slice(-2);}).join("");
   });
 }
-function emailHashOk(e){ return e?_sha256(String(e).trim().toLowerCase()).then(function(h){return h===EMAIL_HASH;}):Promise.resolve(false); }
-function emailOk(u){ return emailHashOk(u&&u.email); }
+
 
 // Camada compativel com o codigo antigo: _db.collection(x).doc(id).get/set/delete
 var _db = {
@@ -71,34 +71,50 @@ var _db = {
 };
 
 // Cada tabela em uma linha separada
-var COLECOES = ["emp","oc","pr","idx","cc","oc5","motivos","sensos","motdem","motafas"];
+var COLECOES = ["emp","oc","pr","idx","cc","oc5","motivos","sensos","motdem","motafas","reaj","grupos","receita","folhafech"];
 
 window._fbLoad = function(){
   return _sb.from(TABELA).select("id,conteudo").in("id", COLECOES).then(function(r){
     var rows = _chk(r) || [], mapa = {};
     rows.forEach(function(x){ mapa[x.id] = x.conteudo; });
+    window._lastSaved = {}; window._seeded = {};
     COLECOES.forEach(function(col){
       window.DB[col] = (mapa[col] && mapa[col].dados) || [];
+      window._lastSaved[col] = mapa[col] ? JSON.stringify(window.DB[col]) : null;
     });
+    var _antes = {}; ["sensos","motdem","grupos","motafas"].forEach(function(c){ _antes[c] = (window.DB[c]||[]).length; });
     if(!window.DB.sensos || window.DB.sensos.length === 0){
       window.DB.sensos = window.initSensos();
     }
     if((!window.DB.motdem || window.DB.motdem.length === 0) && window.initMotDem){
       window.DB.motdem = window.initMotDem();
     }
+    if((!window.DB.grupos || window.DB.grupos.length === 0) && window.initGrupos){
+      window.DB.grupos = window.initGrupos();
+    }
     if((!window.DB.motafas || window.DB.motafas.length === 0) && window.initMotAfas){
       window.DB.motafas = window.initMotAfas();
     }
+    ["sensos","motdem","grupos","motafas"].forEach(function(c){ if(!_antes[c] && (window.DB[c]||[]).length) window._seeded[c] = true; });
     window._dbLoaded = true;
   });
 };
 
+// Grava somente as colecoes que mudaram (o Supabase confere a permissao de cada uma)
 window._fbSave = function(){
-  var agora = new Date().toISOString();
-  var linhas = COLECOES.map(function(col){
-    return { id: col, conteudo: { dados: window.DB[col] || [], updated: agora }, atualizado: agora };
+  var agora = new Date().toISOString(), ls = window._lastSaved || {};
+  var mud = COLECOES.filter(function(col){ return JSON.stringify(window.DB[col] || []) !== ls[col]; });
+  if(!mud.length) return Promise.resolve();
+  return Promise.all(mud.map(function(col){
+    var js = JSON.stringify(window.DB[col] || []);
+    return _sb.from(TABELA).upsert({ id: col, conteudo: { dados: window.DB[col] || [], updated: agora }, atualizado: agora }).then(function(r){
+      if(r.error) return { col: col, msg: r.error.message };
+      ls[col] = js; if(window._seeded) delete window._seeded[col]; return null;
+    });
+  })).then(function(res){
+    var erros = res.filter(function(x){ return x && !(window._seeded && window._seeded[x.col]); });
+    if(erros.length) throw new Error("sem permissao para gravar (" + erros.map(function(x){ return x.col; }).join(", ") + ")");
   });
-  return _sb.from(TABELA).upsert(linhas).then(_chk);
 };
 
 window._fbReady = true;
@@ -289,6 +305,103 @@ input:focus-visible,select:focus-visible{outline:none}
 .chip button{background:none;border:none;color:#6d7fa3;font-size:13px;line-height:1;padding:0 2px;border-radius:3px}
 .chip button:hover{color:#c0392b;background:#fff}
 .chip.add{background:#e4f4ea;color:#1a7a4a}
+
+/* Tabela de colaboradores (modelo planilha) */
+.etab-wrap{overflow:auto;max-height:calc(100vh - 230px);border:1px solid var(--line);border-radius:8px}
+.etab{border-collapse:collapse;width:100%;font-size:12px}
+.etab td.nm,.etab td.c{white-space:normal}
+.etab th{position:sticky;top:0;z-index:2;background:var(--deep);color:#fff;font-weight:800;font-size:11px;letter-spacing:.3px;padding:.55rem .5rem;border:1px solid #2a56a8;cursor:pointer;user-select:none;white-space:nowrap;text-align:left}
+.etab th.c{text-align:center}
+.etab th.cu{background:var(--ink)}
+.etab-ord{display:inline-block;margin-left:5px;background:rgba(255,255,255,.18);color:#fff;border-radius:3px;width:15px;height:15px;line-height:15px;text-align:center;font-size:10px;vertical-align:middle}
+.etab-ord.on{background:#fff;color:var(--deep)}
+.etab td{border:1px solid var(--line);padding:.32rem .5rem;white-space:nowrap;background:#fff}
+.etab tbody tr:nth-child(even) td{background:#f8fafc}
+.etab tbody tr:hover td{background:#eef4fc}
+.etab td.c{text-align:center}.etab td.r{text-align:right;font-variant-numeric:tabular-nums}
+.etab td.nm{font-weight:600;color:#1d2735}
+.etab td.cu{font-weight:800;color:var(--deep);background:#e6edf8!important}
+.etab td.in{padding:0}
+.etab-sal{width:100%;min-width:88px;border:none!important;background:transparent!important;border-radius:0!important;padding:.38rem .5rem!important;text-align:right;font-weight:600;font-size:12px!important;box-shadow:none!important;font-variant-numeric:tabular-nums;color:#222}
+.etab-sal::-webkit-outer-spin-button,.etab-sal::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.etab-sal{-moz-appearance:textfield}
+.etab-sal:focus{outline:2px solid var(--blue)!important;outline-offset:-2px;background:#fff!important}
+.etab td.act{text-align:center;padding:.1rem .3rem;white-space:nowrap}
+.etab .bdg{white-space:nowrap}
+.etab td.act button{font-size:15px}
+.etab tfoot td{position:sticky;bottom:0;background:#dde6f4!important;font-weight:800;color:var(--deep);border-top:2px solid var(--deep)}
+.etab tr.dem td{background:#e8261f!important;color:#fff}
+.etab tr.dem td.nm,.etab tr.dem .etab-sal{color:#fff}
+.etab tr.dem .ibedt,.etab tr.dem .ibdel{color:#fff}
+.etab tr.dem .bdg-dem{background:#fff;color:#c0392b}
+.etab tr.off td{color:#8a94a0}
+.lnk-add{background:none;border:none;color:var(--blue);font-size:11px;font-weight:800;text-transform:none;letter-spacing:0;display:inline-flex;align-items:center;gap:3px;padding:0}
+.lnk-add:hover{text-decoration:underline}
+.mot-rap{display:none;gap:6px;margin-top:6px}.mot-rap.on{display:flex}
+.mot-rap input{flex:1;min-width:0}.mot-rap .btnp{padding:.45rem .8rem}
+.rj-emps{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:.2rem 0}
+.assid-desc{display:inline-block;background:#fbe9e7;color:#c0392b;border-radius:4px;padding:0 5px;font-size:10px;font-weight:800;margin-right:6px}
+.pdf-opts{display:flex;flex-wrap:wrap;gap:6px}
+.pdf-opt{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:8px;padding:.4rem .7rem;font-size:12.5px;cursor:pointer;background:#fff}
+.pdf-opt:has(input:checked){border-color:var(--blue);background:#eef4fc;color:var(--deep);font-weight:700}
+.pdf-opt input{width:auto;margin:0}
+.dir-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
+.dir-chip{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:.45rem .75rem;font-size:12.5px;font-weight:600;color:#444}
+.dir-chip:hover{border-color:var(--blue)}
+.dir-chip b{font-size:15px}
+.dir-chip.warnc b{color:#8a5a00}
+.dir-bar{background:#f1f4f8;border-radius:10px;padding:.7rem .85rem}
+.dir-cnt{margin-left:auto;font-size:12px;font-weight:800;color:var(--deep);background:#fff;border-radius:6px;padding:.3rem .6rem}
+.etab tr.dir-on td{background:#dfeafb!important}
+.ftab th{position:static;white-space:normal;line-height:1.25;vertical-align:middle;font-size:10.5px}
+.ftab th.fl-band{background:#4a6fb3}
+.ftab th.fl-band2,.ftab th.fl-tot{background:var(--ink)}
+.ftab td.fl-c{background:#f4f7fc}
+.ftab td.fl-g{font-weight:800;color:var(--deep)}
+.ftab td.fl-p{font-weight:700;color:#8a5a00}
+.ftab tr.fl-cur td{box-shadow:inset 0 2px 0 var(--blue),inset 0 -2px 0 var(--blue)}
+.ftab tfoot td{position:static}
+.ftab tfoot tr.fl-med td{background:#eef3fa!important;color:#3a4a66}
+.fl-st{display:inline-flex;align-items:center;gap:4px;border:1.5px solid var(--line);background:#fff;border-radius:6px;padding:.2rem .5rem;font-size:11px;font-weight:700;color:#556}
+.fl-st:hover{border-color:var(--blue);color:var(--deep)}
+.fl-st.fech{background:#e4f4ea;border-color:#bfe3cc;color:#1a7a4a}
+.sb-user{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.75);font-size:11.5px;margin-bottom:.6rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sb-user i{font-size:15px;color:#e6a817;flex-shrink:0}
+.acs-tab td{padding:.4rem .6rem}
+.acs-rd{display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}
+.acs-rd input{width:auto;margin:0}
+.acs-rd.dis{opacity:.35;cursor:not-allowed}
+.etab tr.acs-master td{background:#fffbf0!important}
+/* modo somente leitura (permissao "ver") */
+.ro-mode .ibedt,.ro-mode .ibdel,.ro-mode .btn-dem,.ro-mode .lnk-add,.ro-mode .fl-st,
+.ro-mode .btnp:has(.ti-plus),.ro-mode .btnp:has(.ti-user-plus),.ro-mode .btnp:has(.ti-database-plus),
+.ro-mode label:has(input[type=file]),.ro-mode button[onclick^="bkpRestaurar"],.ro-mode button[data-fn],
+.ro-mode button[onclick^="aplTodos"],.ro-mode #ptodos,.ro-mode #p-motivos .btnp,.ro-mode #p-motivos .btng,
+.ro-mode #p-direcionar .dir-bar,.ro-mode #p-backup .seg{display:none!important}
+.ro-mode .etab-sal,.ro-mode .etab-cc,.ro-mode #p-premios input[type=number],.ro-mode #p-motivos input,.ro-mode #p-direcionar tbody tr{pointer-events:none}
+.ro-mode .etab-sal{background:transparent!important}
+.ro-mode .pg-hd .sub::after{content:"  ·  somente visualizacao";color:#8a5a00;font-weight:700}
+.etab-hd{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.etab th.c .etab-hd{justify-content:center}
+.etab th:hover{background:#0b45b0}
+.etab th.cu:hover{background:#22325a}
+.etab-dt{text-align:center!important;min-width:118px}
+.etab-fil{display:flex;align-items:center;gap:8px;background:#e6edf8;color:var(--deep);border-radius:8px;padding:.45rem .7rem;font-size:12px;font-weight:700;margin-bottom:.6rem}
+.etab-fil button{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:6px;padding:.25rem .6rem;font-size:12px;font-weight:700;color:var(--deep)}
+.etab-menu{position:fixed;z-index:9900;width:260px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(10,20,40,.22);padding:.45rem;max-height:calc(100vh - 16px);overflow:auto;font-size:13px}
+.etab-menu>button{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;border-radius:6px;padding:.45rem .55rem;text-align:left;font-size:13px;color:#2a2e33}
+.etab-menu>button:hover{background:#eef4fc;color:var(--deep)}
+.etab-menu>button i{font-size:16px;color:var(--deep)}
+.etab-mt{font-size:10.5px;font-weight:800;color:#8a94a0;text-transform:uppercase;letter-spacing:.5px;padding:.35rem .55rem .25rem}
+.etab-msep{height:1px;background:var(--line);margin:.35rem 0}
+.etab-mbusca{margin:.15rem 0 .35rem;padding:.4rem .6rem!important;font-size:12.5px!important}
+.etab-mvals{max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:.2rem 0}
+.etab-mchk{display:flex;align-items:center;gap:8px;padding:.28rem .55rem;font-size:12.5px;cursor:pointer;color:#333}
+.etab-mchk:hover{background:#f1f4f8}
+.etab-mchk input{width:auto;margin:0}
+.etab-mchk.tudo{font-weight:700}
+.etab-mft{display:flex;justify-content:flex-end;gap:6px;margin-top:.5rem}
+.etab-mft .btnp,.etab-mft .btng{padding:.4rem .8rem;font-size:12px}
 @media (max-width:900px){#main{padding:1rem}}
 /* ===== Logo Timbó ===== */
 .lg-plate{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
@@ -351,7 +464,12 @@ input:focus-visible,select:focus-visible{outline:none}
     <nav style="flex:1;padding:.5rem 0">
       <button class="nb on" id="nb-dashboard" onclick="go('dashboard')"><i class="ti ti-layout-dashboard" style="font-size:18px;flex-shrink:0"></i><span class="nl">Dashboard</span></button>
       <button class="nb" id="nb-centros" onclick="go('centros')"><i class="ti ti-building" style="font-size:18px;flex-shrink:0"></i><span class="nl">Centros de Custo</span></button>
-      <button class="nb" id="nb-employees" onclick="go('employees')"><i class="ti ti-users" style="font-size:18px;flex-shrink:0"></i><span class="nl">Colaboradores</span></button>
+      <button class="nb" id="nb-employees" onclick="go('employees')"><i class="ti ti-users" style="font-size:18px;flex-shrink:0"></i><span class="nl">Cadastro de Colaborador</span></button>
+      <button class="nb" id="nb-reajustes" onclick="go('reajustes')"><i class="ti ti-trending-up" style="font-size:18px;flex-shrink:0"></i><span class="nl">Reajuste Salarial</span></button>
+      <button class="nb" id="nb-grupos" onclick="go('grupos')"><i class="ti ti-category" style="font-size:18px;flex-shrink:0"></i><span class="nl">Grupos de Custo</span></button>
+      <button class="nb" id="nb-direcionar" onclick="go('direcionar')"><i class="ti ti-arrows-split-2" style="font-size:18px;flex-shrink:0"></i><span class="nl">Direcionar p/ Grupos</span></button>
+      <button class="nb" id="nb-resumo" onclick="go('resumo')"><i class="ti ti-report-money" style="font-size:18px;flex-shrink:0"></i><span class="nl">Resumo dos Custos</span></button>
+      <button class="nb" id="nb-folha" onclick="go('folha')"><i class="ti ti-table" style="font-size:18px;flex-shrink:0"></i><span class="nl">Custo Total da Folha</span></button>
       <button class="nb" id="nb-monitor" onclick="go('monitor')"><i class="ti ti-chart-dots-3" style="font-size:18px;flex-shrink:0"></i><span class="nl">Monitoramento</span></button>
       <button class="nb" id="nb-5s" onclick="go('5s')"><i class="ti ti-clipboard-check" style="font-size:18px;flex-shrink:0"></i><span class="nl">Infracao 5S</span></button>
       <button class="nb" id="nb-lancamento" onclick="go('lancamento')"><i class="ti ti-clipboard-list" style="font-size:18px;flex-shrink:0"></i><span class="nl">Lancamentos</span></button>
@@ -360,9 +478,11 @@ input:focus-visible,select:focus-visible{outline:none}
       <button class="nb" id="nb-motivos" onclick="go('motivos')"><i class="ti ti-tags" style="font-size:18px;flex-shrink:0"></i><span class="nl">Motivos</span></button>
       <button class="nb" id="nb-relatorio" onclick="go('relatorio')"><i class="ti ti-chart-bar" style="font-size:18px;flex-shrink:0"></i><span class="nl">Relatorios</span></button>
       <button class="nb" id="nb-calendario" onclick="go('calendario')"><i class="ti ti-calendar-heart" style="font-size:18px;flex-shrink:0"></i><span class="nl">Aniversarios</span></button>
+      <button class="nb" id="nb-acessos" onclick="go('acessos')" style="display:none"><i class="ti ti-shield-lock" style="font-size:18px;flex-shrink:0"></i><span class="nl">Acessos e Permissoes</span></button>
       <button class="nb" id="nb-backup" onclick="go('backup')"><i class="ti ti-database" style="font-size:18px;flex-shrink:0"></i><span class="nl">Backup</span></button>
     </nav>
     <div style="padding:.875rem;border-top:1px solid rgba(255,255,255,.12)">
+      <div id="sb-user" class="sb-user"></div>
       <button onclick="doLogout()" style="display:flex;align-items:center;gap:8px;background:none;border:none;color:rgba(255,255,255,.5);font-size:12px">
         <i class="ti ti-logout" style="font-size:16px"></i><span class="nl">Sair</span>
       </button>
@@ -372,6 +492,11 @@ input:focus-visible,select:focus-visible{outline:none}
     <div id="p-dashboard" class="page active"></div>
     <div id="p-centros" class="page"></div>
     <div id="p-employees" class="page"></div>
+    <div id="p-reajustes" class="page"></div>
+    <div id="p-grupos" class="page"></div>
+    <div id="p-direcionar" class="page"></div>
+    <div id="p-resumo" class="page"></div>
+    <div id="p-folha" class="page"></div>
     <div id="p-monitor" class="page"></div>
     <div id="p-5s" class="page"></div>
     <div id="p-lancamento" class="page"></div>
@@ -381,6 +506,7 @@ input:focus-visible,select:focus-visible{outline:none}
     <div id="p-relatorio" class="page"></div>
     <div id="p-calendario" class="page"></div>
     <div id="p-backup" class="page"></div>
+    <div id="p-acessos" class="page"></div>
   </div>
 </div>
 
@@ -393,7 +519,7 @@ input:focus-visible,select:focus-visible{outline:none}
 // ═══════════════════════════════════════
 // DB GLOBAL
 // ═══════════════════════════════════════
-var DB={emp:[],oc:[],pr:[],idx:[],cc:[],oc5:[],motivos:[],sensos:[],motdem:[],motafas:[]};
+var DB={emp:[],oc:[],pr:[],idx:[],cc:[],oc5:[],motivos:[],sensos:[],motdem:[],motafas:[],reaj:[],grupos:[],receita:[],folhafech:[]};
 var SAVE_TIMER=null;
 
 function dbLoad(){
@@ -401,6 +527,11 @@ function dbLoad(){
 }
 
 function dbSave(){
+  if(ACESSO&&!ACESSO.master&&permTela(pg)!=="editar"){
+    showSync("Voce tem permissao somente para visualizar esta tela. Nada foi gravado.",false,true);
+    window._fbLoad().then(function(){go(pg);});
+    return;
+  }
   if(!window._dbLoaded){
     showSync("Os dados nao foram carregados do servidor. Recarregue a pagina antes de salvar.",false,true);
     return;
@@ -458,13 +589,11 @@ function doLogin(){
   if(!u||!p){falha("Informe e-mail e senha.");return;}
   _loginOcupado=true;btn.disabled=true;
   showSync("Entrando...",false);
-  emailHashOk(u).then(function(ok){
-    if(!ok)throw new Error("sem-permissao");
-    return _sb.auth.signInWithPassword({email:u,password:p});
-  }).then(function(r){
+  _sb.auth.signInWithPassword({email:u,password:p}).then(function(r){
     if(r.error)throw r.error;
-    return emailOk(r.data&&r.data.user).then(function(ok){
-      if(!ok){_sb.auth.signOut();throw new Error("sem-permissao");}
+    return carregarAcesso(r.data&&r.data.user).then(function(ac){
+      if(!ac){_sb.auth.signOut();throw new Error("sem-acesso");}
+      ACESSO=ac;
       document.getElementById("lp").value="";
       return entrarApp();
     });
@@ -473,7 +602,8 @@ function doLogin(){
     var m=(e&&e.message||"").toLowerCase();
     falha(m.indexOf("rate")>=0||m.indexOf("too many")>=0?"Muitas tentativas. Aguarde alguns minutos.":
           m.indexOf("fetch")>=0||m.indexOf("network")>=0?"Sem conexão com o servidor.":
-          m.indexOf("not confirmed")>=0?"E-mail ainda não confirmado no Supabase.":"E-mail ou senha incorretos");
+          m.indexOf("not confirmed")>=0?"E-mail ainda não confirmado no Supabase.":
+          m.indexOf("sem-acesso")>=0?"Este e-mail não tem acesso liberado. Fale com o administrador.":"E-mail ou senha incorretos");
   }).then(function(){_loginOcupado=false;btn.disabled=false;});
 }
 // Sai sozinho apos um tempo sem uso (protege computador compartilhado)
@@ -490,6 +620,31 @@ function _resetInat(){
 ["click","keydown","mousemove","touchstart","scroll"].forEach(function(ev){
   document.addEventListener(ev,_resetInat,{passive:true});
 });
+
+// ═══ CARGA INICIAL DE COLABORADORES (planilha) ═══
+// Roda uma unica vez: grava a marca "seed_colab_v1" na tabela e nao repete,
+// mesmo que algum cadastro seja excluido depois. Nao duplica nomes ja cadastrados.
+var SEED_COLAB=[{"empresa": "PAPELÃO", "nome": "ADV. DEAN - DR. RAFAEL", "func": "ADVOGADO", "horario": ""}, {"empresa": "PAPELÃO", "nome": "ADV. DR. FERNANDO", "func": "ADVOGADO", "horario": ""}, {"empresa": "PAPELÃO", "nome": "ABINEE ASSOCIAÇÃO SETOR ELÉTRICO", "func": "ASSOCIAÇÃO SETOR ELÉTRICO", "horario": ""}, {"empresa": "PAPELÃO", "nome": "WILLIAN DOS SANTOS BERNARDINO", "func": "COMERCIAL", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "ARI ROEDEL", "func": "CONSULTORIA", "horario": ""}, {"empresa": "PAPELÃO", "nome": "ÊNFASE - ALTAIR E ELCIO", "func": "CONSULTORIA", "horario": ""}, {"empresa": "PAPELÃO", "nome": "VICENTE - CONSULTORIA CAP", "func": "CONSULTORIA", "horario": ""}, {"empresa": "PAPELÃO", "nome": "LUIZ CARLOS CAMASSOLA", "func": "COORDENADOR MANUTENÇÃO", "horario": "COMERCIAL", "dem": "2026-08-31"}, {"empresa": "PAPELÃO", "nome": "OLDAIR DA SILVA", "func": "DIRETOR", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "RICARDO MIRANDA", "func": "DIRETOR", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "MARCIO MAYER", "func": "ELETRECISTA", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "SOLIDIFY - ENG. THIAGO", "func": "ENGENHEIRO", "horario": ""}, {"empresa": "PAPELÃO", "nome": "ALEX (AGR)", "func": "ETE", "horario": ""}, {"empresa": "PAPELÃO", "nome": "JESSICA ALINE MORA LORENZ", "func": "FINANCEIRO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "NILSO WALT", "func": "GERENTE DE PRODUTO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "VALDIR DURCKSEN", "func": "LAVAÇÃO", "horario": ""}, {"empresa": "PAPELÃO", "nome": "ANTONIO MARCOS DA SILVA", "func": "MANUTENÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "DJONATA BONETTI", "func": "MANUTENÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "EDERSON CORREA MACIEL", "func": "MANUTENÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "JEAN CARLOS PASQUALI", "func": "MANUTENÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "PAULO ALBERTO ROSA", "func": "MANUTENÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "RAFAEL BAADE", "func": "MANUTENÇÃO", "horario": "VESPERTINO"}, {"empresa": "PAPELÃO", "nome": "MARCELO AFMANN", "func": "MARKETING", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "ALVERDURINO NUNES (R. PAHL)", "func": "PEDREIRO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "TIAGO (GW)", "func": "PEDREIRO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "EDIELSON (GW)", "func": "PEDREIRO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "ANJOS DA NOITE", "func": "PORTARIA", "horario": ""}, {"empresa": "GW NUNES", "nome": "ARLINDO PAISAN", "func": "PRODUÇÃO", "horario": "VESPERTINO"}, {"empresa": "GW NUNES", "nome": "CRISTIANE", "func": "PRODUÇÃO", "horario": "VESPERTINO"}, {"empresa": "GW NUNES", "nome": "EVA OLIVEIRA", "func": "PRODUÇÃO", "horario": "NOTURNO"}, {"empresa": "GW NUNES", "nome": "FELIPE", "func": "PRODUÇÃO", "horario": "VESPERTINO"}, {"empresa": "GW NUNES", "nome": "MARCIA", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "GW NUNES", "nome": "MARCILENE", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "GW NUNES", "nome": "MICHELE", "func": "PRODUÇÃO", "horario": "COMERCIAL"}, {"empresa": "GW NUNES", "nome": "PETERSON", "func": "PRODUÇÃO", "horario": "COMERCIAL"}, {"empresa": "GW NUNES", "nome": "SILVIA BORGES", "func": "PRODUÇÃO", "horario": "NOTURNO"}, {"empresa": "GW NUNES", "nome": "GW NUNES JOICE", "func": "PRODUÇÃO", "horario": "NOTURNO"}, {"empresa": "GW NUNES", "nome": "WESLEY", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "ANGELICA", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "FABIANO", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "JUNIOR", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "LEANDRO", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "SERGIO", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "JACIARA", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "SAMARA", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "LF GESTÃO", "nome": "GUSTAVO", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "PAPELÃO", "nome": "LUCIANA WEISS", "func": "PRODUÇÃO", "horario": "MATUTINO"}, {"empresa": "PAPELÃO", "nome": "MARK DOUGLAS GUTHER", "func": "PRODUÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "PHILIPPE ANDRE TIEGS DURCKSEN", "func": "PRODUÇÃO", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "LISANDRO EVARISTO DA SILVA", "func": "PROJETOS", "horario": ""}, {"empresa": "PAPELÃO", "nome": "RENATO DE MORAES", "func": "QUALIDADE", "horario": "COMERCIAL"}, {"empresa": "PAPELÃO", "nome": "LUIZ FELIPE DOS SANTOS", "func": "SUPERVISOR", "horario": "MATUTINO"}];
+function aplicarSeedColab(){
+  var marca=_db.collection("timbo").doc("seed_colab_v1");
+  return marca.get().then(function(s){
+    if(s.exists)return;
+    var ja={};DB.emp.forEach(function(e){ja[(e.nome||"").trim().toUpperCase()]=1;});
+    var n=0;
+    SEED_COLAB.forEach(function(x){
+      if(ja[x.nome.toUpperCase()])return;
+      DB.emp.push({id:uid(),nome:x.nome,func:x.func,empresa:x.empresa,horario:x.horario,ccid:"",adm:"",aniv:"",vinc:"CLT",ativo:!x.dem,dem:x.dem||""});
+      n++;
+    });
+    var fim=function(){return marca.set({aplicado:new Date().toISOString(),qtd:n});};
+    if(!n)return fim();
+    return window._fbSave().then(fim).then(function(){
+      showSync(n+" colaboradores importados da planilha",true);
+      setTimeout(function(){document.getElementById("sync-bar").style.display="none";},3500);
+      if(pg==="employees")rEmp();else if(pg==="dashboard")rDash();
+    });
+  }).catch(function(e){console.warn("Importacao inicial falhou:",e&&e.message);});
+}
 // Carrega os dados e abre o sistema
 function entrarApp(){
   showSync("Carregando dados...",false);
@@ -500,9 +655,13 @@ function entrarApp(){
     document.getElementById("lp").value="";
     showSync("Dados carregados",true);
     setTimeout(function(){document.getElementById("sync-bar").style.display="none";},3000);
-    go("dashboard");
-    if(typeof checkAniversarios==="function")setTimeout(checkAniversarios,400);
+    aplicarPermissoes();
+    var t0=primeiraTela();
+    if(!t0){throw new Error("Nenhuma tela liberada para este usuario.");}
+    go(t0);
+    if(typeof checkAniversarios==="function"&&permTela("employees")!=="nenhum")setTimeout(checkAniversarios,400);
     _resetInat();
+    if(permTela("employees")==="editar")aplicarSeedColab();
     if(typeof autoBackup==="function")setTimeout(autoBackup,1500);
   }).catch(function(e){
     showSync("Erro ao carregar os dados. Verifique a conexão ou a permissão da conta.",false,true);
@@ -515,12 +674,12 @@ function doLogout(){
   _sb.auth.signOut().catch(function(){});
   clearTimeout(_inatTimer);clearTimeout(SAVE_TIMER);
   // limpa os dados da memoria ao sair
-  window._dbLoaded=false;
+  window._dbLoaded=false;ACESSO=null;ACS_LISTA=null;window._lastSaved={};
   Object.keys(DB).forEach(function(k){DB[k]=[];});
   BKP_LISTA=null;
   // apaga calculos guardados dos relatorios (continham nomes e valores)
   ["_dashStats","_monStats","_relStats","_dashNoPeriodo","_dashML"].forEach(function(k){try{delete window[k];}catch(e){window[k]=undefined;}});
-  ["host-5s","md-drill","md-dem","md-afast","md-emppdf","emod","md-aniv"].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+  ["host-5s","md-drill","md-dem","md-afast","md-emppdf","emod","md-aniv","md-reaj","etab-menu","md-grp","md-acs"].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
   if(typeof killCH==="function")killCH();
   document.querySelectorAll(".page").forEach(function(pgEl){pgEl.innerHTML="";});
   document.querySelectorAll(".mdl-bg.open,.aniv-bg").forEach(function(m){if(m.classList.contains("aniv-bg"))m.remove();else m.classList.remove("open");});
@@ -543,8 +702,8 @@ function startApp(){
   // Nenhum dado e lido antes do login
   _sb.auth.getSession().then(function(r){
     var s=r&&r.data&&r.data.session;
-    return emailOk(s&&s.user).then(function(ok){
-      if(s&&ok){entrarApp();return;}
+    return (s?carregarAcesso(s.user):Promise.resolve(null)).then(function(ac){
+      if(s&&ac){ACESSO=ac;entrarApp();return;}
       if(s)_sb.auth.signOut();
       ls.style.display="none";document.getElementById("lgw").style.display="flex";
     });
@@ -592,6 +751,7 @@ function fmtBRLInt(v){
 function fmtM(m){var p=m.split("-");return MOS[parseInt(p[1])-1]+"/"+p[0];}
 function ini(n){return n.split(" ").map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();}
 function tEmp(a,d){
+  if(!a)return "admissao nao informada";
   var i=new Date(a+"T12:00:00"),f=d?new Date(d+"T12:00:00"):new Date();
   var anos=(f-i)/(1000*60*60*24*365.25);
   if(anos<1){var m=Math.floor(anos*12);return m<=0?"< 1 mes":m+" mes"+(m>1?"es":"");}
@@ -804,6 +964,9 @@ document.addEventListener("keydown",function(ev){
   if(document.getElementById("md-afast")){closeAfastModal();return;}
   if(document.getElementById("md-dem")){closeDemModal();return;}
   if(document.getElementById("md-emppdf")){fecharEmpPDF();return;}
+  if(document.getElementById("md-reaj")){fecharReaj();return;}
+  if(document.getElementById("md-grp")){fecharGrupoMd();return;}
+  if(document.getElementById("md-acs")){acsFechar();return;}
   var mopen=document.querySelectorAll(".mdl-bg.open:not(#md-drill)");
   if(mopen.length){mopen[mopen.length-1].classList.remove("open");return;}
   if(document.getElementById("md-drill")){closeDrill();return;}
@@ -842,10 +1005,12 @@ function segGrad(colors){
 var sbOpen=true,pg="dashboard",CH={};
 function killCH(){Object.values(CH).forEach(function(c){try{c.destroy();}catch(e){}});CH={};}
 function go(p){
+  if(ACESSO&&permTela(p)==="nenhum"){showSync("Voce nao tem acesso a esta tela.",false,true);return;}
   killCH();
   if(typeof closeModal==="function")closeModal();
   if(typeof closeDemModal==="function")closeDemModal();
   if(typeof closeAfastModal==="function")closeAfastModal();
+  if(typeof fecharReaj==="function")fecharReaj();
   if(typeof closeDrill==="function")closeDrill();
   document.querySelectorAll(".mdl-bg.open").forEach(function(m){m.classList.remove("open");});
   document.querySelectorAll(".page").forEach(function(x){x.classList.remove("active");});
@@ -853,7 +1018,8 @@ function go(p){
   document.getElementById("p-"+p).classList.add("active");
   document.getElementById("nb-"+p).classList.add("on");
   pg=p;
-  ({dashboard:rDash,centros:rCC,employees:rEmp,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();}})[p]();
+  document.getElementById("main").classList.toggle("ro-mode",!!ACESSO&&permTela(p)==="ver");
+  ({dashboard:rDash,centros:rCC,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,resumo:function(){empCtx='res';rResumo();},folha:rFolha,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
 }
 function toggleSB(){
   sbOpen=!sbOpen;
@@ -1462,7 +1628,13 @@ function delCC(id){
 }
 
 // COLABORADORES
-var empFiltro="ativos";
+// Estado separado por tela: "cad" = Cadastro de Colaborador, "res" = Resumo dos Custos (somente leitura)
+var empCtx="cad",EMP_ST={cad:{aba:"ativos",sort:{k:"empresa",d:1},fil:{}},res:{aba:"ativos",sort:{k:"empresa",d:1},fil:{}}};
+Object.defineProperty(window,"empFiltro",{get:function(){return EMP_ST[empCtx].aba;},set:function(v){EMP_ST[empCtx].aba=v;}});
+Object.defineProperty(window,"empSort",{get:function(){return EMP_ST[empCtx].sort;},set:function(v){EMP_ST[empCtx].sort=v;}});
+Object.defineProperty(window,"empColFil",{get:function(){return EMP_ST[empCtx].fil;},set:function(v){EMP_ST[empCtx].fil=v;}});
+function empId(x){return empCtx==="res"?"r"+x:x;}
+function empRO(){return empCtx==="res"||(typeof ACESSO!=="undefined"&&!!ACESSO&&permTela("employees")!=="editar");}
 function initMotDem(){
   return [
     {id:uid(),nome:"Pedido de demissao"},
@@ -1505,20 +1677,26 @@ function rEmp(){
   var nMei=DB.emp.filter(function(e){return isAtivo(e)&&empVinc(e)==="MEI";}).length,nClt=DB.emp.filter(function(e){return isAtivo(e);}).length-nMei;
   function segBtn(k,lb,n){return "<button class='seg-b"+(empFiltro===k?" on":"")+"' data-k='"+k+"' onclick=\"setEmpFiltro('"+k+"')\">"+lb+" <span class='seg-n'>"+n+"</span></button>";}
   document.getElementById("p-employees").innerHTML=
-    "<div class='pg-hd'><div><h1 class='h1'>Colaboradores</h1>"
+    "<div class='pg-hd'><div><h1 class='h1'>Cadastro de Colaborador</h1>"
     +"<div class='sub'>"+nAt+" ativo"+(nAt!==1?"s":"")+" &middot; "+nAf+" afastado"+(nAf!==1?"s":"")+" &middot; "+nIn+" inativo"+(nIn!==1?"s":"")
     +" &nbsp;|&nbsp; <span style='color:#1f5fa8;font-weight:700'>"+nClt+" CLT</span> &middot; <span style='color:#7b3fa0;font-weight:700'>"+nMei+" MEI</span></div></div>"
     +"<div style='display:flex;gap:8px;flex-wrap:wrap'>"
-    +"<button class='btng btn-ic' onclick='abrirEmpPDF()'><i class='ti ti-file-download'></i>PDF por centro de custo</button>"
+    +"<button class='btng btn-ic' onclick='abrirEmpPDF()'><i class='ti ti-file-download'></i>Relatorio PDF</button>"
     +"<button class='btnp btn-ic' onclick='novoEmp()'><i class='ti ti-user-plus'></i>Novo colaborador</button></div></div>"
     +"<div class='card'>"
     +"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.5rem'>"
     +"<div class='seg' id='efseg'>"+segBtn("ativos","Ativos",nAt)+segBtn("afastados","Afastados",nAf)+segBtn("inativos","Inativos",nIn)+segBtn("todos","Todos",DB.emp.length)+"</div>"
-    +"<input type='text' id='ebsc' value='"+esc(q)+"' placeholder='Buscar por nome, funcao, CLT ou MEI...' oninput='filtEmp()' style='width:260px;max-width:100%'/></div>"
-    +"<div id='elist'>"+rEmpList(empListaFiltrada(q))+"</div></div>"
+    +"<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'>"
+    +"<button class='btng btn-ic' id='btn-cols' onclick='abrirPainelCols(event)'></button>"
+    +"<input type='text' id='ebsc' value='"+esc(q)+"' placeholder='Buscar por empresa, nome, funcao, horario...' oninput='filtEmp()' style='width:260px;max-width:100%'/></div></div>"
+    +"<div id='elist'>"+rEmpList()+"</div></div>"
     +mdShell("md-emp","Novo colaborador","eftt",
       "<input type='hidden' id='eid'/>"
-      +"<div class='fr'><label class='lbl'>Nome completo</label><input type='text' id='enome' placeholder='Ex: Joao Silva'/></div>"
+      +"<div class='fr2'>"
+      +"<div class='fr'><label class='lbl'>Empresa <span class='opt'>(opcional)</span></label><input type='text' id='eempresa' list='eempresa-lst' placeholder='Ex: Timbo Papeis Especiais'/>"
+      +"<datalist id='eempresa-lst'>"+empresasCad().map(function(x){return "<option value='"+esc(x)+"'>";}).join("")+"</datalist></div>"
+      +"<div class='fr'><label class='lbl'>Horario <span class='opt'>(opcional)</span></label><input type='text' id='ehorario' placeholder='Ex: 07:00 as 17:00'/></div></div>"
+      +"<div class='fr'><label class='lbl'>Nome completo (Funcionario)</label><input type='text' id='enome' placeholder='Ex: Joao Silva'/></div>"
       +"<div class='fr2'>"
       +"<div class='fr'><label class='lbl'>Funcao / Cargo</label><input type='text' id='efunc' placeholder='Ex: Operador'/></div>"
       +"<div class='fr'><label class='lbl'>Data de admissao</label><input type='date' id='eadm'/></div></div>"
@@ -1530,7 +1708,16 @@ function rEmp(){
       +"<div class='seg seg-full'>"
       +"<button type='button' id='evclt' class='seg-b on' onclick=\"setEmpVinc('CLT')\"><i class='ti ti-id-badge-2'></i>CLT</button>"
       +"<button type='button' id='evmei' class='seg-b' onclick=\"setEmpVinc('MEI')\"><i class='ti ti-briefcase'></i>MEI - Prestador de servico</button></div></div>"
-      +"<div class='fr'><label class='lbl'>Salario (R$) <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00'/></div>"
+      +"<div class='fr'><label class='lbl'>Salario (R$) <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00' oninput='updSalCalc()'/></div>"
+      +"<div class='fr2'>"
+      +"<div class='fr'><label class='lbl'>1/3 Ferias <span class='opt'>(automatico)</span></label><input type='text' id='eterco' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div>"
+      +"<div class='fr'><label class='lbl'>13o Salario <span class='opt'>(automatico)</span></label><input type='text' id='e13' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div></div>"
+      +"<div class='hint' style='margin-top:-6px;margin-bottom:.8rem'>1/3 de ferias = salario &divide; 3 &middot; 13o salario = salario integral (12/12).</div>"
+      +"<div class='fr2'>"+BENEF.map(function(b){return "<div class='fr'><label class='lbl'>"+b.lb+" (R$) <span class='opt'>("+(b.anual?"anual":"mensal")+")</span></label><input type='number' id='e"+b.k+"' min='0' step='0.01' placeholder='0,00' oninput='updSalCalc()'/></div>";}).join("")+"</div>"
+      +"<div class='fr'><label class='lbl'>Assiduidade - Premio Cartao <span class='opt'>(vem da tela Premios)</span></label><input type='text' id='eassidv' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/>"
+      +"<div class='hint' id='eassidh'>Valor do premio definido em Premios - Cartao Beneficio, ja descontadas as faltas, atrasos e 5S do mes atual.</div></div>"
+      +"<div class='fr'><label class='lbl'>Custo empresa mensal <span class='opt'>(automatico)</span></label><input type='text' id='ecusto' readonly tabindex='-1' style='background:#f1f4f8;font-weight:800;color:#00348F'/>"
+      +"<div class='hint'>Salario + cesta basica + assiduidade (premio cartao com descontos) + premio metas + refeitorio + 1/12 de: 1/3 ferias, 13o salario e bonus anual.</div></div>"
       +"<div class='fr'><label class='lbl'>Situacao na empresa</label>"
       +"<input type='hidden' id='eativo' value='1'/>"
       +"<div class='seg seg-full'>"
@@ -1549,38 +1736,253 @@ function empListaFiltrada(q){
     if(empFiltro==="ativos"&&!(a&&vis(e)))return false;
     if(empFiltro==="afastados"&&!(a&&!vis(e)))return false;
     if(empFiltro==="inativos"&&a)return false;
-    return !q||e.nome.toLowerCase().includes(q)||(e.func||"").toLowerCase().includes(q)||empVinc(e).toLowerCase()===q;
+    return !q||e.nome.toLowerCase().includes(q)||(e.func||"").toLowerCase().includes(q)||(e.empresa||"").toLowerCase().includes(q)||(e.horario||"").toLowerCase().includes(q)||empVinc(e).toLowerCase()===q;
   }).sort(function(a,b){return a.nome.localeCompare(b.nome);});
 }
 function setEmpFiltro(k){
   empFiltro=k;
-  document.querySelectorAll("#efseg .seg-b").forEach(function(b){b.classList.toggle("on",b.dataset.k===k);});
+  document.querySelectorAll("#"+empId("efseg")+" .seg-b").forEach(function(b){b.classList.toggle("on",b.dataset.k===k);});
   filtEmp();
 }
-function rEmpList(list){
-  if(list.length===0)return "<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador "+(empFiltro==="inativos"?"inativo ":empFiltro==="ativos"?"ativo ":empFiltro==="afastados"?"afastado ":"")+"encontrado.</div>";
-  return list.map(function(e){
-    var cc=DB.cc.find(function(x){return x.id===e.ccid;});
+// ═══ TABELA DE COLABORADORES: colunas, classificar, filtrar e ocultar ═══
+
+var MONEY_K=["sal","terco","dec13","cesta","assid","pmetas","bonus","refeit","custo"];
+// t: txt (texto), dt (data editavel), in (valor editavel), calc (calculado)
+var EMP_COLS=[
+  {k:"empresa",lb:"EMPRESA",t:"txt"},
+  {k:"nome",lb:"FUNCIONÁRIO",t:"txt",fixa:true},
+  {k:"func",lb:"FUNÇÃO",t:"txt",c:1},
+  {k:"cc",lb:"CENTRO DE CUSTO",t:"txt",c:1},
+  {k:"grupo",lb:"GRUPO",t:"txt",c:1},
+  {k:"vinc",lb:"VÍNCULO",t:"txt",c:1},
+  {k:"sit",lb:"SITUAÇÃO",t:"txt",c:1},
+  {k:"adm",lb:"ADMISSÃO",t:"dt"},
+  {k:"tempo",lb:"TEMPO DE EMPRESA",t:"txt",c:1},
+  {k:"aniv",lb:"ANIVERSÁRIO",t:"dt"},
+  {k:"horario",lb:"HORÁRIO",t:"txt",c:1},
+  {k:"sal",lb:"SALÁRIO",t:"in"},
+  {k:"terco",lb:"1/3 FÉRIAS",t:"calc"},
+  {k:"dec13",lb:"13º SALÁRIO",t:"calc"},
+  {k:"cesta",lb:"CESTA BÁSICA",t:"in"},
+  {k:"assid",lb:"ASSIDUIDADE",t:"calc"},
+  {k:"pmetas",lb:"PRÊMIO METAS",t:"in"},
+  {k:"bonus",lb:"BÔNUS ANUAL",t:"in"},
+  {k:"refeit",lb:"REFEITÓRIO",t:"in"},
+  {k:"custo",lb:"CUSTO EMPRESA MENSAL",t:"calc",cu:1}
+];
+function empColKey(){return "timbo_emp_cols_ocultas"+(empCtx==="res"?"_res":"");}
+function empColOcultas(){try{return JSON.parse(localStorage.getItem(empColKey())||"[]");}catch(e){return [];}}
+function setEmpColOcultas(a){try{localStorage.setItem(empColKey(),JSON.stringify(a));}catch(e){}}
+function empColsVis(){var o=empColOcultas();return EMP_COLS.filter(function(c){return c.fixa||o.indexOf(c.k)<0;});}
+function empTemValores(e){return typeof e.sal==="number"||!!assidInfo(e)||BENEF.some(function(b){return typeof e[b.k]==="number";});}
+function empCampoVal(e,k){
+  if(k==="terco"||k==="dec13")return typeof e.sal==="number"?calcSal(e.sal)[k]:null;
+  if(k==="custo")return empTemValores(e)?calcCusto(e):null;
+  if(k==="assid"){var ai=assidInfo(e);return ai?ai.rec:null;}
+  return typeof e[k]==="number"?e[k]:null;
+}
+function empSitTxt(e){var a=isAtivo(e);return a?(afastadoEm(e,hoje())?"AFASTADO":"ATIVO"):(e.dem?"DEMITIDO":"INATIVO");}
+// Texto exibido/filtrado de cada coluna
+function empTxt(e,k){
+  if(k==="cc"){var c=e.ccid?DB.cc.find(function(x){return x.id===e.ccid;}):null;return c?c.cod+" - "+c.desc:"";}
+  if(k==="vinc")return empVinc(e);
+  if(k==="grupo"){var g=e.grupo?(DB.grupos||[]).find(function(x){return x.id===e.grupo;}):null;return g?g.nome:"";}
+  if(k==="sit")return empSitTxt(e);
+  if(k==="tempo")return e.adm?tEmp(e.adm,e.dem):"";
+  if(k==="adm"||k==="aniv")return e[k]?fmtD(e[k]):"";
+  if(MONEY_K.indexOf(k)>=0){var v=empCampoVal(e,k);return v===null?"":fmtBRL(v);}
+  return (k==="nome"?e.nome:e[k])||"";
+}
+function empSortVal(e,k){
+  if(MONEY_K.indexOf(k)>=0){var v=empCampoVal(e,k);return v===null?-1:v;}
+  if(k==="adm"||k==="aniv")return e[k]||"";
+  if(k==="tempo")return e.adm?-(new Date(e.adm+"T12:00:00").getTime()):1e15;
+  return empTxt(e,k).toUpperCase();
+}
+// Lista com busca + aba + filtros de coluna
+function empListaVisivel(){
+  var l=empListaFiltrada(gv(empId("ebsc")));
+  Object.keys(empColFil).forEach(function(k){var s=empColFil[k];l=l.filter(function(e){return s.indexOf(empTxt(e,k))>=0;});});
+  var k=empSort.k,d=empSort.d;
+  return l.sort(function(a,b){
+    var x=empSortVal(a,k),y=empSortVal(b,k);
+    var r=typeof x==="number"?x-y:x.localeCompare(y);
+    if(r)return r*d;
+    return (a.empresa||"").localeCompare(b.empresa||"")||(a.func||"").localeCompare(b.func||"")||a.nome.localeCompare(b.nome);
+  });
+}
+function rEmpList(){
+  setTimeout(atualizarBtnCols,0);
+  var list=empListaVisivel(),cols=empColsVis(),nf=Object.keys(empColFil).length;
+  var aviso=nf?"<div class='etab-fil'><i class='ti ti-filter'></i> "+nf+" filtro"+(nf>1?"s":"")+" de coluna ativo"+(nf>1?"s":"")+" &middot; "+list.length+" linha"+(list.length!==1?"s":"")+" <button onclick='limparEmpFiltros()'>Limpar filtros</button></div>":"";
+  if(list.length===0)return aviso+"<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador "+(empFiltro==="inativos"?"inativo ":empFiltro==="ativos"?"ativo ":empFiltro==="afastados"?"afastado ":"")+"encontrado.</div>";
+  var tot={};MONEY_K.forEach(function(x){tot[x]=0;});
+  function cell(e,c){
+    var cls=(c.c?"c":"");
+    if(c.k==="nome"){
+      var st=empSitTxt(e);
+      return "<td class='nm'>"+esc(e.nome)+(st==="DEMITIDO"?" <span class='bdg bdg-dem'>DEMITIDO "+fmtD(e.dem)+"</span>":"")+"</td>";
+    }
+    var ro=empRO();
+    if(ro&&(c.k==="cc"||c.t==="dt"))return "<td class='c'>"+esc(empTxt(e,c.k))+"</td>";
+    if(ro&&c.t==="in"){var vr=empCampoVal(e,c.k);return "<td class='r'>"+(vr===null?"":fmtBRL(vr))+"</td>";}
+    if(c.k==="grupo"){var gt=empTxt(e,"grupo");return "<td class='c'>"+(gt?"<span class='bdg' style='background:#e6edf8;color:#00348F'>"+esc(gt)+"</span>":"<span style='color:#b0b8c1'>—</span>")+"</td>";}
+    if(c.k==="cc")return "<td class='in'><select class='etab-sal etab-cc' data-col='cc' onchange=\"setCCInline('"+e.id+"',this.value)\"><option value=''>—</option>"
+      +DB.cc.slice().sort(function(a,b){return (a.cod||"").localeCompare(b.cod||"",undefined,{numeric:true});}).map(function(c){return "<option value='"+c.id+"'"+(c.id===e.ccid?" selected":"")+">"+esc(c.cod)+" - "+esc(c.desc)+"</option>";}).join("")
+      +"<option value='__novo'>+ Cadastrar novo centro...</option></select></td>";
+    if(c.k==="vinc")return "<td class='c'>"+vincBdg(e)+"</td>";
+    if(c.k==="sit"){var s=empSitTxt(e),cl={ATIVO:"bdg-ok",AFASTADO:"",DEMITIDO:"bdg-dem",INATIVO:"bdg-off"}[s];
+      return "<td class='c'><span class='bdg "+cl+"'"+(s==="AFASTADO"?" style='background:#fdecd2;color:#8a5a00'":"")+">"+s+"</span></td>";}
+    if(c.t==="dt")return "<td class='in'><input type='date' class='etab-sal etab-dt' value='"+(e[c.k]||"")+"' data-col='"+c.k+"' onchange=\"setDataInline('"+e.id+"','"+c.k+"',this)\" onkeydown='salKey(event,this)'/></td>";
+    if(c.t==="in"){var v=typeof e[c.k]==="number"?e[c.k]:"";
+      return "<td class='in'><input type='number' min='0' step='0.01' class='etab-sal' value='"+v+"' placeholder='0,00' data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
+    if(c.k==="assid"){var ai=assidInfo(e);
+      if(!ai)return "<td class='r' style='color:#b0b8c1' title='Sem premio cadastrado na tela Premios'>—</td>";
+      return "<td class='r' title='Premio "+fmtBRL(ai.bruto)+(ai.pct>0?" - desconto "+pct1(ai.pct)+" ("+fmtBRL(ai.desc)+")":" - sem descontos")+" em "+fmtM(ai.mes)+"'>"
+        +(ai.pct>0?"<span class='assid-desc'>-"+pct1(ai.pct)+"</span>":"")+fmtBRL(ai.rec)+"</td>";}
+    if(c.t==="calc"){var w=empCampoVal(e,c.k);return "<td class='r"+(c.cu?" cu":"")+"'"+(ro?"":" id='et"+c.k+"-"+e.id+"'")+">"+(w===null?"":fmtBRL(w))+"</td>";}
+    return "<td class='"+cls+"'>"+esc(empTxt(e,c.k))+"</td>";
+  }
+  var rows=list.map(function(e){
     var a=isAtivo(e);
-    var st=a?(empFiltro==="todos"&&vis(e)?"<span class='bdg bdg-ok'>ATIVO</span>":"")
-      :(e.dem?"<span class='bdg bdg-dem'>DEMITIDO</span>":"<span class='bdg bdg-off'>INATIVO</span>");
-    if(a&&afastadoEm(e,hoje()))st+=" <span class='bdg' style='background:#fdecd2;color:#8a5a00'>AFASTADO</span>";
-    return "<div class='erow"+(a?"":" off")+(empVinc(e)==="MEI"?" mei":"")+"'>"
-      +"<div class='erow-main'><div class='erow-nm'>"+esc(e.nome)+vincBdg(e)+st+"</div>"
-      +"<div class='erow-sub'>"+esc(e.func)+(cc?" &nbsp;&middot;&nbsp; <span style='color:"+BL+";font-weight:600'><i class='ti ti-building' style='font-size:11px'></i> "+esc(cc.cod)+"</span>":"")+"</div>"
-      +"<div class='erow-meta'>Admissao: "+fmtD(e.adm)+" &middot; <strong style='color:"+B+"'>"+tEmp(e.adm,e.dem)+"</strong>"
-      +(e.dem?"<span style='color:"+RED+"'> &middot; Demissao: "+fmtD(e.dem)+" &middot; "+esc(motDemNome(e.motdem))+"</span>":"")
-      +(!a&&!e.dem&&e.inat?" &middot; Inativo desde "+fmtD(e.inat):"")+"</div></div>"
-      +"<div class='erow-act'>"
-      +(a?"<button class='btn-dem' data-fn='demEmp' data-id='"+e.id+"' title='Registrar demissao'><i class='ti ti-user-minus'></i>Demitido</button>":"")
+    if(a)MONEY_K.forEach(function(x){tot[x]+=empCampoVal(e,x)||0;});
+    var tip="Admissao: "+(e.adm?fmtD(e.adm)+" ("+tEmp(e.adm,e.dem)+")":"nao informada")+" | Vinculo: "+empVinc(e);
+    return "<tr class='"+(e.dem?"dem":a?"":"off")+"' title='"+esc(tip)+"'>"+cols.map(function(c){return cell(e,c);}).join("")
+      +(empRO()?"</tr>":"<td class='act'>"
+      +(a?"<button class='ibdel' data-fn='demEmp' data-id='"+e.id+"' title='Registrar demissao'><i class='ti ti-user-minus'></i></button>":"")
       +"<button class='ibedt' data-fn='edtEmp' data-id='"+e.id+"' title='Editar'><i class='ti ti-edit'></i></button>"
       +"<button class='ibdel' data-fn='delEmp' data-id='"+e.id+"' title='Excluir cadastro'><i class='ti ti-trash'></i></button>"
-      +"</div></div>";
+      +"</td></tr>");
   }).join("");
+  var head=cols.map(function(c){
+    var on=empSort.k===c.k,fil=!!empColFil[c.k];
+    var ic=fil?"ti-filter-filled":on?(empSort.d>0?"ti-sort-ascending":"ti-sort-descending"):"ti-chevron-down";
+    return "<th class='"+(c.c||c.t!=="txt"?"c":"")+(c.cu?" cu":"")+"' onclick=\"abrirColMenu(event,'"+c.k+"')\""+(c.k==="assid"?" title='Premio Cartao Beneficio do mes atual ("+fmtM(curMes())+"), ja com descontos'":"")+">"
+      +"<span class='etab-hd'><span>"+c.lb+"</span><span class='etab-ord"+(on||fil?" on":"")+"'><i class='ti "+ic+"'></i></span></span></th>";
+  }).join("");
+  // posicao da celula de total: soma so nas colunas de valor
+  var nTxt=0;while(nTxt<cols.length&&MONEY_K.indexOf(cols[nTxt].k)<0)nTxt++;
+  var foot="<tr>"+(nTxt?"<td colspan='"+nTxt+"'>TOTAL (ativos)</td>":"")+cols.slice(nTxt).map(function(c){
+    return MONEY_K.indexOf(c.k)>=0?"<td class='r'"+(empRO()?"":" id='ettot-"+c.k+"'")+">"+fmtBRL(tot[c.k])+"</td>":"<td></td>";}).join("")+(empRO()?"":"<td></td>")+"</tr>";
+  return aviso+"<div class='etab-wrap'><table class='etab' style='min-width:"+Math.max(700,cols.length*112+90)+"px'><thead><tr>"+head
+    +(empRO()?"":"<th class='c' style='cursor:default'>AÇÕES</th>")+"</tr></thead><tbody>"+rows+"</tbody><tfoot>"+foot+"</tfoot></table></div>";
+}
+// Menu do cabecalho (estilo Excel): classificar, filtrar valores, ocultar coluna
+function fecharColMenu(){var m=document.getElementById("etab-menu");if(m)m.remove();}
+function abrirColMenu(ev,k){
+  ev.stopPropagation();
+  var ja=document.getElementById("etab-menu");if(ja&&ja.dataset.k===k){fecharColMenu();return;}
+  fecharColMenu();
+  var col=EMP_COLS.find(function(c){return c.k===k;});
+  var num=MONEY_K.indexOf(k)>=0,dt=col.t==="dt"||k==="tempo";
+  var lA=num?"Menor para maior":dt?"Mais antigo para mais novo":"Classificar de A a Z";
+  var lZ=num?"Maior para menor":dt?"Mais novo para mais antigo":"Classificar de Z a A";
+  // valores distintos considerando as demais colunas filtradas
+  var salva=empColFil[k];delete empColFil[k];
+  var base=empListaVisivel();if(salva)empColFil[k]=salva;
+  var vals={};base.forEach(function(e){vals[empTxt(e,k)]=1;});
+  var lv=Object.keys(vals).sort(function(a,b){
+    if(num){var pa=parseFloat(a.replace(/[^0-9,]/g,"").replace(",","."))||0,pb=parseFloat(b.replace(/[^0-9,]/g,"").replace(",","."))||0;return pa-pb;}
+    if(col.t==="dt"){return a.split("/").reverse().join("").localeCompare(b.split("/").reverse().join(""));}
+    return a.localeCompare(b);});
+  var sel=empColFil[k];
+  var m=document.createElement("div");m.id="etab-menu";m.className="etab-menu";m.dataset.k=k;
+  m.innerHTML="<div class='etab-mt'>"+col.lb+"</div>"
+    +"<button onclick=\"ordEmp('"+k+"',1)\"><i class='ti ti-sort-ascending'></i>"+lA+"</button>"
+    +"<button onclick=\"ordEmp('"+k+"',-1)\"><i class='ti ti-sort-descending'></i>"+lZ+"</button>"
+    +(col.fixa?"":"<button onclick=\"ocultarCol('"+k+"')\"><i class='ti ti-eye-off'></i>Ocultar esta coluna</button>")
+    +"<div class='etab-msep'></div>"
+    +"<div class='etab-mt'>Filtrar valores</div>"
+    +"<input type='text' placeholder='Pesquisar...' oninput='filtMenuVals(this.value)' class='etab-mbusca'/>"
+    +"<label class='etab-mchk tudo'><input type='checkbox' id='etab-tudo' "+(!sel?"checked":"")+" onchange='marcarTodosMenu(this.checked)'/>(Selecionar tudo)</label>"
+    +"<div class='etab-mvals'>"+lv.map(function(v){
+      return "<label class='etab-mchk' data-v='"+esc(v.toLowerCase())+"'><input type='checkbox' value='"+esc(v)+"' "+(!sel||sel.indexOf(v)>=0?"checked":"")+"/>"+(v===""?"<i style='color:#999'>(Vazias)</i>":esc(v))+"</label>";
+    }).join("")+"</div>"
+    +"<div class='etab-mft'><button class='btng' onclick='fecharColMenu()'>Cancelar</button><button class='btnp' onclick=\"aplicarFiltroCol('"+k+"')\">OK</button></div>";
+  document.body.appendChild(m);
+  var r=ev.currentTarget.getBoundingClientRect(),w=260;
+  m.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+"px";
+  m.style.top=Math.min(r.bottom+4,window.innerHeight-Math.min(m.offsetHeight,window.innerHeight-16)-8)+"px";
+}
+document.addEventListener("mousedown",function(ev){var m=document.getElementById("etab-menu");if(m&&!m.contains(ev.target))fecharColMenu();});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape")fecharColMenu();});
+function filtMenuVals(q){q=(q||"").toLowerCase();document.querySelectorAll("#etab-menu .etab-mvals .etab-mchk").forEach(function(l){l.style.display=l.dataset.v.indexOf(q)>=0?"":"none";});}
+function marcarTodosMenu(on){document.querySelectorAll("#etab-menu .etab-mvals input").forEach(function(i){if(i.parentNode.style.display!=="none")i.checked=on;});}
+function aplicarFiltroCol(k){
+  var all=document.querySelectorAll("#etab-menu .etab-mvals input"),sel=[];
+  all.forEach(function(i){if(i.checked)sel.push(i.value);});
+  if(sel.length===all.length)delete empColFil[k];else empColFil[k]=sel;
+  fecharColMenu();filtEmp();
+}
+function ordEmp(k,d){empSort={k:k,d:d};fecharColMenu();filtEmp();}
+function setEmpSort(k){ordEmp(k,empSort.k===k?-empSort.d:1);}
+function limparEmpFiltros(){empColFil={};filtEmp();}
+function ocultarCol(k){var o=empColOcultas();if(o.indexOf(k)<0)o.push(k);setEmpColOcultas(o);delete empColFil[k];fecharColMenu();filtEmp();atualizarBtnCols();}
+// Painel "Colunas": mostrar/ocultar
+function abrirPainelCols(ev){
+  ev.stopPropagation();
+  var ja=document.getElementById("etab-menu");if(ja&&ja.dataset.k==="_cols"){fecharColMenu();return;}
+  fecharColMenu();
+  var o=empColOcultas();
+  var m=document.createElement("div");m.id="etab-menu";m.className="etab-menu";m.dataset.k="_cols";
+  m.innerHTML="<div class='etab-mt'>Colunas visiveis</div><div class='etab-mvals' style='max-height:340px'>"
+    +EMP_COLS.map(function(c){return "<label class='etab-mchk'><input type='checkbox' "+(c.fixa?"checked disabled":(o.indexOf(c.k)<0?"checked":""))+" onchange=\"togCol('"+c.k+"',this.checked)\"/>"+c.lb+"</label>";}).join("")
+    +"</div><div class='etab-mft'><button class='btng' onclick='mostrarTodasCols()'>Mostrar todas</button><button class='btnp' onclick='fecharColMenu()'>OK</button></div>";
+  document.body.appendChild(m);
+  var r=ev.currentTarget.getBoundingClientRect(),w=260;
+  m.style.left=Math.max(8,Math.min(r.right-w,window.innerWidth-w-8))+"px";m.style.top=(r.bottom+4)+"px";
+}
+function togCol(k,on){var o=empColOcultas().filter(function(x){return x!==k;});if(!on){o.push(k);delete empColFil[k];}setEmpColOcultas(o);filtEmp();atualizarBtnCols();}
+function mostrarTodasCols(){setEmpColOcultas([]);fecharColMenu();filtEmp();atualizarBtnCols();}
+function atualizarBtnCols(){var b=document.getElementById(empId("btn-cols"));if(!b)return;var n=empColOcultas().length;b.innerHTML="<i class='ti ti-columns-3'></i>Colunas"+(n?" <span class='seg-n'>("+n+" oculta"+(n>1?"s":"")+")</span>":"");}
+// Centro de custo escolhido direto na tabela
+function setCCInline(id,v){
+  if(v==="__novo"){var e=DB.emp.find(function(x){return x.id===id;});filtEmp();go("centros");setTimeout(novoCC,30);return;}
+  DB.emp=DB.emp.map(function(x){return x.id===id?Object.assign({},x,{ccid:v}):x;});
+  dbSave();
+}
+// Datas digitadas direto na tabela (admissao / aniversario)
+function setDataInline(id,k,el){
+  var v=el.value||"",e=DB.emp.find(function(x){return x.id===id;});if(!e)return;
+  if(k==="adm"&&v&&e.dem&&v>e.dem){alert("A admissao nao pode ser posterior a demissao ("+fmtD(e.dem)+").");el.value=e.adm||"";return;}
+  if(k==="adm"&&!v&&e.adm){if(!confirm("Remover a data de admissao?")){el.value=e.adm;return;}}
+  DB.emp=DB.emp.map(function(x){return x.id===id?Object.assign({},x,(function(){var o={};o[k]=v;return o;})()):x;});
+  dbSave();
+  // atualiza "tempo de empresa" na mesma linha
+  if(k==="adm"){var td=el.closest("tr"),ix=empColsVis().findIndex(function(c){return c.k==="tempo";});
+    if(td&&ix>=0&&td.children[ix])td.children[ix].textContent=v?tEmp(v,e.dem):"";}
+}
+// Valor digitado direto na tabela: salva e recalcula 1/3 ferias, 13o e custo mensal
+function setValInline(id,key,v){
+  var t=(v||"").toString().trim(),s=t===""?null:parseFloat(t.replace(",","."));
+  if(s!==null&&(isNaN(s)||s<0)){alert("Informe um valor valido.");return;}
+  var emp=null;
+  DB.emp=DB.emp.map(function(e){
+    if(e.id!==id)return e;
+    var n=Object.assign({},e);
+    if(s===null)delete n[key];else n[key]=+s.toFixed(2);
+    if(key==="sal"){if(s===null){delete n.terco;delete n.dec13;}else{var c=calcSal(s);n.terco=c.terco;n.dec13=c.dec13;}}
+    if(empTemValores(n))n.custo=calcCusto(n);else delete n.custo;
+    emp=n;return n;
+  });
+  if(!emp)return;
+  ["terco","dec13","custo"].forEach(function(x){var el=document.getElementById("et"+x+"-"+id),val=empCampoVal(emp,x);if(el)el.textContent=val===null?"":fmtBRL(val);});
+  var tot={};MONEY_K.forEach(function(x){tot[x]=0;});
+  empListaVisivel().forEach(function(e){if(isAtivo(e))MONEY_K.forEach(function(x){tot[x]+=empCampoVal(e,x)||0;});});
+  MONEY_K.forEach(function(x){var el=document.getElementById("ettot-"+x);if(el)el.textContent=fmtBRL(tot[x]);});
+  dbSave();
+}
+function setSalInline(id,v){setValInline(id,"sal",v);}
+// Enter / setas: vai para o salario da linha de baixo ou de cima (como na planilha)
+function salKey(ev,el){
+  var dir=ev.key==="Enter"||ev.key==="ArrowDown"?1:ev.key==="ArrowUp"?-1:0;if(!dir)return;
+  ev.preventDefault();
+  var all=Array.prototype.slice.call(document.querySelectorAll(".etab-sal[data-col='"+el.dataset.col+"']")),i=all.indexOf(el),nx=all[i+dir];
+  if(nx){nx.focus();nx.select();}else el.blur();
 }
 function filtEmp(){
-  var el=document.getElementById("elist");if(!el)return;
-  el.innerHTML=rEmpList(empListaFiltrada(gv("ebsc")));
+  var el=document.getElementById(empId("elist"));if(!el)return;
+  el.innerHTML=rEmpList();
 }
 function novoEmp(){canEmp();openMd("md-emp");}
 function empVinc(e){return e&&e.vinc==="MEI"?"MEI":"CLT";}
@@ -1597,17 +1999,718 @@ function setEmpAtivo(v){
   if(b1)b1.classList.toggle("on",v==="1");
   if(b0)b0.classList.toggle("on",v==="0");
 }
+
+// ═══════════════════════════════════════
+// REAJUSTE SALARIAL (sindicato ou espontaneo)
+// Cada reajuste grava o salario anterior e o novo, e atualiza o cadastro
+// (1/3 ferias, 13o e custo empresa mensal sao recalculados).
+// ═══════════════════════════════════════
+var REAJ_TIPOS={sindicato:{lb:"Sindicato",co:"#1f5fa8",bg:"#e3eefa",ic:"ti-building-community"},espontaneo:{lb:"Espontaneo",co:"#1a7a4a",bg:"#e4f4ea",ic:"ti-hand-click"}};
+var rjTipo="sindicato",rjForma="pct",rjSel=[];
+function rjEmp(id){return DB.emp.find(function(e){return e.id===id;});}
+function rjNovo(ant,forma,v){
+  if(forma==="pct")return +(ant*(1+v/100)).toFixed(2);
+  if(forma==="add")return +(ant+v).toFixed(2);
+  return +(+v).toFixed(2);
+}
+function rReaj(){
+  if(!DB.reaj)DB.reaj=[];
+  var anoAt=String(new Date().getFullYear());
+  var selAno=gv("rj-ano")||anoAt,selTipo=gv("rj-tipo"),q=(gv("rj-q")||"").toLowerCase();
+  var anos={};anos[anoAt]=1;DB.reaj.forEach(function(r){anos[r.data.slice(0,4)]=1;});
+  var lista=DB.reaj.filter(function(r){
+    if(selAno!=="todos"&&r.data.slice(0,4)!==selAno)return false;
+    if(selTipo&&r.tipo!==selTipo)return false;
+    var e=rjEmp(r.eid);
+    return !q||(e&&(e.nome.toLowerCase().includes(q)||(e.empresa||"").toLowerCase().includes(q)||(e.func||"").toLowerCase().includes(q)))||(r.motivo||"").toLowerCase().includes(q);
+  }).sort(function(a,b){return b.data.localeCompare(a.data)||(b.criado||"").localeCompare(a.criado||"");});
+  var nS=lista.filter(function(r){return r.tipo==="sindicato";}).length,nE=lista.length-nS;
+  var dif=lista.reduce(function(a,r){return a+(r.novo-r.ant);},0);
+  var pctMed=lista.length?lista.reduce(function(a,r){return a+(r.ant>0?(r.novo/r.ant-1)*100:0);},0)/lista.length:0;
+  var selSt="padding:.4rem .7rem;border:1.5px solid var(--line);border-radius:8px;font-size:13px;color:"+B+";font-weight:700;background:#fff;width:auto";
+  var rows=lista.length===0?"<div class='empty'><i class='ti ti-trending-up'></i>Nenhum reajuste no periodo. Clique em Novo reajuste.</div>":
+    "<div class='etab-wrap' style='max-height:calc(100vh - 330px)'><table class='etab' style='min-width:1050px'><thead><tr>"
+    +"<th style='cursor:default'>DATA</th><th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>EMPRESA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+    +"<th class='c' style='cursor:default'>TIPO</th><th style='cursor:default'>MOTIVO</th><th class='c' style='cursor:default'>SALÁRIO ANTERIOR</th>"
+    +"<th class='c' style='cursor:default'>%</th><th class='c' style='cursor:default'>NOVO SALÁRIO</th><th class='c' style='cursor:default'>DIFERENÇA</th><th class='c' style='cursor:default'>AÇÕES</th></tr></thead><tbody>"
+    +lista.map(function(r){
+      var e=rjEmp(r.eid),t=REAJ_TIPOS[r.tipo]||REAJ_TIPOS.espontaneo,p=r.ant>0?(r.novo/r.ant-1)*100:0;
+      return "<tr><td>"+fmtD(r.data)+"</td><td class='nm'>"+(e?esc(e.nome):"<i style='color:#999'>removido</i>")+"</td>"
+        +"<td>"+(e?esc(e.empresa||""):"")+"</td><td class='c'>"+(e?esc(e.func||""):"")+"</td>"
+        +"<td class='c'><span class='bdg' style='background:"+t.bg+";color:"+t.co+"'>"+t.lb.toUpperCase()+"</span></td>"
+        +"<td style='white-space:normal'>"+esc(r.motivo||"")+(r.obs?"<div style='font-size:11px;color:#999'>"+esc(r.obs)+"</div>":"")+"</td>"
+        +"<td class='r'>"+fmtBRL(r.ant)+"</td><td class='r' style='font-weight:700;color:"+(p>=0?GRN:RED)+"'>"+pct1(p)+"</td>"
+        +"<td class='r' style='font-weight:800;color:"+B+"'>"+fmtBRL(r.novo)+"</td><td class='r' style='color:"+(r.novo>=r.ant?GRN:RED)+"'>"+(r.novo>=r.ant?"+":"")+fmtBRL(r.novo-r.ant)+"</td>"
+        +"<td class='act'><button class='ibdel' title='Excluir reajuste' onclick=\"delReaj('"+r.id+"')\"><i class='ti ti-trash'></i></button></td></tr>";
+    }).join("")+"</tbody></table></div>";
+  document.getElementById("p-reajustes").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Reajuste Salarial</h1><div class='sub'>Historico de reajustes por sindicato ou espontaneos</div></div>"
+    +"<button class='btnp btn-ic' onclick='novoReaj()'><i class='ti ti-plus'></i>Novo reajuste</button></div>"
+    +"<div class='ga' style='margin-bottom:1rem'>"
+    +sCard("Reajustes no periodo",lista.length,B,"ti-trending-up",selAno==="todos"?"todos os anos":selAno)
+    +sCard("Por sindicato",nS,"#1f5fa8","ti-building-community","dissidio / acordo")
+    +sCard("Espontaneos",nE,GRN,"ti-hand-click","merito / promocao")
+    +sCard("Aumento na folha (mes)",fmtBRL(dif),BL,"ti-cash","soma das diferencas")
+    +sCard("Reajuste medio",pct1(pctMed),GLD,"ti-percentage","media dos reajustes")
+    +"</div>"
+    +"<div class='card'>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:.75rem'>"
+    +"<select id='rj-ano' onchange='rReaj()' style='"+selSt+"'><option value='todos'"+(selAno==="todos"?" selected":"")+">Todos os anos</option>"+Object.keys(anos).sort().reverse().map(function(a){return "<option value='"+a+"'"+(a===selAno?" selected":"")+">"+a+"</option>";}).join("")+"</select>"
+    +"<select id='rj-tipo' onchange='rReaj()' style='"+selSt+"'><option value=''>Todos os tipos</option><option value='sindicato'"+(selTipo==="sindicato"?" selected":"")+">Sindicato</option><option value='espontaneo'"+(selTipo==="espontaneo"?" selected":"")+">Espontaneo</option></select>"
+    +"<input type='text' id='rj-q' value='"+esc(q)+"' placeholder='Buscar colaborador, empresa ou motivo...' oninput='rReajLista()' style='width:280px;max-width:100%;margin-left:auto'/></div>"
+    +"<div id='rj-lista'>"+rows+"</div></div>";
+}
+var _rjT=null;function rReajLista(){clearTimeout(_rjT);_rjT=setTimeout(function(){var p=document.activeElement&&document.activeElement.id;rReaj();var el=document.getElementById(p);if(el){el.focus();var v=el.value;el.value="";el.value=v;}},250);}
+
+function novoReaj(){
+  rjTipo="sindicato";rjForma="pct";rjSel=[];
+  var emps={};DB.emp.filter(isAtivo).forEach(function(e){if(e.empresa)emps[e.empresa]=1;});
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-reaj";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:760px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-trending-up'></i>Novo reajuste salarial</div>"
+    +"<button class='mdl-x' onclick='fecharReaj()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'>"
+    +"<div class='fr'><label class='lbl'>Tipo do reajuste</label><div class='seg seg-full'>"
+    +"<button type='button' id='rjt-sindicato' class='seg-b on' onclick=\"setRjTipo('sindicato')\"><i class='ti ti-building-community'></i>Sindicato (dissidio / acordo coletivo)</button>"
+    +"<button type='button' id='rjt-espontaneo' class='seg-b' onclick=\"setRjTipo('espontaneo')\"><i class='ti ti-hand-click'></i>Espontaneo (merito / promocao)</button></div></div>"
+    +"<div class='fr2'>"
+    +"<div class='fr'><label class='lbl'>Motivo / descricao</label><input type='text' id='rj-mot' list='rj-mot-lst' placeholder='Ex: Dissidio coletivo 2026'/>"
+    +"<datalist id='rj-mot-lst'></datalist></div>"
+    +"<div class='fr'><label class='lbl'>Data de vigencia</label><input type='date' id='rj-data' value='"+hoje()+"'/></div></div>"
+    +"<div class='fr2'>"
+    +"<div class='fr'><label class='lbl'>Forma do reajuste</label><select id='rj-forma' onchange='rjForma=this.value;updReajPrev()'>"
+    +"<option value='pct'>Percentual (%)</option><option value='add'>Acrescimo em R$</option><option value='novo'>Novo salario (R$)</option></select></div>"
+    +"<div class='fr'><label class='lbl' id='rj-vlb'>Percentual (%)</label><input type='number' id='rj-val' step='0.01' min='0' placeholder='Ex: 5,5' oninput='updReajPrev()'/></div></div>"
+    +"<div class='fr'><label class='lbl'>Observacao <span class='opt'>(opcional)</span></label><input type='text' id='rj-obs' placeholder='Ex: Convencao coletiva, protocolo...'/></div>"
+    +"<div class='fr'><label class='lbl'>Colaboradores</label>"
+    +"<div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px'>"
+    +"<input type='text' id='rj-busca' placeholder='Buscar...' oninput='renderReajEmps()' style='flex:1;min-width:160px'/>"
+    +"<select id='rj-emp' onchange='renderReajEmps()' style='width:auto'><option value=''>Todas as empresas</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
+    +"<button type='button' class='btng' onclick='rjMarcar(true)'>Marcar visiveis</button><button type='button' class='btng' onclick='rjMarcar(false)'>Desmarcar</button></div>"
+    +"<div id='rj-emps' class='rj-emps'></div></div>"
+    +"<div id='rj-prev'></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='fecharReaj()'>Cancelar</button><button class='btnp btn-ic' onclick='savReaj()'><i class='ti ti-check'></i>Aplicar reajuste</button></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharReaj();});
+  setRjTipo("sindicato");renderReajEmps();
+}
+function fecharReaj(){var m=document.getElementById("md-reaj");if(m)m.remove();}
+function setRjTipo(t){
+  rjTipo=t;
+  ["sindicato","espontaneo"].forEach(function(k){var b=document.getElementById("rjt-"+k);if(b){b.classList.toggle("on",k===t);b.style.background=k===t?REAJ_TIPOS[k].co:"";}});
+  var sug=t==="sindicato"?["Dissidio coletivo","Acordo coletivo","Convencao coletiva","Piso da categoria"]:["Merito","Promocao","Enquadramento","Ajuste de mercado","Mudanca de funcao"];
+  var dl=document.getElementById("rj-mot-lst");if(dl)dl.innerHTML=sug.map(function(s){return "<option value='"+s+"'>";}).join("");
+}
+function renderReajEmps(){
+  var q=(gv("rj-busca")||"").toLowerCase(),em=gv("rj-emp");
+  var l=DB.emp.filter(function(e){return isAtivo(e)&&(!em||e.empresa===em)&&(!q||e.nome.toLowerCase().includes(q)||(e.func||"").toLowerCase().includes(q));})
+    .sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||a.nome.localeCompare(b.nome);});
+  var el=document.getElementById("rj-emps");if(!el)return;
+  el.innerHTML=l.length?l.map(function(e){
+    var semSal=typeof e.sal!=="number";
+    return "<label class='etab-mchk' data-id='"+e.id+"'><input type='checkbox' "+(rjSel.indexOf(e.id)>=0?"checked":"")+(semSal?" disabled":"")+" onchange=\"rjTog('"+e.id+"',this.checked)\"/>"
+      +"<span style='flex:1'>"+esc(e.nome)+" <span style='color:#999;font-size:11px'>"+esc(e.empresa||"")+(e.func?" &middot; "+esc(e.func):"")+"</span></span>"
+      +"<span style='font-weight:700;color:"+(semSal?"#c0392b":"#555")+";font-size:12px'>"+(semSal?"sem salario":fmtBRL(e.sal))+"</span></label>";
+  }).join(""):"<div style='color:#aaa;padding:.6rem;font-size:12px'>Nenhum colaborador ativo encontrado.</div>";
+  updReajPrev();
+}
+function rjTog(id,on){rjSel=rjSel.filter(function(x){return x!==id;});if(on)rjSel.push(id);updReajPrev();}
+function rjMarcar(on){
+  document.querySelectorAll("#rj-emps label").forEach(function(l){var i=l.querySelector("input");if(i.disabled)return;i.checked=on;rjSel=rjSel.filter(function(x){return x!==l.dataset.id;});if(on)rjSel.push(l.dataset.id);});
+  updReajPrev();
+}
+function updReajPrev(){
+  var lb=document.getElementById("rj-vlb");if(lb)lb.textContent={pct:"Percentual (%)",add:"Acrescimo (R$)",novo:"Novo salario (R$)"}[rjForma];
+  var el=document.getElementById("rj-prev");if(!el)return;
+  var t=gv("rj-val").trim(),v=t===""?NaN:parseFloat(t.replace(",","."));
+  if(!rjSel.length){el.innerHTML="<div class='hint' style='margin-bottom:.5rem'>Marque os colaboradores que recebem o reajuste. Quem esta sem salario cadastrado nao pode ser marcado.</div>";return;}
+  var tA=0,tN=0;
+  var linhas=rjSel.map(rjEmp).filter(Boolean).map(function(e){
+    var n=isNaN(v)?null:rjNovo(e.sal,rjForma,v);tA+=e.sal;tN+=n===null?e.sal:n;
+    return "<tr><td class='nm'>"+esc(e.nome)+"</td><td class='r'>"+fmtBRL(e.sal)+"</td><td class='r' style='font-weight:800;color:"+B+"'>"+(n===null?"—":fmtBRL(n))+"</td><td class='r' style='color:"+GRN+"'>"+(n===null?"":"+"+fmtBRL(n-e.sal))+"</td></tr>";
+  }).join("");
+  el.innerHTML="<div style='font-weight:700;font-size:13px;color:"+B+";margin:.25rem 0 .4rem'>Previa: "+rjSel.length+" colaborador"+(rjSel.length>1?"es":"")+"</div>"
+    +"<div class='etab-wrap' style='max-height:180px'><table class='etab'><thead><tr><th style='cursor:default'>FUNCIONÁRIO</th><th class='c' style='cursor:default'>ATUAL</th><th class='c' style='cursor:default'>NOVO</th><th class='c' style='cursor:default'>DIFERENÇA</th></tr></thead><tbody>"+linhas+"</tbody>"
+    +"<tfoot><tr><td>TOTAL MENSAL</td><td class='r'>"+fmtBRL(tA)+"</td><td class='r'>"+fmtBRL(tN)+"</td><td class='r'>+"+fmtBRL(tN-tA)+"</td></tr></tfoot></table></div>";
+}
+function savReaj(){
+  var mot=gv("rj-mot").trim(),data=gv("rj-data"),obs=gv("rj-obs").trim();
+  var t=gv("rj-val").trim(),v=t===""?NaN:parseFloat(t.replace(",","."));
+  if(!rjSel.length){alert("Marque ao menos um colaborador.");return;}
+  if(!mot){alert("Informe o motivo / descricao do reajuste.");return;}
+  if(!data){alert("Informe a data de vigencia.");return;}
+  if(isNaN(v)||v<=0){alert("Informe um valor de reajuste valido.");return;}
+  var lote=uid(),criado=new Date().toISOString(),regs=[];
+  rjSel.forEach(function(id){
+    var e=rjEmp(id);if(!e||typeof e.sal!=="number")return;
+    regs.push({id:uid(),lote:lote,eid:id,data:data,tipo:rjTipo,motivo:mot,obs:obs,forma:rjForma,valor:v,ant:e.sal,novo:rjNovo(e.sal,rjForma,v),criado:criado});
+  });
+  if(regs.some(function(r){return r.novo<r.ant;})&&!confirm("Algum novo salario ficou menor que o atual. Continuar?"))return;
+  if(!confirm("Aplicar reajuste ("+REAJ_TIPOS[rjTipo].lb+") para "+regs.length+" colaborador"+(regs.length>1?"es":"")+"?\nO salario no cadastro sera atualizado."))return;
+  regs.forEach(function(r){aplicarSalEmp(r.eid,r.novo);});
+  DB.reaj=(DB.reaj||[]).concat(regs);
+  dbSave();fecharReaj();rReaj();
+}
+// Atualiza salario e recalcula 1/3, 13o e custo
+function aplicarSalEmp(id,sal){
+  DB.emp=DB.emp.map(function(e){
+    if(e.id!==id)return e;
+    var n=Object.assign({},e),c=calcSal(sal);n.sal=sal;n.terco=c.terco;n.dec13=c.dec13;n.custo=calcCusto(n);return n;
+  });
+}
+function delReaj(id){
+  var r=(DB.reaj||[]).find(function(x){return x.id===id;});if(!r)return;
+  var e=rjEmp(r.eid);
+  var volta=e&&typeof e.sal==="number"&&Math.abs(e.sal-r.novo)<0.005;
+  var msg="Excluir este reajuste?"+(volta?"\n\nO salario de "+e.nome+" volta para "+fmtBRL(r.ant)+".":"\n\nO salario atual nao sera alterado (ja foi modificado depois deste reajuste).");
+  if(!confirm(msg))return;
+  if(volta)aplicarSalEmp(r.eid,r.ant);
+  DB.reaj=DB.reaj.filter(function(x){return x.id!==id;});
+  dbSave();rReaj();
+}
+
+// ═══════════════════════════════════════
+// GRUPOS DE CUSTO (Direto, Indireto, Vendas, Administrativo, Terceiros...)
+// tipo "proprio" soma em TOTAL DA FOLHA; tipo "terceiro" soma em TOTAL CUSTO TERCEIROS
+// ═══════════════════════════════════════
+function initGrupos(){
+  return [
+    {id:uid(),nome:"Direto",tipo:"proprio",ord:1},
+    {id:uid(),nome:"Indireto",tipo:"proprio",ord:2},
+    {id:uid(),nome:"Vendas",tipo:"proprio",ord:3},
+    {id:uid(),nome:"Administrativo",tipo:"proprio",ord:4},
+    {id:uid(),nome:"Terceiro Producao",tipo:"terceiro",ord:5},
+    {id:uid(),nome:"Terceiro Administrativo",tipo:"terceiro",ord:6},
+    {id:uid(),nome:"Terceirizado Comercial",tipo:"terceiro",ord:7}
+  ];
+}
+function gruposOrd(){
+  if(!DB.grupos)DB.grupos=[];
+  return DB.grupos.slice().sort(function(a,b){
+    if(a.tipo!==b.tipo)return a.tipo==="proprio"?-1:1;
+    return (a.ord||0)-(b.ord||0)||a.nome.localeCompare(b.nome);
+  });
+}
+var GTIPO={proprio:{lb:"Pessoal proprio",co:"#00348F",bg:"#e6edf8"},terceiro:{lb:"Terceirizado",co:"#7b3fa0",bg:"#f1e7f8"}};
+function rGrupos(){
+  var gs=gruposOrd();
+  var rows=gs.length===0?"<div class='empty'><i class='ti ti-category'></i>Nenhum grupo cadastrado.</div>":
+    "<div class='etab-wrap'><table class='etab'><thead><tr>"
+    +"<th style='cursor:default;width:60px' class='c'>ORDEM</th><th style='cursor:default'>GRUPO</th><th class='c' style='cursor:default'>TIPO</th>"
+    +"<th class='c' style='cursor:default'>COLABORADORES ATIVOS</th><th class='c' style='cursor:default'>CUSTO MENSAL ATUAL</th><th class='c' style='cursor:default'>AÇÕES</th></tr></thead><tbody>"
+    +gs.map(function(g,i){
+      var emps=DB.emp.filter(function(e){return e.grupo===g.id&&isAtivo(e);});
+      var cu=emps.reduce(function(a,e){return a+(empTemValores(e)?calcCusto(e):0);},0),t=GTIPO[g.tipo]||GTIPO.proprio;
+      var irmaos=gs.filter(function(x){return x.tipo===g.tipo;}),pos=irmaos.indexOf(g);
+      return "<tr><td class='act'>"
+        +"<button class='ibedt' title='Subir' "+(pos===0?"disabled style='opacity:.25'":"")+" onclick=\"moverGrupo('"+g.id+"',-1)\"><i class='ti ti-arrow-up'></i></button>"
+        +"<button class='ibedt' title='Descer' "+(pos===irmaos.length-1?"disabled style='opacity:.25'":"")+" onclick=\"moverGrupo('"+g.id+"',1)\"><i class='ti ti-arrow-down'></i></button></td>"
+        +"<td class='nm'>"+esc(g.nome)+"</td>"
+        +"<td class='c'><span class='bdg' style='background:"+t.bg+";color:"+t.co+"'>"+t.lb.toUpperCase()+"</span></td>"
+        +"<td class='c'>"+emps.length+"</td><td class='r' style='font-weight:700;color:"+B+"'>"+fmtBRL(cu)+"</td>"
+        +"<td class='act'><button class='ibedt' title='Editar' onclick=\"edtGrupo('"+g.id+"')\"><i class='ti ti-edit'></i></button>"
+        +"<button class='ibdel' title='Excluir' onclick=\"delGrupo('"+g.id+"')\"><i class='ti ti-trash'></i></button></td></tr>";
+    }).join("")+"</tbody></table></div>";
+  var semG=DB.emp.filter(function(e){return isAtivo(e)&&!(e.grupo&&DB.grupos.some(function(g){return g.id===e.grupo;}));}).length;
+  document.getElementById("p-grupos").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Grupos de Custo</h1><div class='sub'>Grupos usados no Custo Total da Folha de Pagamento</div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap'><button class='btng btn-ic' onclick=\"go('direcionar')\"><i class='ti ti-arrows-split-2'></i>Direcionar colaboradores</button>"
+    +"<button class='btnp btn-ic' onclick='novoGrupo()'><i class='ti ti-plus'></i>Novo grupo</button></div></div>"
+    +(semG?"<div class='warn' style='margin-bottom:1rem'><i class='ti ti-alert-triangle'></i> "+semG+" colaborador"+(semG>1?"es ativos estao":" ativo esta")+" sem grupo e nao entra"+(semG>1?"m":"")+" no Custo Total da Folha. <a href='#' onclick=\"go('direcionar');return false\" style='color:inherit'>Direcionar agora</a></div>":"")
+    +"<div class='card'>"+rows
+    +"<div class='hint' style='margin-top:.7rem'><b>Pessoal proprio</b> soma no Total da Folha. <b>Terceirizado</b> soma no Total Custo Terceiros. A ordem define a ordem das colunas na tabela da folha.</div></div>";
+}
+function grupoModal(g){
+  fecharGrupoMd();
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-grp";div.style.zIndex="9500";
+  var tp=g?g.tipo:"proprio";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:440px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-category'></i>"+(g?"Editar grupo":"Novo grupo")+"</div>"
+    +"<button class='mdl-x' onclick='fecharGrupoMd()' aria-label='Fechar'><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<input type='hidden' id='grp-id' value='"+(g?g.id:"")+"'/>"
+    +"<div class='fr'><label class='lbl'>Nome do grupo</label><input type='text' id='grp-nome' value='"+(g?esc(g.nome):"")+"' placeholder='Ex: Manutencao' onkeydown=\"if(event.key==='Enter')savGrupo()\"/></div>"
+    +"<div class='fr'><label class='lbl'>Tipo</label><input type='hidden' id='grp-tipo' value='"+tp+"'/><div class='seg seg-full'>"
+    +"<button type='button' id='grpt-proprio' class='seg-b"+(tp==="proprio"?" on":"")+"' onclick=\"setGrpTipo('proprio')\"><i class='ti ti-users'></i>Pessoal proprio</button>"
+    +"<button type='button' id='grpt-terceiro' class='seg-b"+(tp==="terceiro"?" on":"")+"' onclick=\"setGrpTipo('terceiro')\"><i class='ti ti-briefcase'></i>Terceirizado</button></div></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='fecharGrupoMd()'>Cancelar</button><button class='btnp' onclick='savGrupo()'>"+(g?"Salvar alteracoes":"Cadastrar")+"</button></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharGrupoMd();});
+  setTimeout(function(){var i=document.getElementById("grp-nome");if(i)i.focus();},50);
+}
+function setGrpTipo(t){document.getElementById("grp-tipo").value=t;["proprio","terceiro"].forEach(function(k){var b=document.getElementById("grpt-"+k);if(b)b.classList.toggle("on",k===t);});}
+function fecharGrupoMd(){var m=document.getElementById("md-grp");if(m)m.remove();}
+function novoGrupo(){grupoModal(null);}
+function edtGrupo(id){grupoModal(DB.grupos.find(function(g){return g.id===id;}));}
+function savGrupo(){
+  var id=gv("grp-id"),nome=gv("grp-nome").trim(),tipo=gv("grp-tipo")||"proprio";
+  if(!nome){alert("Informe o nome do grupo.");return;}
+  if(DB.grupos.some(function(g){return g.id!==id&&g.nome.toLowerCase()===nome.toLowerCase();})){alert("Ja existe um grupo com esse nome.");return;}
+  if(id)DB.grupos=DB.grupos.map(function(g){return g.id===id?Object.assign({},g,{nome:nome,tipo:tipo}):g;});
+  else{var mx=DB.grupos.reduce(function(a,g){return Math.max(a,g.ord||0);},0);DB.grupos.push({id:uid(),nome:nome,tipo:tipo,ord:mx+1});}
+  dbSave();fecharGrupoMd();rGrupos();
+}
+function delGrupo(id){
+  var g=DB.grupos.find(function(x){return x.id===id;});if(!g)return;
+  var n=DB.emp.filter(function(e){return e.grupo===id;}).length;
+  if(!confirm("Excluir o grupo "+g.nome+"?"+(n?"\n\n"+n+" colaborador"+(n>1?"es ficarao":" ficara")+" sem grupo.":"")))return;
+  DB.grupos=DB.grupos.filter(function(x){return x.id!==id;});
+  DB.emp=DB.emp.map(function(e){if(e.grupo!==id)return e;var o=Object.assign({},e);delete o.grupo;return o;});
+  dbSave();rGrupos();
+}
+function moverGrupo(id,d){
+  var gs=gruposOrd(),g=gs.find(function(x){return x.id===id;}),irm=gs.filter(function(x){return x.tipo===g.tipo;});
+  var i=irm.indexOf(g),j=i+d;if(j<0||j>=irm.length)return;
+  irm.splice(i,1);irm.splice(j,0,g);
+  irm.forEach(function(x,k){x.ord=k+1;});
+  dbSave();rGrupos();
+}
+
+// ═══ DIRECIONAR COLABORADORES PARA OS GRUPOS ═══
+var dirSel=[];
+function rDir(){
+  dirSel=[];
+  var gs=gruposOrd(),emps={};DB.emp.forEach(function(e){if(e.empresa)emps[e.empresa]=1;});
+  var cont=gs.map(function(g){var n=DB.emp.filter(function(e){return e.grupo===g.id&&isAtivo(e);}).length,t=GTIPO[g.tipo]||GTIPO.proprio;
+    return "<button class='dir-chip' style='border-color:"+t.co+"33' onclick=\"setDirFiltroGrupo('"+g.id+"')\"><span>"+esc(g.nome)+"</span><b style='color:"+t.co+"'>"+n+"</b></button>";}).join("");
+  var semG=DB.emp.filter(function(e){return isAtivo(e)&&!(e.grupo&&DB.grupos.some(function(g){return g.id===e.grupo;}));}).length;
+  document.getElementById("p-direcionar").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Direcionar Colaboradores para os Grupos</h1><div class='sub'>Selecione um ou varios colaboradores e escolha o grupo</div></div>"
+    +"<button class='btng btn-ic' onclick=\"go('grupos')\"><i class='ti ti-category'></i>Cadastro de grupos</button></div>"
+    +"<div class='dir-chips'>"+cont+"<button class='dir-chip warnc' onclick=\"setDirFiltroGrupo('_sem')\"><span>Sem grupo</span><b>"+semG+"</b></button></div>"
+    +"<div class='card'>"
+    +"<div class='dir-bar'>"
+    +"<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>"
+    +"<span class='lbl' style='margin:0'>Grupo de destino</span>"
+    +"<select id='dir-dest' style='width:220px'><option value=''>Selecione o grupo...</option>"
+    +gs.map(function(g){return "<option value='"+g.id+"'>"+esc(g.nome)+" ("+(GTIPO[g.tipo]||GTIPO.proprio).lb+")</option>";}).join("")+"</select>"
+    +"<button class='btnp btn-ic' onclick='aplicarDir()'><i class='ti ti-arrow-right'></i>Direcionar selecionados</button>"
+    +"<button class='btng btn-ic' onclick='removerDir()'><i class='ti ti-x'></i>Tirar do grupo</button>"
+    +"<span id='dir-cnt' class='dir-cnt'>0 selecionados</span></div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;margin:.75rem 0'>"
+    +"<input type='text' id='dir-q' placeholder='Buscar por nome ou funcao...' oninput='renderDir()' style='flex:1;min-width:200px'/>"
+    +"<select id='dir-emp' onchange='renderDir()' style='width:auto'><option value=''>Todas as empresas</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
+    +"<select id='dir-fg' onchange='renderDir()' style='width:auto'><option value=''>Todos os grupos</option><option value='_sem'>Sem grupo</option>"
+    +gs.map(function(g){return "<option value='"+g.id+"'>"+esc(g.nome)+"</option>";}).join("")+"</select>"
+    +"<select id='dir-sit' onchange='renderDir()' style='width:auto'><option value='ativos'>Ativos</option><option value='todos'>Todos</option></select></div>"
+    +"<div id='dir-lista'></div></div>";
+  renderDir();
+}
+function setDirFiltroGrupo(g){var s=document.getElementById("dir-fg");if(s){s.value=g;renderDir();}}
+function dirLista(){
+  var q=(gv("dir-q")||"").toLowerCase(),em=gv("dir-emp"),fg=gv("dir-fg"),sit=gv("dir-sit")||"ativos";
+  var ids={};DB.grupos.forEach(function(g){ids[g.id]=1;});
+  return DB.emp.filter(function(e){
+    if(sit==="ativos"&&!isAtivo(e))return false;
+    if(em&&e.empresa!==em)return false;
+    if(fg==="_sem"&&e.grupo&&ids[e.grupo])return false;
+    if(fg&&fg!=="_sem"&&e.grupo!==fg)return false;
+    return !q||e.nome.toLowerCase().includes(q)||(e.func||"").toLowerCase().includes(q);
+  }).sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||(a.func||"").localeCompare(b.func||"")||a.nome.localeCompare(b.nome);});
+}
+function renderDir(){
+  var el=document.getElementById("dir-lista");if(!el)return;
+  var l=dirLista();
+  var todos=l.length&&l.every(function(e){return dirSel.indexOf(e.id)>=0;});
+  el.innerHTML=l.length===0?"<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador encontrado.</div>":
+    "<div class='etab-wrap'><table class='etab'><thead><tr>"
+    +"<th class='c' style='cursor:default;width:42px'><input type='checkbox' "+(todos?"checked":"")+" onchange='dirTodos(this.checked)' title='Selecionar todos' style='width:auto'/></th>"
+    +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>EMPRESA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+    +"<th class='c' style='cursor:default'>CENTRO DE CUSTO</th><th class='c' style='cursor:default'>GRUPO ATUAL</th><th class='c' style='cursor:default'>CUSTO MENSAL</th></tr></thead><tbody>"
+    +l.map(function(e){
+      var on=dirSel.indexOf(e.id)>=0,gt=empTxt(e,"grupo"),cu=empTemValores(e)?calcCusto(e):null;
+      return "<tr class='"+(on?"dir-on":"")+(isAtivo(e)?"":" off")+"' onclick=\"dirTog('"+e.id+"',event)\" style='cursor:pointer'>"
+        +"<td class='c'><input type='checkbox' "+(on?"checked":"")+" style='width:auto;pointer-events:none'/></td>"
+        +"<td class='nm'>"+esc(e.nome)+"</td><td>"+esc(e.empresa||"")+"</td><td class='c'>"+esc(e.func||"")+"</td>"
+        +"<td class='c'>"+esc(empTxt(e,"cc"))+"</td>"
+        +"<td class='c'>"+(gt?"<span class='bdg' style='background:#e6edf8;color:#00348F'>"+esc(gt)+"</span>":"<span class='bdg' style='background:#fdecd2;color:#8a5a00'>SEM GRUPO</span>")+"</td>"
+        +"<td class='r'>"+(cu===null?"—":fmtBRL(cu))+"</td></tr>";
+    }).join("")+"</tbody></table></div>";
+  var c=document.getElementById("dir-cnt");if(c)c.textContent=dirSel.length+" selecionado"+(dirSel.length!==1?"s":"");
+}
+function dirTog(id){var i=dirSel.indexOf(id);if(i>=0)dirSel.splice(i,1);else dirSel.push(id);renderDir();}
+function dirTodos(on){var l=dirLista().map(function(e){return e.id;});dirSel=dirSel.filter(function(x){return l.indexOf(x)<0;});if(on)dirSel=dirSel.concat(l);renderDir();}
+function aplicarDir(){
+  var g=gv("dir-dest");
+  if(!dirSel.length){alert("Selecione ao menos um colaborador.");return;}
+  if(!g){alert("Escolha o grupo de destino.");return;}
+  var gn=DB.grupos.find(function(x){return x.id===g;}).nome;
+  DB.emp=DB.emp.map(function(e){return dirSel.indexOf(e.id)>=0?Object.assign({},e,{grupo:g}):e;});
+  var n=dirSel.length;dirSel=[];dbSave();
+  var keep={q:gv("dir-q"),em:gv("dir-emp"),fg:gv("dir-fg"),sit:gv("dir-sit"),d:g};
+  rDir();
+  ["dir-q","dir-emp","dir-fg","dir-sit"].forEach(function(id,i){var el=document.getElementById(id);if(el)el.value=[keep.q,keep.em,keep.fg,keep.sit][i];});
+  document.getElementById("dir-dest").value=keep.d;renderDir();
+  showSync(n+" colaborador"+(n>1?"es direcionados":" direcionado")+" para "+gn,true);
+  setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
+}
+function removerDir(){
+  if(!dirSel.length){alert("Selecione ao menos um colaborador.");return;}
+  if(!confirm("Tirar "+dirSel.length+" colaborador(es) do grupo atual?"))return;
+  DB.emp=DB.emp.map(function(e){if(dirSel.indexOf(e.id)<0)return e;var o=Object.assign({},e);delete o.grupo;return o;});
+  dirSel=[];dbSave();renderDir();
+}
+
+// ═══ RESUMO DOS CUSTOS (Custo com RH) - mesma tabela do cadastro, somente leitura ═══
+function rResumo(){
+  empCtx="res";
+  var nAt=DB.emp.filter(ativoVis).length,nAf=DB.emp.filter(function(e){return isAtivo(e)&&!vis(e);}).length,nIn=DB.emp.filter(function(e){return !isAtivo(e);}).length;
+  function segBtn(k,lb,n){return "<button class='seg-b"+(empFiltro===k?" on":"")+"' data-k='"+k+"' onclick=\"setEmpFiltro('"+k+"')\">"+lb+" <span class='seg-n'>"+n+"</span></button>";}
+  var q=gv("rebsc");
+  document.getElementById("p-resumo").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Resumo dos Custos</h1>"
+    +"<div class='sub'><i class='ti ti-lock'></i> Somente leitura &middot; atualiza sozinho com o Cadastro de Colaborador, os Reajustes e os Premios</div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap'>"
+    +"<button class='btng btn-ic' onclick='abrirEmpPDF()'><i class='ti ti-file-download'></i>Relatorio PDF</button>"
+    +"<button class='btnp btn-ic' onclick=\"go('folha')\"><i class='ti ti-table'></i>Custo Total da Folha</button></div></div>"
+    +"<div class='card'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.5rem'>"
+    +"<div class='seg' id='refseg'>"+segBtn("ativos","Ativos",nAt)+segBtn("afastados","Afastados",nAf)+segBtn("inativos","Inativos",nIn)+segBtn("todos","Todos",DB.emp.length)+"</div>"
+    +"<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'>"
+    +"<button class='btng btn-ic' id='rbtn-cols' onclick='abrirPainelCols(event)'></button>"
+    +"<input type='text' id='rebsc' value='"+esc(q)+"' placeholder='Buscar por empresa, nome, funcao, horario...' oninput='filtEmp()' style='width:260px;max-width:100%'/></div></div>"
+    +"<div id='relist'>"+rEmpList()+"</div></div>";
+}
+
+// ═══ CUSTO TOTAL DA FOLHA DE PAGAMENTO (jan-dez por grupo) ═══
+// Base: Resumo dos Custos (custo empresa mensal de cada colaborador), somado por grupo.
+// Salario do mes considera os reajustes (antes do reajuste vale o salario anterior).
+var MESF=["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+function empAtivoNoMes(e,m){
+  var ini=m+"-01",fim=fimMesStr(m);
+  if(e.adm&&e.adm>fim)return false;
+  if(e.dem)return e.dem>=ini;
+  if(!isAtivo(e))return !!e.inat&&e.inat>=ini;
+  return true;
+}
+function salNoMes(e,m){
+  if(typeof e.sal!=="number")return undefined;
+  var fim=fimMesStr(m);
+  var rs=(DB.reaj||[]).filter(function(r){return r.eid===e.id&&r.data>fim;}).sort(function(a,b){return a.data.localeCompare(b.data)||(a.criado||"").localeCompare(b.criado||"");});
+  return rs.length?rs[0].ant:e.sal;
+}
+function custoNoMes(e,m){
+  var o=Object.assign({},e),s=salNoMes(e,m);
+  if(s===undefined)delete o.sal;else o.sal=s;
+  if(!(typeof o.sal==="number"||assidInfo(o,m)||BENEF.some(function(b){return typeof o[b.k]==="number";})))return 0;
+  return calcCusto(o,m);
+}
+// valores do mes: {g:{grupoId:valor}, sem:valor, fechado:bool} ou null (mes futuro)
+function folhaMes(m){
+  var f=(DB.folhafech||[]).find(function(x){return x.id===m;});
+  if(f)return {g:f.g||{},sem:f.sem||0,fechado:true,em:f.em};
+  if(m>curMes())return null;
+  var g={},sem=0,ids={};DB.grupos.forEach(function(x){ids[x.id]=1;g[x.id]=0;});
+  DB.emp.forEach(function(e){
+    if(!empAtivoNoMes(e,m))return;
+    var v=custoNoMes(e,m);if(!v)return;
+    if(e.grupo&&ids[e.grupo])g[e.grupo]+=v;else sem+=v;
+  });
+  Object.keys(g).forEach(function(k){g[k]=+g[k].toFixed(2);});
+  return {g:g,sem:+sem.toFixed(2),fechado:false};
+}
+function receitaMes(m){var r=(DB.receita||[]).find(function(x){return x.id===m;});return r&&typeof r.valor==="number"?r.valor:null;}
+function rFolha(){
+  var anoAt=String(new Date().getFullYear()),ano=gv("fl-ano")||anoAt;
+  var anos={};anos[anoAt]=1;anos[String(+anoAt-1)]=1;anos[String(+anoAt+1)]=1;
+  (DB.receita||[]).forEach(function(r){anos[r.id.slice(0,4)]=1;});(DB.folhafech||[]).forEach(function(r){anos[r.id.slice(0,4)]=1;});
+  var gs=gruposOrd(),gp=gs.filter(function(g){return g.tipo!=="terceiro";}),gt=gs.filter(function(g){return g.tipo==="terceiro";});
+  var meses=MESF.map(function(n,i){return ano+"-"+String(i+1).padStart(2,"0");});
+  var dados=meses.map(function(m){
+    var f=folhaMes(m),rec=receitaMes(m);
+    if(!f)return {m:m,f:null,rec:rec};
+    var folha=gp.reduce(function(a,g){return a+(f.g[g.id]||0);},0),terc=gt.reduce(function(a,g){return a+(f.g[g.id]||0);},0);
+    return {m:m,f:f,rec:rec,folha:folha,terc:terc,geral:folha+terc};
+  });
+  var comDado=dados.filter(function(d){return d.f;}),comRec=dados.filter(function(d){return d.rec!==null&&d.rec>0;});
+  function soma(fn,l){return (l||comDado).reduce(function(a,d){return a+fn(d);},0);}
+  function med(fn,l){l=l||comDado;return l.length?soma(fn,l)/l.length:null;}
+  var tFolha=soma(function(d){return d.folha;}),tTerc=soma(function(d){return d.terc;}),tGeral=tFolha+tTerc,tRec=soma(function(d){return d.rec;},comRec);
+  var semNow=folhaMes(curMes()),semV=semNow?semNow.sem:0;
+  var nSem=DB.emp.filter(function(e){return isAtivo(e)&&!(e.grupo&&DB.grupos.some(function(g){return g.id===e.grupo;}));}).length;
+  var v=function(x){return x===null||x===undefined?"":fmtBRL(x);};
+  var pct=function(c,r){return r?pct2(c/r*100):"";};
+  var th=function(lb,cls,attr){return "<th class='c "+(cls||"")+"' style='cursor:default' "+(attr||"")+">"+lb+"</th>";};
+  var head="<tr>"+th("MÊS","","rowspan='2'")
+    +gp.map(function(g){return th("CUSTO PESSOAL<br>"+esc(g.nome).toUpperCase(),"","rowspan='2'");}).join("")
+    +(gt.length?th("TERCEIRIZADOS","fl-band","colspan='"+gt.length+"'"):"")
+    +th("TOTALIZADOR","fl-band2","colspan='5'")+th("SITUAÇÃO","","rowspan='2'")+"</tr><tr>"
+    +gt.map(function(g){return th(esc(g.nome).toUpperCase());}).join("")
+    +th("TOTAL DA FOLHA","fl-tot")+th("TOTAL CUSTO TERCEIROS","fl-tot")+th("CUSTO TOTAL DA FOLHA","fl-tot")+th("RECEITA<br><span style='font-weight:500'>(manual)</span>","fl-tot")+th("% S/ RECEITA","fl-tot")+"</tr>";
+  var body=dados.map(function(d,i){
+    var f=d.f,mm=MESF[i];
+    var cells=gp.concat(gt).map(function(g){return "<td class='r'>"+(f?v(f.g[g.id]||0):"")+"</td>";}).join("");
+    var st=!f?"<span style='color:#b0b8c1;font-size:11px'>futuro</span>"
+      :f.fechado?"<button class='fl-st fech' onclick=\"reabrirMes('"+d.m+"')\" title='Fechado em "+(f.em?fmtD(f.em.slice(0,10)):"")+". Clique para reabrir'><i class='ti ti-lock'></i>Fechado</button>"
+      :"<button class='fl-st' onclick=\"fecharMes('"+d.m+"')\" title='Congelar os valores deste mes'><i class='ti ti-lock-open'></i>Fechar</button>";
+    return "<tr class='"+(d.m===curMes()?"fl-cur":"")+"'><td class='nm'>"+mm+"</td>"+cells
+      +"<td class='r fl-c'>"+(f?v(d.folha):"")+"</td><td class='r fl-c'>"+(f?v(d.terc):"")+"</td><td class='r fl-c fl-g'>"+(f?v(d.geral):"")+"</td>"
+      +"<td class='in fl-c'><input type='number' min='0' step='0.01' class='etab-sal' data-col='rec' value='"+(d.rec===null?"":d.rec)+"' placeholder='0,00' onchange=\"setReceita('"+d.m+"',this.value)\" onkeydown='salKey(event,this)'/></td>"
+      +"<td class='r fl-c fl-p'>"+(f&&d.rec?pct(d.geral,d.rec):"")+"</td><td class='c'>"+st+"</td></tr>";
+  }).join("");
+  var totG=gp.concat(gt).map(function(g){return "<td class='r'>"+fmtBRL(soma(function(d){return d.f.g[g.id]||0;}))+"</td>";}).join("");
+  var medG=gp.concat(gt).map(function(g){var x=med(function(d){return d.f.g[g.id]||0;});return "<td class='r'>"+v(x)+"</td>";}).join("");
+  var mF=med(function(d){return d.folha;}),mT=med(function(d){return d.terc;}),mR=med(function(d){return d.rec;},comRec);
+  var foot="<tr><td>TOTAL</td>"+totG+"<td class='r'>"+fmtBRL(tFolha)+"</td><td class='r'>"+fmtBRL(tTerc)+"</td><td class='r'>"+fmtBRL(tGeral)+"</td><td class='r'>"+fmtBRL(tRec)+"</td><td class='r'>"+(tRec?pct(soma(function(d){return d.rec?d.geral:0;}),tRec):"")+"</td><td></td></tr>"
+    +"<tr class='fl-med'><td>MÉDIA</td>"+medG+"<td class='r'>"+v(mF)+"</td><td class='r'>"+v(mT)+"</td><td class='r'>"+v(mF===null?null:mF+mT)+"</td><td class='r'>"+v(mR)+"</td><td class='r'>"+(mR&&mF!==null?pct(mF+mT,mR):"")+"</td><td></td></tr>";
+  var selSt="padding:.4rem .7rem;border:1.5px solid var(--line);border-radius:8px;font-size:13px;color:"+B+";font-weight:700;background:#fff;width:auto";
+  document.getElementById("p-folha").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Custo Total da Folha de Pagamento</h1>"
+    +"<div class='sub'>Base: Resumo dos Custos (custo empresa mensal) somado por grupo &middot; receita lancada manualmente</div></div>"
+    +"<div style='display:flex;align-items:center;gap:8px'><i class='ti ti-calendar' style='color:#888'></i><span style='font-size:12px;font-weight:600;color:#555'>Ano:</span>"
+    +"<select id='fl-ano' onchange='rFolha()' style='"+selSt+"'>"+Object.keys(anos).sort().reverse().map(function(a){return "<option value='"+a+"'"+(a===ano?" selected":"")+">"+a+"</option>";}).join("")+"</select></div></div>"
+    +(nSem?"<div class='warn' style='margin-bottom:1rem'><i class='ti ti-alert-triangle'></i> "+nSem+" colaborador"+(nSem>1?"es ativos":" ativo")+" sem grupo"+(semV?" (custo de "+fmtBRL(semV)+" no mes atual)":"")+" nao entra"+(nSem>1?"m":"")+" nesta tabela. <a href='#' onclick=\"go('direcionar');return false\" style='color:inherit'>Direcionar para um grupo</a></div>":"")
+    +"<div class='ga' style='margin-bottom:1rem'>"
+    +sCard("Custo total da folha",fmtBRL(tGeral),B,"ti-cash",ano+" · "+comDado.length+" mes"+(comDado.length!==1?"es":""))
+    +sCard("Total da folha",fmtBRL(tFolha),BL,"ti-users","pessoal proprio")
+    +sCard("Custo terceiros",fmtBRL(tTerc),PUR,"ti-briefcase","terceirizados")
+    +sCard("Receita",fmtBRL(tRec),GRN,"ti-chart-line",comRec.length+" mes"+(comRec.length!==1?"es":"")+" lancado"+(comRec.length!==1?"s":""))
+    +sCard("% s/ receita",tRec?pct(soma(function(d){return d.rec?d.geral:0;}),tRec):"—",GLD,"ti-percentage","meses com receita")
+    +sCard("Media mensal",v(mF===null?0:mF+mT),"#14213D","ti-calendar-stats","custo total / mes")
+    +"</div>"
+    +"<div class='card'><div class='etab-wrap' style='max-height:none'><table class='etab ftab' style='min-width:"+(420+(gp.length+gt.length)*120+5*125)+"px'><thead>"+head+"</thead><tbody>"+body+"</tbody><tfoot>"+foot+"</tfoot></table></div>"
+    +"<div class='hint' style='margin-top:.7rem'>Total da Folha = soma dos grupos de pessoal proprio &middot; Total Custo Terceiros = soma dos terceirizados &middot; Custo Total = Folha + Terceiros &middot; % s/ Receita = Custo Total &divide; Receita. "
+    +"Meses abertos se atualizam sozinhos; use <b>Fechar</b> para congelar os valores de um mes encerrado.</div></div>";
+}
+function pct2(x){return (x||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";}
+function setReceita(m,val){
+  var t=(val||"").toString().trim(),v=t===""?null:parseFloat(t.replace(",","."));
+  if(v!==null&&(isNaN(v)||v<0)){alert("Informe um valor valido.");return;}
+  if(!DB.receita)DB.receita=[];
+  DB.receita=DB.receita.filter(function(r){return r.id!==m;});
+  if(v!==null)DB.receita.push({id:m,valor:+v.toFixed(2)});
+  dbSave();
+  var foco=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.col==="rec"?Array.prototype.indexOf.call(document.querySelectorAll(".ftab .etab-sal"),document.activeElement):-1;
+  rFolha();
+  if(foco>=0){var el=document.querySelectorAll(".ftab .etab-sal")[foco];if(el)el.focus();}
+}
+function fecharMes(m){
+  var f=folhaMes(m);if(!f)return;
+  if(!confirm("Fechar "+fmtM(m)+"?\n\nOs valores deste mes ficam congelados e nao mudam mais com alteracoes de salario ou cadastro. Voce pode reabrir depois."))return;
+  if(!DB.folhafech)DB.folhafech=[];
+  DB.folhafech=DB.folhafech.filter(function(x){return x.id!==m;});
+  DB.folhafech.push({id:m,g:f.g,sem:f.sem,em:new Date().toISOString()});
+  dbSave();rFolha();
+}
+function reabrirMes(m){
+  if(!confirm("Reabrir "+fmtM(m)+"? Os valores voltam a ser calculados com os dados atuais."))return;
+  DB.folhafech=(DB.folhafech||[]).filter(function(x){return x.id!==m;});
+  dbSave();rFolha();
+}
+
+// ═══════════════════════════════════════
+// ACESSOS E PERMISSOES
+// Master (rhpapelao@gmail.com.br) tem acesso total e e o unico que gerencia usuarios.
+// Os demais usuarios ficam na tabela timbo_usuarios com permissao por tela:
+// "nenhum" (nao ve a tela), "ver" (so consulta) ou "editar".
+// O Supabase (RLS) confere as mesmas permissoes ao gravar - nao depende so da tela.
+// ═══════════════════════════════════════
+var TELAS=[
+  {k:"dashboard",lb:"Dashboard",ic:"ti-layout-dashboard"},
+  {k:"centros",lb:"Centros de Custo",ic:"ti-building"},
+  {k:"employees",lb:"Cadastro de Colaborador",ic:"ti-users"},
+  {k:"reajustes",lb:"Reajuste Salarial",ic:"ti-trending-up"},
+  {k:"grupos",lb:"Grupos de Custo",ic:"ti-category"},
+  {k:"direcionar",lb:"Direcionar p/ Grupos",ic:"ti-arrows-split-2"},
+  {k:"resumo",lb:"Resumo dos Custos",ic:"ti-report-money",soVer:true},
+  {k:"folha",lb:"Custo Total da Folha",ic:"ti-table"},
+  {k:"monitor",lb:"Monitoramento",ic:"ti-chart-dots-3",soVer:true},
+  {k:"5s",lb:"Infracao 5S",ic:"ti-clipboard-check"},
+  {k:"lancamento",lb:"Lancamentos",ic:"ti-clipboard-list"},
+  {k:"premios",lb:"Premios",ic:"ti-gift"},
+  {k:"indices",lb:"Indices",ic:"ti-adjustments"},
+  {k:"motivos",lb:"Motivos",ic:"ti-tags"},
+  {k:"relatorio",lb:"Relatorios",ic:"ti-chart-bar",soVer:true},
+  {k:"calendario",lb:"Aniversarios",ic:"ti-calendar-heart",soVer:true},
+  {k:"backup",lb:"Backup",ic:"ti-database"}
+];
+var ACESSO=null;
+function isMasterEmail(e){return e?_sha256(String(e).trim().toLowerCase()).then(function(h){return h===MASTER_HASH;}):Promise.resolve(false);}
+// Descobre quem esta logado e quais telas pode usar. null = sem acesso ao sistema
+function carregarAcesso(user){
+  var email=(user&&user.email||"").trim().toLowerCase();
+  if(!email)return Promise.resolve(null);
+  return isMasterEmail(email).then(function(m){
+    if(m)return {master:true,email:email,nome:"Master",perms:{}};
+    return _sb.from("timbo_usuarios").select("email,nome,ativo,perms").eq("email",email).maybeSingle().then(function(r){
+      if(r.error||!r.data||r.data.ativo===false)return null;
+      return {master:false,email:email,nome:r.data.nome||email,perms:r.data.perms||{}};
+    });
+  });
+}
+function permTela(p){
+  if(!ACESSO)return "nenhum";
+  if(ACESSO.master)return "editar";
+  if(p==="acessos")return "nenhum";
+  var v=ACESSO.perms[p];
+  var t=TELAS.find(function(x){return x.k===p;});
+  if(t&&t.soVer&&v==="editar")v="ver";
+  return v==="ver"||v==="editar"?v:"nenhum";
+}
+function primeiraTela(){
+  if(permTela("dashboard")!=="nenhum")return "dashboard";
+  var t=TELAS.find(function(x){return permTela(x.k)!=="nenhum";});
+  return t?t.k:null;
+}
+// Mostra/oculta os itens do menu conforme as permissoes
+function aplicarPermissoes(){
+  TELAS.forEach(function(t){var b=document.getElementById("nb-"+t.k);if(b)b.style.display=permTela(t.k)==="nenhum"?"none":"";});
+  var a=document.getElementById("nb-acessos");if(a)a.style.display=ACESSO&&ACESSO.master?"":"none";
+  var u=document.getElementById("sb-user");
+  if(u)u.innerHTML=ACESSO?"<i class='ti "+(ACESSO.master?"ti-crown":"ti-user")+"'></i><span class='nl'>"+esc(ACESSO.master?ACESSO.email+" (master)":ACESSO.nome)+"</span>":"";
+}
+
+var ACS_LISTA=null,ACS_ERRO="";
+function rAcessos(){
+  var el=document.getElementById("p-acessos");
+  if(!ACESSO||!ACESSO.master){el.innerHTML="<div class='empty'><i class='ti ti-lock'></i>Somente o usuario master gerencia acessos.</div>";return;}
+  if(ACS_LISTA===null){
+    el.innerHTML="<div class='empty'><i class='ti ti-loader'></i>Carregando usuarios...</div>";
+    _sb.from("timbo_usuarios").select("email,nome,ativo,perms,atualizado").order("email").then(function(r){
+      if(r.error){ACS_ERRO=r.error.message;ACS_LISTA=[];}else{ACS_ERRO="";ACS_LISTA=r.data||[];}
+      if(pg==="acessos")rAcessos();
+    });
+    return;
+  }
+  function resumoPerm(p){
+    var ed=0,vr=0;TELAS.forEach(function(t){var v=(p||{})[t.k];if(v==="editar"&&!t.soVer)ed++;else if(v==="ver"||v==="editar")vr++;});
+    return "<span class='bdg bdg-ok'>"+ed+" editar</span> <span class='bdg' style='background:#e6edf8;color:#00348F'>"+vr+" ver</span> <span class='bdg bdg-off'>"+(TELAS.length-ed-vr)+" sem acesso</span>";
+  }
+  var rows="<tr class='acs-master'><td class='nm'><i class='ti ti-crown' style='color:#e6a817'></i> "+esc(ACESSO.email)+"</td><td>Master</td>"
+    +"<td class='c'><span class='bdg bdg-ok'>ATIVO</span></td><td><span class='bdg' style='background:#fdf3e1;color:#8a5a00'>ACESSO TOTAL + GERENCIA ACESSOS</span></td><td class='c'>—</td><td class='act'><span style='color:#b0b8c1;font-size:11px'>fixo</span></td></tr>"
+    +ACS_LISTA.map(function(u){
+      return "<tr class='"+(u.ativo===false?"off":"")+"'><td class='nm'>"+esc(u.email)+"</td><td>"+esc(u.nome||"")+"</td>"
+        +"<td class='c'>"+(u.ativo===false?"<span class='bdg bdg-off'>BLOQUEADO</span>":"<span class='bdg bdg-ok'>ATIVO</span>")+"</td>"
+        +"<td>"+resumoPerm(u.perms)+"</td><td class='c'>"+(u.atualizado?fmtD(u.atualizado.slice(0,10)):"")+"</td>"
+        +"<td class='act'><button class='ibedt' title='Editar permissoes' onclick=\"acsModal('"+esc(u.email)+"')\"><i class='ti ti-edit'></i></button>"
+        +"<button class='ibdel' title='Remover acesso' onclick=\"acsExcluir('"+esc(u.email)+"')\"><i class='ti ti-trash'></i></button></td></tr>";
+    }).join("");
+  el.innerHTML="<div class='pg-hd'><div><h1 class='h1'>Acessos e Permissoes</h1><div class='sub'>Defina quem entra no sistema e o que cada pessoa pode ver ou editar</div></div>"
+    +"<button class='btnp btn-ic' onclick='acsModal()'><i class='ti ti-user-plus'></i>Novo usuario</button></div>"
+    +(ACS_ERRO?"<div class='warn' style='margin-bottom:1rem;background:#fbe9e7;color:#a93226'><i class='ti ti-alert-triangle'></i> Nao foi possivel ler os usuarios ("+esc(ACS_ERRO)+"). Rode o supabase_setup.sql atualizado no SQL Editor do Supabase.</div>":"")
+    +"<div class='warn' style='margin-bottom:1rem'><i class='ti ti-info-circle'></i> Para a pessoa conseguir entrar, o mesmo e-mail tambem precisa estar cadastrado no Supabase em <b>Authentication &gt; Users &gt; Add user</b> (com a senha). Aqui voce libera o acesso e as permissoes.</div>"
+    +"<div class='card'><div class='etab-wrap'><table class='etab'><thead><tr>"
+    +"<th style='cursor:default'>E-MAIL</th><th style='cursor:default'>NOME</th><th class='c' style='cursor:default'>SITUAÇÃO</th><th style='cursor:default'>PERMISSÕES</th><th class='c' style='cursor:default'>ATUALIZADO</th><th class='c' style='cursor:default'>AÇÕES</th>"
+    +"</tr></thead><tbody>"+rows+"</tbody></table></div>"
+    +(ACS_LISTA.length?"":"<div class='hint' style='margin-top:.6rem'>Nenhum usuario alem do master. Clique em Novo usuario.</div>")+"</div>";
+}
+function acsModal(email){
+  acsFechar();
+  var u=email?ACS_LISTA.find(function(x){return x.email===email;}):null,p=(u&&u.perms)||{};
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-acs";div.style.zIndex="9500";
+  var grid=TELAS.map(function(t){
+    var v=p[t.k]||"nenhum";if(t.soVer&&v==="editar")v="ver";
+    function rd(val,lb,dis){return "<label class='acs-rd"+(dis?" dis":"")+"'><input type='radio' name='acs-"+t.k+"' value='"+val+"'"+(v===val?" checked":"")+(dis?" disabled":"")+"/>"+lb+"</label>";}
+    return "<tr><td><i class='ti "+t.ic+"' style='color:#00348F;margin-right:6px'></i>"+t.lb+(t.soVer?" <span style='color:#999;font-size:10.5px'>(consulta)</span>":"")+"</td>"
+      +"<td class='c'>"+rd("nenhum","Sem acesso")+"</td><td class='c'>"+rd("ver","Ver")+"</td><td class='c'>"+rd("editar","Editar",t.soVer)+"</td></tr>";
+  }).join("");
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:640px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-shield-lock'></i>"+(u?"Editar acesso":"Novo usuario")+"</div>"
+    +"<button class='mdl-x' onclick='acsFechar()' aria-label='Fechar'><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<div class='fr2'><div class='fr'><label class='lbl'>E-mail</label><input type='email' id='acs-email' value='"+(u?esc(u.email):"")+"'"+(u?" disabled":"")+" placeholder='nome@empresa.com'/></div>"
+    +"<div class='fr'><label class='lbl'>Nome</label><input type='text' id='acs-nome' value='"+(u?esc(u.nome||""):"")+"' placeholder='Ex: Maria (RH)'/></div></div>"
+    +"<div class='fr'><label class='lbl'>Situacao</label><input type='hidden' id='acs-ativo' value='"+(u&&u.ativo===false?"0":"1")+"'/><div class='seg seg-full'>"
+    +"<button type='button' id='acs-at1' class='seg-b"+(u&&u.ativo===false?"":" on")+"' onclick=\"acsAtivo('1')\"><i class='ti ti-circle-check'></i>Ativo</button>"
+    +"<button type='button' id='acs-at0' class='seg-b"+(u&&u.ativo===false?" on":"")+"' onclick=\"acsAtivo('0')\"><i class='ti ti-lock'></i>Bloqueado</button></div></div>"
+    +"<div class='fr'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px'><label class='lbl' style='margin:0'>Permissoes por tela</label>"
+    +"<div style='display:flex;gap:6px'><button type='button' class='btng' style='padding:.3rem .6rem;font-size:11px' onclick=\"acsTodos('editar')\">Tudo editar</button>"
+    +"<button type='button' class='btng' style='padding:.3rem .6rem;font-size:11px' onclick=\"acsTodos('ver')\">Tudo ver</button>"
+    +"<button type='button' class='btng' style='padding:.3rem .6rem;font-size:11px' onclick=\"acsTodos('nenhum')\">Nenhum</button></div></div>"
+    +"<div class='etab-wrap' style='max-height:46vh'><table class='etab acs-tab'><thead><tr><th style='cursor:default'>TELA</th><th class='c' style='cursor:default'>SEM ACESSO</th><th class='c' style='cursor:default'>VER</th><th class='c' style='cursor:default'>EDITAR</th></tr></thead><tbody>"+grid+"</tbody></table></div></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='acsFechar()'>Cancelar</button><button class='btnp' id='acs-sav' onclick='acsSalvar()'>"+(u?"Salvar alteracoes":"Liberar acesso")+"</button></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)acsFechar();});
+}
+function acsFechar(){var m=document.getElementById("md-acs");if(m)m.remove();}
+function acsAtivo(v){document.getElementById("acs-ativo").value=v;document.getElementById("acs-at1").classList.toggle("on",v==="1");document.getElementById("acs-at0").classList.toggle("on",v==="0");}
+function acsTodos(v){TELAS.forEach(function(t){var val=t.soVer&&v==="editar"?"ver":v;var r=document.querySelector("input[name='acs-"+t.k+"'][value='"+val+"']");if(r)r.checked=true;});}
+function acsSalvar(){
+  var email=gv("acs-email").trim().toLowerCase(),nome=gv("acs-nome").trim(),ativo=gv("acs-ativo")!=="0";
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert("Informe um e-mail valido.");return;}
+  if(email===ACESSO.email){alert("Este e-mail ja e o master.");return;}
+  var perms={};TELAS.forEach(function(t){var r=document.querySelector("input[name='acs-"+t.k+"']:checked");var v=r?r.value:"nenhum";if(v!=="nenhum")perms[t.k]=v;});
+  if(!Object.keys(perms).length&&!confirm("Nenhuma tela liberada. O usuario nao vai conseguir usar o sistema. Salvar assim mesmo?"))return;
+  var b=document.getElementById("acs-sav");if(b)b.disabled=true;
+  _sb.from("timbo_usuarios").upsert({email:email,nome:nome,ativo:ativo,perms:perms,atualizado:new Date().toISOString()}).then(function(r){
+    if(r.error)throw new Error(r.error.message);
+    acsFechar();ACS_LISTA=null;rAcessos();
+    showSync("Acesso de "+email+" salvo",true);setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
+  }).catch(function(e){if(b)b.disabled=false;showSync("Erro ao salvar acesso: "+e.message,false,true);});
+}
+function acsExcluir(email){
+  if(!confirm("Remover o acesso de "+email+"?\n\nA pessoa nao entra mais no sistema. (O usuario continua existindo no Supabase Authentication.)"))return;
+  _sb.from("timbo_usuarios").delete().eq("email",email).then(function(r){
+    if(r.error)throw new Error(r.error.message);
+    ACS_LISTA=null;rAcessos();
+  }).catch(function(e){showSync("Erro: "+e.message,false,true);});
+}
+
+// ═══ CALCULOS AUTOMATICOS SOBRE O SALARIO ═══
+function calcSal(sal){
+  sal=+sal||0;
+  return {terco:+(sal/3).toFixed(2),dec13:+sal.toFixed(2)};
+}
+// Beneficios do colaborador (valores digitados). anual=true entra no custo mensal dividido por 12
+var BENEF=[
+  {k:"cesta",lb:"Cesta basica"},
+  {k:"pmetas",lb:"Premio metas"},
+  {k:"bonus",lb:"Bonus anual",anual:true},
+  {k:"refeit",lb:"Refeitorio"}
+];
+// Custo empresa mensal: mensais + provisao mensal (1/12) do 1/3 ferias, 13o e bonus anual
+// Assiduidade = Premio Cartao Beneficio (tela Premios) do mes atual, ja com os descontos de faltas/atrasos/5S
+function assidInfo(e,mes){
+  if(!e||!e.id)return null;
+  var pr=DB.pr.find(function(p){return p.eid===e.id;});if(!pr)return null;
+  mes=mes||curMes();
+  var d=calcDesc(e.id,mes,pr.val);
+  return {bruto:pr.val,pct:d.pct,desc:+d.desc.toFixed(2),rec:+d.rec.toFixed(2),mes:mes};
+}
+function calcCusto(e,mes){
+  var sal=typeof e.sal==="number"?e.sal:0,c=calcSal(sal),t=sal+(c.terco+c.dec13)/12;
+  var ai=assidInfo(e,mes);if(ai)t+=ai.rec;
+  BENEF.forEach(function(b){var v=+e[b.k]||0;t+=b.anual?v/12:v;});
+  return +t.toFixed(2);
+}
+function numVal(id){var t=gv(id).trim();if(t==="")return null;var v=parseFloat(t.replace(",","."));return isNaN(v)||v<0?NaN:v;}
+function updSalCalc(){
+  var v=numVal("esal");
+  var a=document.getElementById("eterco"),b=document.getElementById("e13"),cu=document.getElementById("ecusto");
+  if(!a||!b)return;
+  if(v===null||isNaN(v)){a.value="";b.value="";}
+  else{var c=calcSal(v);a.value=fmtBRL(c.terco);b.value=fmtBRL(c.dec13);}
+  var ai=assidInfo({id:gv("eid")}),av=document.getElementById("eassidv");
+  if(av)av.value=ai?fmtBRL(ai.rec)+(ai.pct>0?"  (premio "+fmtBRL(ai.bruto)+" - "+pct1(ai.pct)+" de desconto em "+fmtM(ai.mes)+")":"  (sem descontos em "+fmtM(ai.mes)+")"):"Sem premio cadastrado em Premios";
+  if(cu){
+    var o={id:gv("eid"),sal:(v===null||isNaN(v))?undefined:v},alg=(v!==null&&!isNaN(v))||!!ai;
+    BENEF.forEach(function(x){var n=numVal("e"+x.k);if(n!==null&&!isNaN(n)){o[x.k]=n;alg=true;}});
+    cu.value=alg?fmtBRL(calcCusto(o)):"";
+  }
+}
+function empresasCad(){
+  var s={};DB.emp.forEach(function(e){if(e.empresa)s[e.empresa]=1;});
+  return Object.keys(s).sort();
+}
 function savEmp(){
   var id=gv("eid");
   var nome=gv("enome").trim(),func=gv("efunc").trim(),ccid=gv("ecc"),adm=gv("eadm"),aniv=gv("eaniv");
   var salTx=gv("esal").trim(),sal=salTx===""?null:parseFloat(salTx.replace(",","."));
   if(sal!==null&&(isNaN(sal)||sal<0)){alert("Informe um salario valido.");return;}
   var ativo=gv("eativo")==="1",vinc=gv("evinc")==="MEI"?"MEI":"CLT";
+  var empresa=gv("eempresa").trim(),horario=gv("ehorario").trim(),bv={};
+  for(var bi=0;bi<BENEF.length;bi++){var nb=numVal("e"+BENEF[bi].k);if(isNaN(nb)){alert("Valor invalido em "+BENEF[bi].lb+".");return;}bv[BENEF[bi].k]=nb;}
   if(!nome||!func||!adm){alert("Preencha nome, funcao e admissao.");return;}
   var old=id?DB.emp.find(function(e){return e.id===id;}):null;
   if(old&&old.dem&&ativo&&!confirm(nome+" esta demitido. Marcar como ativo cancela a demissao. Continuar?"))return;
   var obj=Object.assign({},old||{dem:""},{id:id||uid(),nome:nome,func:func,ccid:ccid,adm:adm,aniv:aniv,ativo:ativo,vinc:vinc});
-  if(sal===null)delete obj.sal;else obj.sal=+sal.toFixed(2);
+  if(sal===null){delete obj.sal;delete obj.terco;delete obj.dec13;}
+  else{var cs=calcSal(sal);obj.sal=+sal.toFixed(2);obj.terco=cs.terco;obj.dec13=cs.dec13;}
+  obj.empresa=empresa;obj.horario=horario;
+  BENEF.forEach(function(b){if(bv[b.k]===null)delete obj[b.k];else obj[b.k]=+bv[b.k].toFixed(2);});
+  delete obj.assid;
+  obj.custo=calcCusto(obj);
   if(ativo){obj.dem="";delete obj.motdem;delete obj.obsdem;delete obj.inat;}
   else if(!obj.dem&&!obj.inat){obj.inat=hoje();}
   if(obj.dem&&adm>obj.dem){alert("A admissao nao pode ser posterior a demissao ("+fmtD(obj.dem)+").");return;}
@@ -1623,6 +2726,10 @@ function edtEmp(id){
   document.getElementById("eadm").value=e.adm;
   var an=document.getElementById("eaniv");if(an)an.value=e.aniv||"";
   var sl=document.getElementById("esal");if(sl)sl.value=(e.sal!==undefined&&e.sal!==null)?e.sal:"";
+  var ep=document.getElementById("eempresa");if(ep)ep.value=e.empresa||"";
+  var hr=document.getElementById("ehorario");if(hr)hr.value=e.horario||"";
+  BENEF.forEach(function(b){var el=document.getElementById("e"+b.k);if(el)el.value=(typeof e[b.k]==="number")?e[b.k]:"";});
+  updSalCalc();
   document.getElementById("eftt").textContent="Editar colaborador";
   document.getElementById("esav").textContent="Salvar alteracoes";
   setEmpAtivo(isAtivo(e)?"1":"0");
@@ -1632,7 +2739,8 @@ function edtEmp(id){
   openMd("md-emp");
 }
 function canEmp(){
-  ["eid","enome","efunc","eadm","eaniv","esal"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  ["eid","enome","efunc","eadm","eaniv","esal","eempresa","ehorario","ecesta","eassid","epmetas","ebonus","erefeit"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  updSalCalc();
   var cc=document.getElementById("ecc");if(cc)cc.value="";
   var t=document.getElementById("eftt");if(t)t.textContent="Novo colaborador";
   var btn=document.getElementById("esav");if(btn)btn.textContent="Cadastrar";
@@ -1882,7 +2990,7 @@ function rLanc(){
       +"<div class='fr'><label class='lbl'>Tipo de ocorrencia</label>"
       +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"+tBtns+"</div></div>"
       +"<div class='fr2'><div class='fr'><label class='lbl'>Data</label><input type='date' id='ldata' value='"+hoje()+"'/></div>"
-      +"<div class='fr'><label class='lbl'>Motivo <span class='opt'>(opcional)</span></label><select id='lmotivo'>"+motOpts(lancT,"")+"</select></div></div>"
+      +"<div class='fr'><label class='lbl' style='display:flex;justify-content:space-between;align-items:center'><span>Motivo <span class='opt'>(opcional)</span></span><button type='button' class='lnk-add' onclick=\"togMotRap('lmotivo')\"><i class='ti ti-plus'></i>Novo motivo</button></label><select id='lmotivo'>"+motOpts(lancT,"")+"</select><div id='lmotivo-novo' class='mot-rap'><input type='text' id='lmotivo-nm' placeholder='Nome do novo motivo' onkeydown=\"if(event.key==='Enter')addMotRap('lmotivo')\"/><button type='button' class='btnp' onclick=\"addMotRap('lmotivo')\">Salvar</button></div></div>"+"</div>"
       +"<div class='fr'><label class='lbl'>Observacao <span class='opt'>(opcional)</span></label><input type='text' id='lobs' placeholder='Detalhe adicional...'/></div>"
       +"<div id='linfo' style='background:"+ta.co+"18;border-radius:8px;padding:.6rem .75rem;font-size:12px;color:"+ta.co+";font-weight:700'>"
       +"<i class='ti "+ta.ic+"'></i> Desconto: -"+getPct(lancT,hoje())+"% do premio</div>"
@@ -1905,6 +3013,23 @@ function setTipo(t){
   var ti=TIPOS.find(function(x){return x.k===t;}),info=document.getElementById("linfo");
   if(info&&ti){info.style.background=ti.co+"18";info.style.color=ti.co;info.innerHTML="<i class='ti "+ti.ic+"'></i> Desconto: -"+getPct(t,gv("ldata")||hoje())+"% do premio";}
   var ms=document.getElementById("lmotivo");if(ms)ms.innerHTML=motOpts(t,"");
+}
+// Cadastro rapido de motivo direto no lancamento
+function togMotRap(sel){
+  var r=document.getElementById(sel+"-novo");if(!r)return;
+  var show=!r.classList.contains("on");r.classList.toggle("on",show);
+  if(show)document.getElementById(sel+"-nm").focus();
+}
+function addMotRap(sel){
+  var nm=gv(sel+"-nm").trim();
+  if(!nm){alert("Informe o nome do motivo.");return;}
+  var tipo=sel==="etmotivo"?gv("ettipo"):lancT;
+  var ex=DB.motivos.find(function(m){return m.tipo===tipo&&m.nome.toLowerCase()===nm.toLowerCase();});
+  var novo=ex||{id:uid(),tipo:tipo,nome:nm,desc:""};
+  if(!ex){DB.motivos.push(novo);dbSave();}
+  var s=document.getElementById(sel);if(s)s.innerHTML=motOpts(tipo,novo.id);
+  document.getElementById(sel+"-nm").value="";
+  document.getElementById(sel+"-novo").classList.remove("on");
 }
 function savLanc(){
   var eid=gv("lemp"),data=gv("ldata"),obs=gv("lobs"),motivo_id=gv("lmotivo");
@@ -1933,7 +3058,7 @@ function edtLanc(id){
     +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"+tBtns+"</div>"
     +"<input type='hidden' id='ettipo' value='"+o.tipo+"'/></div>"
     +"<div class='fr2'><div class='fr'><label class='lbl'>Data</label><input type='date' id='etdata' value='"+o.data+"'/></div>"
-    +"<div class='fr'><label class='lbl'>Motivo</label><select id='etmotivo'>"+motOpts(o.tipo,o.motivo_id||"")+"</select></div></div>"
+    +"<div class='fr'><label class='lbl' style='display:flex;justify-content:space-between;align-items:center'><span>Motivo <span class='opt'>(opcional)</span></span><button type='button' class='lnk-add' onclick=\"togMotRap('etmotivo')\"><i class='ti ti-plus'></i>Novo motivo</button></label><select id='etmotivo'>"+motOpts(o.tipo,o.motivo_id||"")+"</select><div id='etmotivo-novo' class='mot-rap'><input type='text' id='etmotivo-nm' placeholder='Nome do novo motivo' onkeydown=\"if(event.key==='Enter')addMotRap('etmotivo')\"/><button type='button' class='btnp' onclick=\"addMotRap('etmotivo')\">Salvar</button></div></div>"+"</div>"
     +"<div class='fr'><label class='lbl'>Observacao</label><input type='text' id='etobs' value='"+esc(o.obs||"")+"' placeholder='Motivo...'/></div>"
     +"<div style='display:flex;gap:8px;margin-top:1.25rem'>"
     +"<button data-fn='savEdtLanc' data-id='"+id+"' class='btnp' style='flex:1'>Salvar alteracoes</button>"
@@ -2575,7 +3700,7 @@ function rMon(){
   function fimMes(m){var p=m.split("-");var d=new Date(+p[0],+p[1],0);return p[0]+"-"+p[1]+"-"+String(d.getDate()).padStart(2,"0");}
   function prevMes(m){var p=m.split("-").map(Number);var d=new Date(p[0],p[1]-2,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
   var EMPV=DB.emp.filter(vis),ocV=ocVisF();
-  function quadro(m){var f=fimMes(m);return EMPV.filter(function(e){return e.adm&&e.adm<=f&&(!e.dem||e.dem>f);}).length;}
+  function quadro(m){var f=fimMes(m);return EMPV.filter(function(e){return (!e.adm||e.adm<=f)&&(!e.dem||e.dem>f);}).length;}
   function contr(m){return EMPV.filter(function(e){return e.adm&&e.adm.slice(0,7)===m;});}
   function demit(m){return EMPV.filter(function(e){return e.dem&&e.dem.slice(0,7)===m;});}
 
@@ -2614,7 +3739,7 @@ function rMon(){
   }
   function absent(m,ccid){
     var f=fimMes(m),ini=m+"-01";
-    var emps=EMPV.filter(function(e){return e.adm&&e.adm<=f&&(!e.dem||e.dem>=ini)&&(ccid===undefined||(e.ccid||"")===ccid);});
+    var emps=EMPV.filter(function(e){return (!e.adm||e.adm<=f)&&(!e.dem||e.dem>=ini)&&(ccid===undefined||(e.ccid||"")===ccid);});
     var ids={};emps.forEach(function(e){ids[e.id]=1;});
     var faltas=DB.oc.filter(function(o){return o.tipo==="falta"&&gmk(o.data)===m&&ocV(o)&&(ccid===undefined||ids[o.eid]);}).length;
     var atrasos=DB.oc.filter(function(o){return o.tipo==="atraso"&&gmk(o.data)===m&&ocV(o)&&(ccid===undefined||ids[o.eid]);}).length;
@@ -2640,7 +3765,7 @@ function rMon(){
     var du=0,f=0;
     meses.forEach(function(m){
       var fim=fimMes(m),ini=m+"-01";
-      if(!(e.adm&&e.adm<=fim&&(!e.dem||e.dem>=ini)))return;
+      if(!((!e.adm||e.adm<=fim)&&(!e.dem||e.dem>=ini)))return;
       du+=diasUteis(m);
       f+=DB.oc.filter(function(o){return o.eid===e.id&&o.tipo==="falta"&&gmk(o.data)===m;}).length;
     });
@@ -2804,10 +3929,11 @@ function monCfgPie(bd,s){
 }
 
 // ═══ KIT PDF PADRAO TIMBÓ (cabecalho com logo, paineis, tabelas, rodape) ═══
-function mkPdfKit(titulo,periodo,orient){
-  var retrato=orient==="portrait";
-  var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:retrato?"portrait":"landscape",compress:true});
-  var K={doc:doc,W:retrato?210:297,H:retrato?297:210,mg:12,BANDH:27,PX:7};
+function mkPdfKit(titulo,periodo,orient,papel){
+  var retrato=orient==="portrait",a3=papel==="a3";
+  var doc=new window.jspdf.jsPDF({unit:"mm",format:a3?"a3":"a4",orientation:retrato?"portrait":"landscape",compress:true});
+  var lg=a3?420:297,ct=a3?297:210;
+  var K={doc:doc,W:retrato?ct:lg,H:retrato?lg:ct,mg:12,BANDH:27,PX:7};
   K.cw=K.W-K.mg*2;
   var C=K.C={ink:[10,31,74],b:[0,52,143],bl:[30,91,198],red:[192,57,43],grn:[26,122,74],gld:[230,168,23],pur:[123,63,160],org:[211,84,0],dk:[122,47,0],line:[226,231,238],txt:[60,60,60],mut:[140,140,140]};
   function fill(c){doc.setFillColor(c[0],c[1],c[2]);}
@@ -2849,24 +3975,31 @@ function mkPdfKit(titulo,periodo,orient){
     doc.addImage(img,"PNG",x+4,y+10.5,aw,ah);
   };
   K.table=function(y,cols,rows,opt){
-    opt=opt||{};var rh=opt.rh||5.6,x=opt.x||K.mg,tw=cols.reduce(function(a,c){return a+c.w;},0);
+    opt=opt||{};var rh=opt.rh||5.6,x=opt.x||K.mg,tw=cols.reduce(function(a,c){return a+c.w;},0),fs=opt.fs||7.2;
     function head(){
-      fill(C.b);doc.rect(x,y,tw,rh+.6,"F");font(7.3,true);txt([255,255,255]);
-      var cx=x;cols.forEach(function(c){doc.text(c.h,c.al==="r"?cx+c.w-2:c.al==="c"?cx+c.w/2:cx+2,y+rh/2+1.6,{align:c.al==="r"?"right":c.al==="c"?"center":"left"});cx+=c.w;});
-      y+=rh+.6;
+      font(fs+.1,true);
+      // cabecalho quebra em ate 2 linhas quando o titulo nao cabe na coluna
+      var linhas=cols.map(function(c){var l=doc.splitTextToSize(c.h,c.w-2.4);if(l.length>2){l=[l[0],l.slice(1).join(" ")];}
+        return l.map(function(t){while(t.length>3&&doc.getTextWidth(t)>c.w-2.2)t=t.slice(0,-1);return t;});});
+      var nl=Math.max.apply(null,linhas.map(function(l){return l.length;})),lh=(fs+.1)*0.42,hh=rh+.6+(nl-1)*lh;
+      fill(C.b);doc.rect(x,y,tw,hh,"F");txt([255,255,255]);
+      var cx=x;cols.forEach(function(c,i){var l=linhas[i],y0=y+hh/2-(l.length-1)*lh/2+1.5;
+        l.forEach(function(t,j){doc.text(t,c.al==="r"?cx+c.w-2:c.al==="c"?cx+c.w/2:cx+2,y0+j*lh,{align:c.al==="r"?"right":c.al==="c"?"center":"left"});});cx+=c.w;});
+      y+=hh;
     }
     head();
     rows.forEach(function(r,i){
       if(y+rh>K.H-14){doc.addPage();y=K.header();if(opt.titulo)K.section(opt.titulo+" (continuação)",y,opt.cor);y+=4;head();}
-      if(r._total){fill([226,236,246]);doc.rect(x,y,tw,rh+.4,"F");}
+      if(r._total){fill(r._grand?[200,215,238]:[226,236,246]);doc.rect(x,y,tw,rh+.4,"F");}
+      else if(r._bg){fill(r._bg);doc.rect(x,y,tw,rh,"F");}
       else if(r._hl){fill([227,240,250]);doc.rect(x,y,tw,rh,"F");}
       else if(i%2===1){fill([248,250,252]);doc.rect(x,y,tw,rh,"F");}
       var cx=x;
       cols.forEach(function(c){
         var v=r[c.k];v=v===undefined||v===null?"":String(v);
-        font(7.2,r._total||r._hl||c.b);
+        font(fs,r._total||r._hl||c.b);
         while(v.length>3&&doc.getTextWidth(v)>c.w-3)v=v.slice(0,-2);
-        txt(r._total&&!c.cor?C.b:(c.cor?c.cor(r):C.txt));
+        txt(r._total&&!c.cor?C.b:(r._cor||(c.cor?c.cor(r):C.txt)));
         doc.text(v,c.al==="r"?cx+c.w-2:c.al==="c"?cx+c.w/2:cx+2,y+rh/2+1.5,{align:c.al==="r"?"right":c.al==="c"?"center":"left"});
         cx+=c.w;
       });
@@ -2890,71 +4023,133 @@ function mkPdfKit(titulo,periodo,orient){
 }
 
 // ═══ PDF: COLABORADORES POR CENTRO DE CUSTO ═══
+// ═══ RELATORIO PDF - CADASTRO DE COLABORADOR ═══
 function abrirEmpPDF(){
   fecharEmpPDF();
+  var vis0=empColsVis().length;
   var div=document.createElement("div");div.className="mdl-bg open";div.id="md-emppdf";div.style.zIndex="9500";
-  function opt(v,lb){return "<option value='"+v+"'"+(empFiltro===v?" selected":"")+">"+lb+"</option>";}
-  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:440px'>"
-    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-file-download'></i>PDF de colaboradores</div>"
+  function radio(nm,v,lb,on){return "<label class='pdf-opt'><input type='radio' name='"+nm+"' value='"+v+"'"+(on?" checked":"")+"/>"+lb+"</label>";}
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:540px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-file-download'></i>Relatorio de colaboradores</div>"
     +"<button class='mdl-x' onclick='fecharEmpPDF()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
     +"<div class='mdl-bd'>"
-    +"<div class='fr'><label class='lbl'>Situacao</label><select id='pdfsit'>"+opt("ativos","Ativos")+opt("inativos","Inativos")+opt("todos","Todos")+"</select>"
-    +"<div class='hint'>Separado por centro de custo. Colaboradores afastados nao entram no relatorio.</div></div>"
-    +"<div class='fr'><label style='display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer'><input type='checkbox' id='pdfsal' style='width:auto'/> Incluir salarios</label></div>"
-    +"<div class='mdl-ft' style='flex-wrap:wrap'><button class='btng' onclick='fecharEmpPDF()'>Cancelar</button>"
-    +"<button class='btnp btn-ic' onclick=\"gerarEmpPDF('portrait')\"><i class='ti ti-file-text'></i>Retrato</button>"
-    +"<button class='btnp btn-ic' onclick=\"gerarEmpPDF('landscape')\"><i class='ti ti-file-horizontal'></i>Paisagem</button></div>"
+    +"<div class='fr'><label class='lbl'>Colaboradores</label><select id='pdfsit'>"
+    +"<option value='tela'>Como esta na tela (aba, busca, filtros e ordenacao)</option>"
+    +"<option value='ativos'>Ativos</option><option value='inativos'>Inativos / demitidos</option><option value='todos'>Todos</option></select></div>"
+    +"<div class='fr'><label class='lbl'>Agrupar por</label><div class='pdf-opts'>"
+    +radio("pdfgrp","cc","Centro de custo",true)+radio("pdfgrp","empresa","Empresa")+radio("pdfgrp","func","Funcao")+radio("pdfgrp","nenhum","Sem agrupamento")+"</div></div>"
+    +"<div class='fr'><label class='lbl'>Colunas</label><div class='pdf-opts'>"
+    +radio("pdfcols","tela","Colunas visiveis na tela ("+vis0+")",true)+radio("pdfcols","todas","Todas as colunas ("+EMP_COLS.length+")")+"</div></div>"
+    +"<div class='fr'><label class='lbl'>Papel</label><div class='pdf-opts'>"
+    +radio("pdfpap","auto","Automatico",true)+radio("pdfpap","a4","A4 paisagem")+radio("pdfpap","a3","A3 paisagem")+"</div>"
+    +"<div class='hint'>Automatico: usa A3 quando ha muitas colunas, para manter o texto legivel.</div></div>"
+    +"<div class='fr'><label style='display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer'><input type='checkbox' id='pdfres' checked style='width:auto'/> Incluir resumo por grupo no final</label></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='fecharEmpPDF()'>Cancelar</button>"
+    +"<button class='btnp btn-ic' onclick='gerarEmpPDF()'><i class='ti ti-file-download'></i>Gerar PDF</button></div>"
     +"</div></div>";
   document.body.appendChild(div);
   div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharEmpPDF();});
 }
 function fecharEmpPDF(){var m=document.getElementById("md-emppdf");if(m)m.remove();}
-function gerarEmpPDF(orient){
+function _radio(nm){var r=document.querySelector("input[name='"+nm+"']:checked");return r?r.value:"";}
+function gerarEmpPDF(){
   if(!(window.jspdf&&window.jspdf.jsPDF)){alert("As bibliotecas ainda estao carregando. Aguarde alguns segundos e tente novamente.");return;}
-  var sit=gv("pdfsit")||"ativos",comSal=!!(document.getElementById("pdfsal")&&document.getElementById("pdfsal").checked);
-  var lista=DB.emp.filter(function(e){
-    if(!vis(e))return false;
-    var a=isAtivo(e);
-    return sit==="todos"||(sit==="ativos"?a:!a);
-  });
-  if(!lista.length){alert("Nenhum colaborador para imprimir nesta situacao.");return;}
-  var sitLb={ativos:"Ativos",inativos:"Inativos",todos:"Todos"}[sit];
-  var K=mkPdfKit("Colaboradores por Centro de Custo","Situação: "+sitLb+"  |  "+lista.length+" colaborador"+(lista.length!==1?"es":""),orient),doc=K.doc,C=K.C;
-  var retrato=orient==="portrait",cw=K.cw;
-  // grupos por centro de custo (ordem do codigo) + "Sem centro de custo" no final
-  var grupos=DB.cc.slice().sort(function(a,b){return (a.cod||"").localeCompare(b.cod||"",undefined,{numeric:true});})
-    .map(function(c){return{lb:c.cod+" - "+c.desc,emps:lista.filter(function(e){return e.ccid===c.id;})};});
-  var semCC=lista.filter(function(e){return !e.ccid||!DB.cc.some(function(c){return c.id===e.ccid;});});
-  if(semCC.length)grupos.push({lb:"Sem centro de custo",emps:semCC});
-  grupos=grupos.filter(function(g){return g.emps.length;});
-  // colunas (a ultima absorve a sobra da largura)
-  var cols=[{h:"#",k:"i",w:8,al:"c"},{h:"Colaborador",k:"nome",w:retrato?46:92,b:true,cor:function(){return C.b;}},{h:"Função",k:"func",w:retrato?34:62},
-    {h:"Vínculo",k:"vinc",w:14,al:"c",cor:function(r){return r.vinc==="MEI"?[123,63,160]:[31,95,168];}},
-    {h:"Admissão",k:"adm",w:20,al:"c"},{h:"Tempo de empresa",k:"tempo",w:retrato?24:30,al:"c"}];
-  if(sit!=="ativos")cols.push({h:"Situação",k:"sit",w:retrato?18:24,al:"c",cor:function(r){return r.sit==="Ativo"?C.grn:C.mut;}});
-  if(comSal)cols.push({h:"Salário",k:"sal",w:24,al:"r"});
-  var usado=cols.reduce(function(a,c){return a+c.w;},0);cols[1].w+=Math.max(0,cw-usado);
-  var y=K.header(),totGeral=0;
-  grupos.forEach(function(g,gi){
-    if(y+24>K.H-14){doc.addPage();y=K.header();}
-    var tot=0;
-    var rows=g.emps.slice().sort(function(a,b){return a.nome.localeCompare(b.nome);}).map(function(e,i){
-      var sv=typeof e.sal==="number"?e.sal:null;if(sv)tot+=sv;
-      return{i:i+1,nome:e.nome,func:e.func||"",vinc:empVinc(e),adm:fmtD(e.adm),tempo:e.adm?tEmp(e.adm,e.dem):"",sit:isAtivo(e)?"Ativo":(e.dem?"Demitido":"Inativo"),sal:sv===null?"-":fmtBRL(sv)};
+  var sit=gv("pdfsit")||"tela",grp=_radio("pdfgrp")||"cc",colOpt=_radio("pdfcols")||"tela",pap=_radio("pdfpap")||"auto";
+  var comRes=!!(document.getElementById("pdfres")&&document.getElementById("pdfres").checked);
+  var lista;
+  if(sit==="tela")lista=empListaVisivel();
+  else lista=DB.emp.filter(function(e){var a=isAtivo(e);return sit==="todos"||(sit==="ativos"?a&&vis(e):!a);})
+    .sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||(a.func||"").localeCompare(b.func||"")||a.nome.localeCompare(b.nome);});
+  if(!lista.length){alert("Nenhum colaborador para o relatorio com essa selecao.");return;}
+  var cols0=colOpt==="todas"?EMP_COLS.slice():empColsVis();
+  if(grp!=="nenhum")cols0=cols0.filter(function(c){return c.k!==grp;}); // a coluna do agrupamento vira o titulo da secao
+  var papel=pap==="auto"?(cols0.length>11?"a3":"a4"):pap;
+  var sitLb={tela:"Conforme a tela",ativos:"Ativos",inativos:"Inativos / demitidos",todos:"Todos"}[sit];
+  var grpLb={cc:"centro de custo",empresa:"empresa",func:"função",nenhum:""}[grp];
+  var K=mkPdfKit("Cadastro de Colaboradores",sitLb+(grpLb?"  |  Agrupado por "+grpLb:"")+"  |  "+lista.length+" colaborador"+(lista.length!==1?"es":""),"landscape",papel),doc=K.doc,C=K.C,cw=K.cw;
+  // larguras proporcionais ao conteudo de cada coluna
+  var PESO={empresa:1.05,nome:2.3,func:1.3,cc:1.45,vinc:.55,sit:.88,adm:.98,tempo:.85,aniv:.98,horario:1.08,sal:1.15,terco:1.12,dec13:1.15,cesta:1.05,assid:1.05,pmetas:1.05,bonus:1.05,refeit:1.05,custo:1.25};
+  var PL={empresa:"EMPRESA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
+    sal:"SALÁRIO",terco:"1/3 FÉRIAS",dec13:"13º SALÁRIO",cesta:"CESTA BÁSICA",assid:"ASSIDUID.",pmetas:"PRÊMIO METAS",bonus:"BÔNUS ANUAL",refeit:"REFEITÓRIO",custo:"CUSTO MENSAL"};
+  var pesos=cols0.map(function(c){return PESO[c.k]||1;}),somaP=pesos.reduce(function(a,b){return a+b;},0)+0.35;
+  var unit=cw/somaP;
+  var stCor={ATIVO:C.grn,AFASTADO:[138,90,0],DEMITIDO:C.red,INATIVO:C.mut};
+  var cols=[{h:"#",k:"_i",w:unit*.35,al:"c",cor:function(){return C.mut;}}].concat(cols0.map(function(c,ix){
+    var money=MONEY_K.indexOf(c.k)>=0;
+    var o={h:PL[c.k]||c.lb,k:c.k,w:pesos[ix]*unit,al:money?"r":(c.c||c.t==="dt"?"c":"l")};
+    if(c.k==="nome"){o.b=true;o.cor=function(){return C.ink;};}
+    if(c.k==="custo"){o.b=true;o.cor=function(){return C.b;};}
+    if(c.k==="sit")o.cor=function(r){return stCor[r.sit]||C.txt;};
+    if(c.k==="vinc")o.cor=function(r){return r.vinc==="MEI"?C.pur:[31,95,168];};
+    return o;
+  }));
+  var fs=papel==="a3"?7.6:(cols.length>13?6.4:cols.length>10?6.8:7.2),rh=papel==="a3"?6.2:5.6;
+  var moneyCols=cols0.filter(function(c){return MONEY_K.indexOf(c.k)>=0;}).map(function(c){return c.k;});
+  var colLbl=cols0.some(function(c){return c.k==="nome";})?"nome":cols[1].k;
+  function linha(e,i){
+    var r={_i:i+1};
+    cols0.forEach(function(c){
+      if(MONEY_K.indexOf(c.k)>=0){var v=empCampoVal(e,c.k);r[c.k]=v===null?"-":fmtBRL(v);}
+      else r[c.k]=empTxt(e,c.k)||"-";
     });
-    totGeral+=tot;
-    if(comSal){var tr={_total:true,nome:"Total do centro de custo",sal:fmtBRL(tot)};rows.push(tr);}
-    var tit=g.lb+" ("+g.emps.length+" colaborador"+(g.emps.length!==1?"es":"")+")";
-    K.section(tit,y,C.bl);y+=3;
-    y=K.table(y,cols,rows,{rh:5.8,titulo:tit,cor:C.bl})+9;
-  });
-  if(comSal){
-    if(y+10>K.H-14){doc.addPage();y=K.header();}
-    K.fill([226,236,246]);doc.rect(K.mg,y-5,cw,8,"F");
-    K.font(9,true);K.txt(C.b);doc.text("Total geral de salários ("+lista.length+" colaborador"+(lista.length!==1?"es":"")+")",K.mg+3,y);
-    doc.text(fmtBRL(totGeral),K.mg+cw-3,y,{align:"right"});
+    if(e.dem){r._bg=[253,236,234];r._cor=[150,40,30];if(r.nome)r.nome=e.nome+" (dem. "+fmtD(e.dem)+")";}
+    return r;
   }
-  K.finalizar("colaboradores-centro-de-custo-"+(retrato?"retrato":"paisagem")+".pdf");
+  function somar(l){var t={};MONEY_K.forEach(function(k){t[k]=0;});l.forEach(function(e){MONEY_K.forEach(function(k){t[k]+=empCampoVal(e,k)||0;});});return t;}
+  function linhaTot(lb,t,grand){var r={_total:true,_grand:!!grand};r[colLbl]=lb;moneyCols.forEach(function(k){r[k]=fmtBRL(t[k]);});return r;}
+  // ── indicadores ──
+  var T=somar(lista),nAt=lista.filter(isAtivo).length,comSal=lista.filter(function(e){return typeof e.sal==="number";});
+  var benef=T.cesta+T.assid+T.pmetas+T.refeit,prov=(T.terco+T.dec13+T.bonus)/12;
+  var y=K.header();
+  K.section("Indicadores",y);y+=3.5;
+  var ks=[
+    ["Colaboradores",String(lista.length),nAt+" ativo"+(nAt!==1?"s":"")+" · "+(lista.length-nAt)+" inativo"+(lista.length-nAt!==1?"s":""),C.b],
+    ["Folha salarial",fmtBRL(T.sal),comSal.length+" com salário cadastrado",C.bl],
+    ["Salário médio",fmtBRL(comSal.length?T.sal/comSal.length:0),"média de quem tem salário",C.grn],
+    ["Benefícios mensais",fmtBRL(benef),"cesta, assiduidade, metas, refeitório",C.pur],
+    ["Provisões mensais",fmtBRL(prov),"1/12 de 1/3 férias, 13º e bônus",C.gld],
+    ["Custo empresa mensal",fmtBRL(T.custo),"total do relatório",C.ink]
+  ];
+  var gap=3.2,kw=(cw-gap*5)/6,kh=21;
+  ks.forEach(function(k,i){K.kpi(K.mg+i*(kw+gap),y,kw,kh,k[0],k[1],k[2],k[3]);});
+  y+=kh+8;
+  // ── grupos ──
+  var grupos=[];
+  if(grp==="nenhum")grupos=[{lb:"Colaboradores",emps:lista}];
+  else{
+    var mapa={},ordem=[];
+    lista.forEach(function(e){var k=grp==="cc"?empTxt(e,"cc"):(e[grp]||"");if(!(k in mapa)){mapa[k]=[];ordem.push(k);}mapa[k].push(e);});
+    ordem.sort(function(a,b){if(!a)return 1;if(!b)return -1;return a.localeCompare(b,undefined,{numeric:true});});
+    grupos=ordem.map(function(k){return {lb:k||("Sem "+grpLb),emps:mapa[k]};});
+  }
+  grupos.forEach(function(g){
+    if(y+rh*4>K.H-14){doc.addPage();y=K.header();}
+    var tit=g.lb+"  ("+g.emps.length+" colaborador"+(g.emps.length!==1?"es":"")+")";
+    K.section(tit,y,C.bl);y+=3;
+    var rows=g.emps.map(linha);
+    if(moneyCols.length&&grupos.length>1)rows.push(linhaTot("Subtotal",somar(g.emps)));
+    y=K.table(y,cols,rows,{rh:rh,fs:fs,titulo:tit,cor:C.bl})+7;
+  });
+  if(moneyCols.length){
+    if(y+rh*2>K.H-14){doc.addPage();y=K.header();}
+    y=K.table(y,cols,[linhaTot("TOTAL GERAL ("+lista.length+")",T,true)],{rh:rh+.6,fs:fs+.3})+7;
+  }
+  // ── resumo por grupo ──
+  if(comRes&&grupos.length>1){
+    if(y+40>K.H-14){doc.addPage();y=K.header();}
+    K.section("Resumo por "+grpLb,y);y+=3;
+    var rc=[{h:grpLb.toUpperCase(),k:"g",w:cw*.30,b:true,cor:function(){return C.ink;}},{h:"COLABORADORES",k:"n",w:cw*.10,al:"c"},
+      {h:"FOLHA SALARIAL",k:"sal",w:cw*.14,al:"r"},{h:"SALÁRIO MÉDIO",k:"med",w:cw*.12,al:"r"},{h:"BENEFÍCIOS",k:"ben",w:cw*.11,al:"r"},
+      {h:"PROVISÕES",k:"prov",w:cw*.10,al:"r"},{h:"CUSTO MENSAL",k:"cu",w:cw*.13,al:"r",b:true,cor:function(){return C.b;}}];
+    var rr=grupos.map(function(g){var t=somar(g.emps),ns=g.emps.filter(function(e){return typeof e.sal==="number";}).length;
+      return {g:g.lb,n:g.emps.length,sal:fmtBRL(t.sal),med:fmtBRL(ns?t.sal/ns:0),ben:fmtBRL(t.cesta+t.assid+t.pmetas+t.refeit),prov:fmtBRL((t.terco+t.dec13+t.bonus)/12),cu:fmtBRL(t.custo)};});
+    rr.push({_total:true,_grand:true,g:"TOTAL",n:lista.length,sal:fmtBRL(T.sal),med:fmtBRL(comSal.length?T.sal/comSal.length:0),ben:fmtBRL(benef),prov:fmtBRL(prov),cu:fmtBRL(T.custo)});
+    y=K.table(y,rc,rr,{rh:6,fs:7.6,titulo:"Resumo por "+grpLb})+6;
+  }
+  if(y+8>K.H-12){doc.addPage();y=K.header();}
+  K.font(7);K.txt(C.mut);
+  doc.text("Assiduidade = Prêmio Cartão Benefício de "+fmtM(curMes())+" já com os descontos de faltas, atrasos e 5S.  Custo mensal = salário + benefícios mensais + 1/12 de 1/3 férias, 13º salário e bônus anual.",K.mg,y+2);
+  K.finalizar("cadastro-colaboradores-"+hoje()+".pdf");
   fecharEmpPDF();
 }
 
@@ -3115,7 +4310,7 @@ function relMes(m,se){
     if(l.pct===0)r.ok++;
   });
   var fim=fimMesStr(m),ini=m+"-01",ids={};
-  DB.emp.forEach(function(e){if((!se||e.id===se)&&e.adm&&e.adm<=fim&&(!e.dem||e.dem>=ini)&&!afastadoNoMes(e,m)&&vis(e))ids[e.id]=1;});
+  DB.emp.forEach(function(e){if((!se||e.id===se)&&(!e.adm||e.adm<=fim)&&(!e.dem||e.dem>=ini)&&!afastadoNoMes(e,m)&&vis(e))ids[e.id]=1;});
   r.absF=DB.oc.filter(function(o){return o.tipo==="falta"&&gmk(o.data)===m&&ids[o.eid];}).length;
   r.du=dUteis(m);r.hc=Object.keys(ids).length;r.absBase=r.hc*r.du;
   return relFin(r);
@@ -3449,7 +4644,8 @@ function gerarAnalisePDF(){
     head();
     rows.forEach(function(r,i){
       if(y+rh>H-14){doc.addPage();y=header();if(opt.titulo)section(opt.titulo+" (continuação)",y,opt.cor);y+=4;head();}
-      if(r._total){fill([226,236,246]);doc.rect(x,y,tw,rh+.4,"F");}
+      if(r._total){fill(r._grand?[200,215,238]:[226,236,246]);doc.rect(x,y,tw,rh+.4,"F");}
+      else if(r._bg){fill(r._bg);doc.rect(x,y,tw,rh,"F");}
       else if(r._hl){fill([227,240,250]);doc.rect(x,y,tw,rh,"F");}
       else if(i%2===1){fill([248,250,252]);doc.rect(x,y,tw,rh,"F");}
       var cx=x;
