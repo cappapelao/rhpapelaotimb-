@@ -34,7 +34,13 @@ var MINUTOS_INATIVIDADE = 30;                   // sai sozinho apos X minutos pa
 var _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
-    storage: window.sessionStorage,   // fechou a aba/navegador = precisa logar de novo
+    // "Lembrar senha" marcado: sessao fica salva neste computador (localStorage).
+    // Desmarcado: fechou a aba/navegador = precisa logar de novo (sessionStorage).
+    storage: {
+      getItem: function(k){ try{ return (localStorage.getItem("timbo_lembrar")==="1"?localStorage:sessionStorage).getItem(k); }catch(e){ return null; } },
+      setItem: function(k,v){ try{ (localStorage.getItem("timbo_lembrar")==="1"?localStorage:sessionStorage).setItem(k,v); }catch(e){} },
+      removeItem: function(k){ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }
+    },
     autoRefreshToken: true,
     detectSessionInUrl: false
   }
@@ -381,6 +387,9 @@ input:focus-visible,select:focus-visible{outline:none}
 .ro-mode .etab-sal,.ro-mode .etab-cc,.ro-mode #p-premios input[type=number],.ro-mode #p-motivos input,.ro-mode #p-direcionar tbody tr{pointer-events:none}
 .ro-mode .etab-sal{background:transparent!important}
 .ro-mode .pg-hd .sub::after{content:"  ·  somente visualizacao";color:#8a5a00;font-weight:700}
+.lg-opts{display:flex;justify-content:space-between;align-items:center;margin:-.2rem 0 .9rem}
+.lg-chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#555;cursor:pointer;user-select:none}
+.lg-chk input{width:auto;margin:0;accent-color:var(--deep)}
 .etab-hd{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .etab th.c .etab-hd{justify-content:center}
 .etab th:hover{background:#0b45b0}
@@ -446,6 +455,9 @@ input:focus-visible,select:focus-visible{outline:none}
         <i class="ti ti-eye" id="eye-icon"></i>
       </button>
     </div></div>
+    <div class="lg-opts">
+      <label class="lg-chk"><input type="checkbox" id="lrem"/> Lembrar senha neste computador</label>
+    </div>
     <div id="lerr" style="color:#c0392b;font-size:12px;margin-bottom:.75rem;text-align:center;display:none" role="alert"></div>
     <button class="btnp" id="btn-login" style="width:100%;padding:.75rem;font-size:15px" onclick="doLogin()">
       <i class="ti ti-login" style="margin-right:6px"></i>Entrar
@@ -478,7 +490,7 @@ input:focus-visible,select:focus-visible{outline:none}
       <button class="nb" id="nb-motivos" onclick="go('motivos')"><i class="ti ti-tags" style="font-size:18px;flex-shrink:0"></i><span class="nl">Motivos</span></button>
       <button class="nb" id="nb-relatorio" onclick="go('relatorio')"><i class="ti ti-chart-bar" style="font-size:18px;flex-shrink:0"></i><span class="nl">Relatorios</span></button>
       <button class="nb" id="nb-calendario" onclick="go('calendario')"><i class="ti ti-calendar-heart" style="font-size:18px;flex-shrink:0"></i><span class="nl">Aniversarios</span></button>
-      <button class="nb" id="nb-acessos" onclick="go('acessos')" style="display:none"><i class="ti ti-shield-lock" style="font-size:18px;flex-shrink:0"></i><span class="nl">Acessos e Permissoes</span></button>
+      <button class="nb" id="nb-acessos" onclick="go('acessos')" style="display:none"><i class="ti ti-shield-lock" style="font-size:18px;flex-shrink:0"></i><span class="nl">Permissoes de Usuarios</span></button>
       <button class="nb" id="nb-backup" onclick="go('backup')"><i class="ti ti-database" style="font-size:18px;flex-shrink:0"></i><span class="nl">Backup</span></button>
     </nav>
     <div style="padding:.875rem;border-top:1px solid rgba(255,255,255,.12)">
@@ -588,6 +600,11 @@ function doLogin(){
   function falha(msg){err.textContent=msg;err.style.display="block";}
   if(!u||!p){falha("Informe e-mail e senha.");return;}
   _loginOcupado=true;btn.disabled=true;
+  var lembrar=!!(document.getElementById("lrem")&&document.getElementById("lrem").checked);
+  try{
+    if(lembrar){localStorage.setItem("timbo_lembrar","1");localStorage.setItem("timbo_email",u);}
+    else{localStorage.removeItem("timbo_lembrar");localStorage.removeItem("timbo_email");}
+  }catch(e){}
   showSync("Entrando...",false);
   _sb.auth.signInWithPassword({email:u,password:p}).then(function(r){
     if(r.error)throw r.error;
@@ -608,8 +625,9 @@ function doLogin(){
 }
 // Sai sozinho apos um tempo sem uso (protege computador compartilhado)
 var _inatTimer=null;
+function _lembrando(){try{return localStorage.getItem("timbo_lembrar")==="1";}catch(e){return false;}}
 function _resetInat(){
-  if(!window._dbLoaded)return;
+  if(!window._dbLoaded||_lembrando())return;
   clearTimeout(_inatTimer);
   _inatTimer=setTimeout(function(){
     doLogout();
@@ -688,6 +706,7 @@ function doLogout(){
   document.getElementById("lu").value="";
   document.getElementById("lp").value="";
   document.getElementById("lerr").style.display="none";
+  prepararLogin();
 }
 // Se a sessao expirar ou for encerrada em outra aba, fecha o sistema
 _sb.auth.onAuthStateChange(function(ev){
@@ -697,7 +716,15 @@ _sb.auth.onAuthStateChange(function(ev){
 // ═══════════════════════════════════════
 // STARTUP — aguarda Supabase ficar pronto
 // ═══════════════════════════════════════
+function prepararLogin(){
+  try{
+    var em=localStorage.getItem("timbo_email"),lb=localStorage.getItem("timbo_lembrar")==="1";
+    var r=document.getElementById("lrem");if(r)r.checked=lb;
+    if(em){document.getElementById("lu").value=em;}
+  }catch(e){}
+}
 function startApp(){
+  prepararLogin();
   var ls=document.getElementById("loading-screen");
   // Nenhum dado e lido antes do login
   _sb.auth.getSession().then(function(r){
@@ -2584,12 +2611,13 @@ function rAcessos(){
         +"<td class='c'>"+(u.ativo===false?"<span class='bdg bdg-off'>BLOQUEADO</span>":"<span class='bdg bdg-ok'>ATIVO</span>")+"</td>"
         +"<td>"+resumoPerm(u.perms)+"</td><td class='c'>"+(u.atualizado?fmtD(u.atualizado.slice(0,10)):"")+"</td>"
         +"<td class='act'><button class='ibedt' title='Editar permissoes' onclick=\"acsModal('"+esc(u.email)+"')\"><i class='ti ti-edit'></i></button>"
+        +"<button class='ibedt' title='Redefinir senha' onclick=\"acsSenha('"+esc(u.email)+"')\"><i class='ti ti-key'></i></button>"
         +"<button class='ibdel' title='Remover acesso' onclick=\"acsExcluir('"+esc(u.email)+"')\"><i class='ti ti-trash'></i></button></td></tr>";
     }).join("");
-  el.innerHTML="<div class='pg-hd'><div><h1 class='h1'>Acessos e Permissoes</h1><div class='sub'>Defina quem entra no sistema e o que cada pessoa pode ver ou editar</div></div>"
+  el.innerHTML="<div class='pg-hd'><div><h1 class='h1'>Permissoes de Usuarios</h1><div class='sub'>Crie usuarios, defina a senha e o que cada pessoa pode ver ou editar</div></div>"
     +"<button class='btnp btn-ic' onclick='acsModal()'><i class='ti ti-user-plus'></i>Novo usuario</button></div>"
     +(ACS_ERRO?"<div class='warn' style='margin-bottom:1rem;background:#fbe9e7;color:#a93226'><i class='ti ti-alert-triangle'></i> Nao foi possivel ler os usuarios ("+esc(ACS_ERRO)+"). Rode o supabase_setup.sql atualizado no SQL Editor do Supabase.</div>":"")
-    +"<div class='warn' style='margin-bottom:1rem'><i class='ti ti-info-circle'></i> Para a pessoa conseguir entrar, o mesmo e-mail tambem precisa estar cadastrado no Supabase em <b>Authentication &gt; Users &gt; Add user</b> (com a senha). Aqui voce libera o acesso e as permissoes.</div>"
+    +"<div class='warn' style='margin-bottom:1rem'><i class='ti ti-info-circle'></i> Ao cadastrar um usuario com senha, o login ja e criado automaticamente. Use <b>Redefinir senha</b> na edicao para trocar a senha de alguem.</div>"
     +"<div class='card'><div class='etab-wrap'><table class='etab'><thead><tr>"
     +"<th style='cursor:default'>E-MAIL</th><th style='cursor:default'>NOME</th><th class='c' style='cursor:default'>SITUAÇÃO</th><th style='cursor:default'>PERMISSÕES</th><th class='c' style='cursor:default'>ATUALIZADO</th><th class='c' style='cursor:default'>AÇÕES</th>"
     +"</tr></thead><tbody>"+rows+"</tbody></table></div>"
@@ -2610,6 +2638,9 @@ function acsModal(email){
     +"<button class='mdl-x' onclick='acsFechar()' aria-label='Fechar'><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
     +"<div class='fr2'><div class='fr'><label class='lbl'>E-mail</label><input type='email' id='acs-email' value='"+(u?esc(u.email):"")+"'"+(u?" disabled":"")+" placeholder='nome@empresa.com'/></div>"
     +"<div class='fr'><label class='lbl'>Nome</label><input type='text' id='acs-nome' value='"+(u?esc(u.nome||""):"")+"' placeholder='Ex: Maria (RH)'/></div></div>"
+    +"<div class='fr2'><div class='fr'><label class='lbl'>"+(u?"Nova senha <span class='opt'>(deixe vazio para manter)</span>":"Senha de acesso")+"</label>"
+    +"<input type='password' id='acs-senha' autocomplete='new-password' placeholder='Minimo 8 caracteres'/></div>"
+    +"<div class='fr'><label class='lbl'>Confirmar senha</label><input type='password' id='acs-senha2' autocomplete='new-password' placeholder='Repita a senha'/></div></div>"
     +"<div class='fr'><label class='lbl'>Situacao</label><input type='hidden' id='acs-ativo' value='"+(u&&u.ativo===false?"0":"1")+"'/><div class='seg seg-full'>"
     +"<button type='button' id='acs-at1' class='seg-b"+(u&&u.ativo===false?"":" on")+"' onclick=\"acsAtivo('1')\"><i class='ti ti-circle-check'></i>Ativo</button>"
     +"<button type='button' id='acs-at0' class='seg-b"+(u&&u.ativo===false?" on":"")+"' onclick=\"acsAtivo('0')\"><i class='ti ti-lock'></i>Bloqueado</button></div></div>"
@@ -2631,13 +2662,31 @@ function acsSalvar(){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert("Informe um e-mail valido.");return;}
   if(email===ACESSO.email){alert("Este e-mail ja e o master.");return;}
   var perms={};TELAS.forEach(function(t){var r=document.querySelector("input[name='acs-"+t.k+"']:checked");var v=r?r.value:"nenhum";if(v!=="nenhum")perms[t.k]=v;});
+  var novo=!ACS_LISTA.some(function(x){return x.email===email;});
+  var s1=gv("acs-senha"),s2=gv("acs-senha2");
+  if(novo&&!s1&&!confirm("Nenhuma senha informada. O login so vai funcionar se este e-mail ja existir no Supabase. Continuar?"))return;
+  if(s1&&s1.length<8){alert("A senha precisa ter pelo menos 8 caracteres.");return;}
+  if(s1!==s2){alert("As senhas nao conferem.");return;}
   if(!Object.keys(perms).length&&!confirm("Nenhuma tela liberada. O usuario nao vai conseguir usar o sistema. Salvar assim mesmo?"))return;
   var b=document.getElementById("acs-sav");if(b)b.disabled=true;
   _sb.from("timbo_usuarios").upsert({email:email,nome:nome,ativo:ativo,perms:perms,atualizado:new Date().toISOString()}).then(function(r){
     if(r.error)throw new Error(r.error.message);
+    if(s1)return _sb.rpc("timbo_definir_senha",{p_email:email,p_senha:s1}).then(function(x){if(x.error)throw new Error("acesso salvo, mas a senha nao foi definida: "+x.error.message);});
+  }).then(function(){
     acsFechar();ACS_LISTA=null;rAcessos();
     showSync("Acesso de "+email+" salvo",true);setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
   }).catch(function(e){if(b)b.disabled=false;showSync("Erro ao salvar acesso: "+e.message,false,true);});
+}
+function acsSenha(email){
+  var s=prompt("Nova senha para "+email+" (minimo 8 caracteres):");
+  if(s===null)return;
+  if(s.length<8){alert("A senha precisa ter pelo menos 8 caracteres.");return;}
+  var s2=prompt("Repita a nova senha:");
+  if(s2!==s){alert("As senhas nao conferem. Nada foi alterado.");return;}
+  _sb.rpc("timbo_definir_senha",{p_email:email,p_senha:s}).then(function(r){
+    if(r.error)throw new Error(r.error.message);
+    showSync("Senha de "+email+" redefinida",true);setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
+  }).catch(function(e){showSync("Erro ao redefinir senha: "+e.message,false,true);});
 }
 function acsExcluir(email){
   if(!confirm("Remover o acesso de "+email+"?\n\nA pessoa nao entra mais no sistema. (O usuario continua existindo no Supabase Authentication.)"))return;
