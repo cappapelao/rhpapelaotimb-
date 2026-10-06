@@ -889,7 +889,7 @@ function drillItens(d){
     return DB.oc.filter(function(o){
       if(o.tipo!==d.tipo||gmk(o.data)!==d.mes)return false;
       var e=DB.emp.find(function(x){return x.id===o.eid;});
-      return !!e&&contaNoMes(e,d.mes)&&DB.pr.some(function(p){return p.eid===e.id;});
+      return !!e&&contaNoMes(e,d.mes)&&!isMEI(e)&&DB.pr.some(function(p){return p.eid===e.id;});
     }).sort(function(a,b){
       var ea=DB.emp.find(function(x){return x.id===a.eid;}),eb=DB.emp.find(function(x){return x.id===b.eid;});
       return (ea?ea.nome:"").localeCompare(eb?eb.nome:"")||b.data.localeCompare(a.data);
@@ -1101,7 +1101,7 @@ function rDash(){
   meses12.forEach(function(mes){
     var p2=0,l2=0,f2=0,a2=0;
     DB.emp.forEach(function(e){
-      if(!contaNoMes(e,mes))return;
+      if(!contaNoMes(e,mes)||isMEI(e))return;
       var pr=DB.pr.find(function(x){return x.eid===e.id;});if(!pr)return;
       var d=calcDesc(e.id,mes,pr.val);p2+=d.rec;l2+=d.desc;f2+=d.f;a2+=d.a;
     });
@@ -1116,7 +1116,7 @@ function rDash(){
     tf=aFaltas.reduce(function(a,b){return a+b;},0);
     ta=aAtrasos.reduce(function(a,b){return a+b;},0);
     DB.emp.forEach(function(e){
-      var p=DB.pr.find(function(x){return x.eid===e.id;});if(!p)return;
+      if(isMEI(e))return;var p=DB.pr.find(function(x){return x.eid===e.id;});if(!p)return;
       var mesesEmp=meses12.filter(function(mes){return contaNoMes(e,mes);});
       if(mesesEmp.length===0)return;
       var perfeito=mesesEmp.every(function(mes){return calcDesc(e.id,mes,p.val).pct===0;});
@@ -1125,7 +1125,7 @@ function rDash(){
   }else{
     DB.emp.forEach(function(e){
       if(!contaNoMes(e,selMes))return;
-      var p=DB.pr.find(function(x){return x.eid===e.id;});if(!p)return;
+      if(isMEI(e))return;var p=DB.pr.find(function(x){return x.eid===e.id;});if(!p)return;
       var d=calcDesc(e.id,selMes,p.val);
       tp+=d.rec;tl+=d.desc;tf+=d.f;ta+=d.a;if(d.pct===0)ok++;
     });
@@ -1735,16 +1735,22 @@ function rEmp(){
       +"<div class='seg seg-full'>"
       +"<button type='button' id='evclt' class='seg-b on' onclick=\"setEmpVinc('CLT')\"><i class='ti ti-id-badge-2'></i>CLT</button>"
       +"<button type='button' id='evmei' class='seg-b' onclick=\"setEmpVinc('MEI')\"><i class='ti ti-briefcase'></i>MEI - Prestador de servico</button></div></div>"
-      +"<div class='fr'><label class='lbl'>Salario (R$) <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00' oninput='updSalCalc()'/></div>"
-      +"<div class='fr2'>"
+      +"<div id='emeiarea' style='display:none'><div class='fr2'>"
+      +"<div class='fr'><label class='lbl'>Forma de pagamento MEI</label><input type='hidden' id='emeitipo' value='mensal'/>"
+      +"<div class='seg seg-full'><button type='button' id='emtmensal' class='seg-b on' onclick=\"setMeiTipo('mensal')\"><i class='ti ti-calendar'></i>Valor mensal</button>"
+      +"<button type='button' id='emthora' class='seg-b' onclick=\"setMeiTipo('hora')\"><i class='ti ti-clock'></i>Valor por hora</button></div></div>"
+      +"<div class='fr' id='emeihrow' style='display:none'><label class='lbl'>Horas por mes</label><input type='number' id='emeihoras' min='1' step='1' placeholder='220' oninput='updSalCalc()'/></div>"
+      +"</div></div>"
+      +"<div class='fr'><label class='lbl'><span id='esallb'>Salario (R$)</span> <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00' oninput='updSalCalc()'/><div class='hint' id='esalhint' style='display:none'></div></div>"
+      +"<div id='ecltcalc'><div class='fr2'>"
       +"<div class='fr'><label class='lbl'>1/3 Ferias <span class='opt'>(automatico)</span></label><input type='text' id='eterco' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div>"
       +"<div class='fr'><label class='lbl'>13o Salario <span class='opt'>(automatico)</span></label><input type='text' id='e13' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div></div>"
-      +"<div class='hint' style='margin-top:-6px;margin-bottom:.8rem'>1/3 de ferias = salario &divide; 3 &middot; 13o salario = salario integral (12/12).</div>"
+      +"<div class='hint' style='margin-top:-6px;margin-bottom:.8rem'>1/3 de ferias = salario &divide; 3 &middot; 13o salario = salario integral (12/12).</div></div>"
       +"<div class='fr2'>"+BENEF.map(function(b){return "<div class='fr'><label class='lbl'>"+b.lb+" (R$) <span class='opt'>("+(b.anual?"anual":"mensal")+")</span></label><input type='number' id='e"+b.k+"' min='0' step='0.01' placeholder='0,00' oninput='updSalCalc()'/></div>";}).join("")+"</div>"
       +"<div class='fr'><label class='lbl'>Assiduidade - Premio Cartao <span class='opt'>(vem da tela Premios)</span></label><input type='text' id='eassidv' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/>"
       +"<div class='hint' id='eassidh'>Valor do premio definido em Premios - Cartao Beneficio, ja descontadas as faltas, atrasos e 5S do mes atual.</div></div>"
       +"<div class='fr'><label class='lbl'>Custo empresa mensal <span class='opt'>(automatico)</span></label><input type='text' id='ecusto' readonly tabindex='-1' style='background:#f1f4f8;font-weight:800;color:#00348F'/>"
-      +"<div class='hint'>Salario + cesta basica + assiduidade (premio cartao com descontos) + premio metas + refeitorio + 1/12 de: 1/3 ferias, 13o salario e bonus anual.</div></div>"
+      +"<div class='hint'>Salario (MEI por hora = valor x horas no mes) + adicional de salario + cesta basica + assiduidade (so CLT) + premio metas + refeitorio + 1/12 de: 1/3 ferias e 13o (so CLT) e bonus anual.</div></div>"
       +"<div class='fr'><label class='lbl'>Situacao na empresa</label>"
       +"<input type='hidden' id='eativo' value='1'/>"
       +"<div class='seg seg-full'>"
@@ -1773,7 +1779,7 @@ function setEmpFiltro(k){
 }
 // ═══ TABELA DE COLABORADORES: colunas, classificar, filtrar e ocultar ═══
 
-var MONEY_K=["sal","terco","dec13","cesta","assid","pmetas","bonus","refeit","custo"];
+var MONEY_K=["sal","adic","terco","dec13","cesta","assid","pmetas","bonus","refeit","custo"];
 // t: txt (texto), dt (data editavel), in (valor editavel), calc (calculado)
 var EMP_COLS=[
   {k:"empresa",lb:"EMPRESA",t:"txt"},
@@ -1782,12 +1788,14 @@ var EMP_COLS=[
   {k:"cc",lb:"CENTRO DE CUSTO",t:"txt",c:1},
   {k:"grupo",lb:"GRUPO",t:"txt",c:1},
   {k:"vinc",lb:"VÍNCULO",t:"txt",c:1},
+  {k:"pgto",lb:"TIPO PAGTO",t:"txt",c:1},
   {k:"sit",lb:"SITUAÇÃO",t:"txt",c:1},
   {k:"adm",lb:"ADMISSÃO",t:"dt"},
   {k:"tempo",lb:"TEMPO DE EMPRESA",t:"txt",c:1},
   {k:"aniv",lb:"ANIVERSÁRIO",t:"dt"},
   {k:"horario",lb:"HORÁRIO",t:"txt",c:1},
   {k:"sal",lb:"SALÁRIO",t:"in"},
+  {k:"adic",lb:"ADICIONAL DE SALÁRIO",t:"in"},
   {k:"terco",lb:"1/3 FÉRIAS",t:"calc"},
   {k:"dec13",lb:"13º SALÁRIO",t:"calc"},
   {k:"cesta",lb:"CESTA BÁSICA",t:"in"},
@@ -1803,7 +1811,8 @@ function setEmpColOcultas(a){try{localStorage.setItem(empColKey(),JSON.stringify
 function empColsVis(){var o=empColOcultas();return EMP_COLS.filter(function(c){return c.fixa||o.indexOf(c.k)<0;});}
 function empTemValores(e){return typeof e.sal==="number"||!!assidInfo(e)||BENEF.some(function(b){return typeof e[b.k]==="number";});}
 function empCampoVal(e,k){
-  if(k==="terco"||k==="dec13")return typeof e.sal==="number"?calcSal(e.sal)[k]:null;
+  if(k==="terco"||k==="dec13")return typeof e.sal==="number"?(isMEI(e)?0:calcSal(e.sal)[k]):null;
+  if(k==="sal")return typeof e.sal==="number"?salMensal(e):null;
   if(k==="custo")return empTemValores(e)?calcCusto(e):null;
   if(k==="assid"){var ai=assidInfo(e);return ai?ai.rec:null;}
   return typeof e[k]==="number"?e[k]:null;
@@ -1813,6 +1822,7 @@ function empSitTxt(e){var a=isAtivo(e);return a?(afastadoEm(e,hoje())?"AFASTADO"
 function empTxt(e,k){
   if(k==="cc"){var c=e.ccid?DB.cc.find(function(x){return x.id===e.ccid;}):null;return c?c.cod+" - "+c.desc:"";}
   if(k==="vinc")return empVinc(e);
+  if(k==="pgto")return meiPgto(e);
   if(k==="grupo"){var g=e.grupo?(DB.grupos||[]).find(function(x){return x.id===e.grupo;}):null;return g?g.nome:"";}
   if(k==="sit")return empSitTxt(e);
   if(k==="tempo")return e.adm?tEmp(e.adm,e.dem):"";
@@ -1862,7 +1872,7 @@ function rEmpList(){
       return "<td class='c'><span class='bdg "+cl+"'"+(s==="AFASTADO"?" style='background:#fdecd2;color:#8a5a00'":"")+">"+s+"</span></td>";}
     if(c.t==="dt")return "<td class='in'><input type='date' class='etab-sal etab-dt' value='"+(e[c.k]||"")+"' data-col='"+c.k+"' onchange=\"setDataInline('"+e.id+"','"+c.k+"',this)\" onkeydown='salKey(event,this)'/></td>";
     if(c.t==="in"){var v=typeof e[c.k]==="number"?e[c.k]:"";
-      return "<td class='in'><input type='number' min='0' step='0.01' class='etab-sal' value='"+v+"' placeholder='0,00' data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
+      return "<td class='in'><input type='number' min='0' step='0.01' class='etab-sal' value='"+v+"' placeholder='0,00'"+(c.k==="sal"&&isMEI(e)&&e.meiTipo==="hora"?" title='Valor por hora x "+(+e.meiHoras||220)+"h no mes = "+fmtBRL(salMensal(e))+"'":"")+" data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
     if(c.k==="assid"){var ai=assidInfo(e);
       if(!ai)return "<td class='r' style='color:#b0b8c1' title='Sem premio cadastrado na tela Premios'>—</td>";
       return "<td class='r' title='Premio "+fmtBRL(ai.bruto)+(ai.pct>0?" - desconto "+pct1(ai.pct)+" ("+fmtBRL(ai.desc)+")":" - sem descontos")+" em "+fmtM(ai.mes)+"'>"
@@ -1988,7 +1998,7 @@ function setValInline(id,key,v){
     if(e.id!==id)return e;
     var n=Object.assign({},e);
     if(s===null)delete n[key];else n[key]=+s.toFixed(2);
-    if(key==="sal"){if(s===null){delete n.terco;delete n.dec13;}else{var c=calcSal(s);n.terco=c.terco;n.dec13=c.dec13;}}
+    if(key==="sal"){if(s===null){delete n.terco;delete n.dec13;}else{var c=isMEI(n)?{terco:0,dec13:0}:calcSal(s);n.terco=c.terco;n.dec13=c.dec13;}}
     if(empTemValores(n))n.custo=calcCusto(n);else delete n.custo;
     emp=n;return n;
   });
@@ -2013,12 +2023,30 @@ function filtEmp(){
 }
 function novoEmp(){canEmp();openMd("md-emp");}
 function empVinc(e){return e&&e.vinc==="MEI"?"MEI":"CLT";}
+function isMEI(e){return empVinc(e)==="MEI";}
+// Salario mensal: MEI por hora = valor da hora x horas no mes
+function salMensal(e){if(!e||typeof e.sal!=="number")return 0;if(isMEI(e)&&e.meiTipo==="hora")return +(e.sal*(+e.meiHoras||220)).toFixed(2);return e.sal;}
+function meiPgto(e){return isMEI(e)&&e.meiTipo==="hora"?"HORA ("+(+e.meiHoras||220)+"h)":"MENSAL";}
 function vincBdg(e){return empVinc(e)==="MEI"?"<span class='bdg bdg-mei' title='Prestador de servico MEI'>MEI</span>":"<span class='bdg bdg-clt' title='Contratado CLT'>CLT</span>";}
 function setEmpVinc(v){
   var h=document.getElementById("evinc");if(h)h.value=v;
   var c=document.getElementById("evclt"),m=document.getElementById("evmei");
   if(c)c.classList.toggle("on",v==="CLT");
   if(m)m.classList.toggle("on",v==="MEI");
+  var ma=document.getElementById("emeiarea"),cc=document.getElementById("ecltcalc");
+  if(ma)ma.style.display=v==="MEI"?"":"none";
+  if(cc)cc.style.display=v==="MEI"?"none":"";
+  updSalLbl();updSalCalc();
+}
+function setMeiTipo(tp){
+  var h=document.getElementById("emeitipo");if(h)h.value=tp;
+  ["mensal","hora"].forEach(function(k){var b=document.getElementById("emt"+k);if(b)b.classList.toggle("on",k===tp);});
+  var r=document.getElementById("emeihrow");if(r)r.style.display=tp==="hora"?"":"none";
+  updSalLbl();updSalCalc();
+}
+function updSalLbl(){
+  var l=document.getElementById("esallb");if(!l)return;
+  l.textContent=gv("evinc")!=="MEI"?"Salario (R$)":gv("emeitipo")==="hora"?"Valor por hora (R$)":"Valor mensal (R$)";
 }
 function setEmpAtivo(v){
   var h=document.getElementById("eativo");if(h)h.value=v;
@@ -2183,7 +2211,7 @@ function savReaj(){
 function aplicarSalEmp(id,sal){
   DB.emp=DB.emp.map(function(e){
     if(e.id!==id)return e;
-    var n=Object.assign({},e),c=calcSal(sal);n.sal=sal;n.terco=c.terco;n.dec13=c.dec13;n.custo=calcCusto(n);return n;
+    var n=Object.assign({},e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal);n.sal=sal;n.terco=c.terco;n.dec13=c.dec13;n.custo=calcCusto(n);return n;
   });
 }
 function delReaj(id){
@@ -2704,6 +2732,7 @@ function calcSal(sal){
 }
 // Beneficios do colaborador (valores digitados). anual=true entra no custo mensal dividido por 12
 var BENEF=[
+  {k:"adic",lb:"Adicional de salario"},
   {k:"cesta",lb:"Cesta basica"},
   {k:"pmetas",lb:"Premio metas"},
   {k:"bonus",lb:"Bonus anual",anual:true},
@@ -2712,29 +2741,32 @@ var BENEF=[
 // Custo empresa mensal: mensais + provisao mensal (1/12) do 1/3 ferias, 13o e bonus anual
 // Assiduidade = Premio Cartao Beneficio (tela Premios) do mes atual, ja com os descontos de faltas/atrasos/5S
 function assidInfo(e,mes){
-  if(!e||!e.id)return null;
+  if(!e||!e.id||isMEI(e))return null;
   var pr=DB.pr.find(function(p){return p.eid===e.id;});if(!pr)return null;
   mes=mes||curMes();
   var d=calcDesc(e.id,mes,pr.val);
   return {bruto:pr.val,pct:d.pct,desc:+d.desc.toFixed(2),rec:+d.rec.toFixed(2),mes:mes};
 }
 function calcCusto(e,mes){
-  var sal=typeof e.sal==="number"?e.sal:0,c=calcSal(sal),t=sal+(c.terco+c.dec13)/12;
+  var sal=salMensal(e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal),t=sal+(c.terco+c.dec13)/12;
   var ai=assidInfo(e,mes);if(ai)t+=ai.rec;
   BENEF.forEach(function(b){var v=+e[b.k]||0;t+=b.anual?v/12:v;});
   return +t.toFixed(2);
 }
 function numVal(id){var t=gv(id).trim();if(t==="")return null;var v=parseFloat(t.replace(",","."));return isNaN(v)||v<0?NaN:v;}
 function updSalCalc(){
-  var v=numVal("esal");
+  var v=numVal("esal"),ok=v!==null&&!isNaN(v),mei=gv("evinc")==="MEI",hora=mei&&gv("emeitipo")==="hora";
+  var hrs=numVal("emeihoras");if(hrs===null||isNaN(hrs)||hrs<=0)hrs=220;
   var a=document.getElementById("eterco"),b=document.getElementById("e13"),cu=document.getElementById("ecusto");
   if(!a||!b)return;
-  if(v===null||isNaN(v)){a.value="";b.value="";}
+  if(!ok||mei){a.value="";b.value="";}
   else{var c=calcSal(v);a.value=fmtBRL(c.terco);b.value=fmtBRL(c.dec13);}
-  var ai=assidInfo({id:gv("eid")}),av=document.getElementById("eassidv");
-  if(av)av.value=ai?fmtBRL(ai.rec)+(ai.pct>0?"  (premio "+fmtBRL(ai.bruto)+" - "+pct1(ai.pct)+" de desconto em "+fmtM(ai.mes)+")":"  (sem descontos em "+fmtM(ai.mes)+")"):"Sem premio cadastrado em Premios";
+  var sh=document.getElementById("esalhint");
+  if(sh){sh.style.display=hora?"":"none";sh.textContent=!hora?"":ok?"Equivalente mensal: "+fmtBRL(v*hrs)+" ("+hrs+"h x "+fmtBRL(v)+")":"Informe o valor da hora; o custo mensal considera "+hrs+"h no mes.";}
+  var ai=mei?null:assidInfo({id:gv("eid")}),av=document.getElementById("eassidv");
+  if(av)av.value=mei?"Nao se aplica a MEI":ai?fmtBRL(ai.rec)+(ai.pct>0?"  (premio "+fmtBRL(ai.bruto)+" - "+pct1(ai.pct)+" de desconto em "+fmtM(ai.mes)+")":"  (sem descontos em "+fmtM(ai.mes)+")"):"Sem premio cadastrado em Premios";
   if(cu){
-    var o={id:gv("eid"),sal:(v===null||isNaN(v))?undefined:v},alg=(v!==null&&!isNaN(v))||!!ai;
+    var o={id:gv("eid"),vinc:mei?"MEI":"CLT",meiTipo:hora?"hora":"mensal",meiHoras:hrs,sal:ok?v:undefined},alg=ok||!!ai;
     BENEF.forEach(function(x){var n=numVal("e"+x.k);if(n!==null&&!isNaN(n)){o[x.k]=n;alg=true;}});
     cu.value=alg?fmtBRL(calcCusto(o)):"";
   }
@@ -2756,8 +2788,11 @@ function savEmp(){
   if(old&&old.dem&&ativo&&!confirm(nome+" esta demitido. Marcar como ativo cancela a demissao. Continuar?"))return;
   var obj=Object.assign({},old||{dem:""},{id:id||uid(),nome:nome,func:func,ccid:ccid,adm:adm,aniv:aniv,ativo:ativo,vinc:vinc});
   if(sal===null){delete obj.sal;delete obj.terco;delete obj.dec13;}
-  else{var cs=calcSal(sal);obj.sal=+sal.toFixed(2);obj.terco=cs.terco;obj.dec13=cs.dec13;}
+  else{var cs=vinc==="MEI"?{terco:0,dec13:0}:calcSal(sal);obj.sal=+sal.toFixed(2);obj.terco=cs.terco;obj.dec13=cs.dec13;}
   obj.empresa=empresa;obj.horario=horario;
+  if(vinc==="MEI"){obj.meiTipo=gv("emeitipo")==="hora"?"hora":"mensal";
+    if(obj.meiTipo==="hora"){var hh=numVal("emeihoras");if(isNaN(hh)){alert("Informe as horas por mes validas.");return;}obj.meiHoras=hh&&hh>0?hh:220;}else delete obj.meiHoras;}
+  else{delete obj.meiTipo;delete obj.meiHoras;}
   BENEF.forEach(function(b){if(bv[b.k]===null)delete obj[b.k];else obj[b.k]=+bv[b.k].toFixed(2);});
   delete obj.assid;
   obj.custo=calcCusto(obj);
@@ -2783,19 +2818,22 @@ function edtEmp(id){
   document.getElementById("eftt").textContent="Editar colaborador";
   document.getElementById("esav").textContent="Salvar alteracoes";
   setEmpAtivo(isAtivo(e)?"1":"0");
+  var mh=document.getElementById("emeihoras");if(mh)mh.value=e.meiHoras||"";
+  setMeiTipo(e.meiTipo||"mensal");
   setEmpVinc(empVinc(e));
   var area=document.getElementById("edemarea");
   area.innerHTML=empExtraArea(e);
   openMd("md-emp");
 }
 function canEmp(){
-  ["eid","enome","efunc","eadm","eaniv","esal","eempresa","ehorario","ecesta","eassid","epmetas","ebonus","erefeit"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  ["eid","enome","efunc","eadm","eaniv","esal","eempresa","ehorario","eadic","ecesta","eassid","epmetas","ebonus","erefeit","emeihoras"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   updSalCalc();
   var cc=document.getElementById("ecc");if(cc)cc.value="";
   var t=document.getElementById("eftt");if(t)t.textContent="Novo colaborador";
   var btn=document.getElementById("esav");if(btn)btn.textContent="Cadastrar";
   var area=document.getElementById("edemarea");if(area)area.innerHTML="";
   setEmpAtivo("1");
+  setMeiTipo("mensal");
   setEmpVinc("CLT");
   closeMd("md-emp");
 }
@@ -3565,9 +3603,15 @@ function del5S(id){
 
 // PREMIOS
 function rPrem(){
-  var sm=document.getElementById("pm")&&document.getElementById("pm").value||curMes();
+  var cm=curMes(),pmA=gv("pm-ano")||cm.slice(0,4),pmM=gv("pm-mes")||cm.slice(5,7);
+  var sm=pmA+"-"+pmM;
+  var anoIni=parseInt(cm.slice(0,4),10)-2;
+  DB.oc.forEach(function(o){var a=parseInt(o.data.slice(0,4),10);if(a<anoIni)anoIni=a;});
+  var pmAnoOpts="";for(var ay=Math.max(2030,parseInt(cm.slice(0,4),10));ay>=anoIni;ay--)pmAnoOpts+="<option value='"+ay+"'"+(String(ay)===pmA?" selected":"")+">"+ay+"</option>";
+  var pmMesOpts=MOS.map(function(m,i){var v=String(i+1).padStart(2,"0");return "<option value='"+v+"'"+(v===pmM?" selected":"")+">"+m+"</option>";}).join("");
+  var pmSel="padding:.4rem .75rem;border:1.5px solid #dfe5ee;border-radius:8px;font-size:13px;color:"+B+";font-weight:600;background:#fff;width:auto";
   var sn=(document.getElementById("pn")&&document.getElementById("pn").value||"").toLowerCase();
-  var ativosMes=DB.emp.filter(function(e){return contaNoMes(e,sm);}).sort(function(a,b){return a.nome.localeCompare(b.nome);});
+  var ativosMes=DB.emp.filter(function(e){return contaNoMes(e,sm)&&!isMEI(e);}).sort(function(a,b){return a.nome.localeCompare(b.nome);});
   var fil=ativosMes.filter(function(e){return!sn||e.nome.toLowerCase().includes(sn)||e.func.toLowerCase().includes(sn);});
   var rows=fil.map(function(emp){
     var pr=DB.pr.find(function(p){return p.eid===emp.id;});
@@ -3590,6 +3634,7 @@ function rPrem(){
       +"<div style='width:32px;height:32px;border-radius:50%;background:#e6edf8;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:"+B+";flex-shrink:0'>"+ini(emp.nome)+"</div>"
       +"<div style='min-width:0'><div style='font-weight:700;font-size:13px;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px'>"+esc(emp.nome)+"</div>"
       +"<div style='font-size:11px;color:#aaa'>"+esc(emp.func)+(emp.dem?"<span style='color:"+RED+"'> &middot; Dem. "+fmtD(emp.dem)+"</span>":"")+"</div></div></div></td>"
+      +"<td style='text-align:center'>"+vincBdg(emp)+"</td>"
       +"<td><div style='display:flex;gap:5px;align-items:center'>"
       +"<input type='number' id='pv"+emp.id+"' value='"+(pr?pr.val:"")+"' min='0' step='10' placeholder='0,00' style='width:90px;padding:.35rem .5rem;border:1.5px solid #dfe5ee;border-radius:6px;font-size:13px'/>"
       +"<button class='btnp' data-fn='savPr' data-id='"+emp.id+"' style='padding:.32rem .6rem;font-size:11px;font-weight:700;flex-shrink:0'>OK</button></div></td>"
@@ -3600,11 +3645,11 @@ function rPrem(){
   document.getElementById("p-premios").innerHTML=
     "<div style='margin-bottom:1.5rem'>"
     +"<h1 style='font-size:22px;font-weight:800;color:"+B+"'>Premios - Cartao Beneficio</h1>"
-    +"<div style='font-size:13px;color:#888;margin-bottom:1rem'>Defina o valor e veja os descontos</div>"
+    +"<div style='font-size:13px;color:#888;margin-bottom:1rem'>Defina o valor e veja os descontos &middot; somente colaboradores CLT (MEI nao recebe o premio)</div>"
     +"<div style='background:#e6edf8;border:1.5px solid #c3d3ee;border-radius:10px;padding:.875rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap'>"
     +"<i class='ti ti-gift' style='font-size:20px;color:"+B+"'></i>"
     +"<div><div style='font-size:13px;font-weight:700;color:"+B+"'>Definir valor para todos</div>"
-    +"<div style='font-size:11px;color:#4f7fa8'>Aplica o mesmo premio a todos os ativos</div></div>"
+    +"<div style='font-size:11px;color:#4f7fa8'>Aplica o mesmo premio a todos os CLT ativos</div></div>"
     +"<div style='display:flex;align-items:center;gap:8px;margin-left:auto'>"
     +"<span style='font-size:13px;font-weight:600;color:#555'>R$</span>"
     +"<input type='number' id='ptodos' min='0' step='10' placeholder='Ex: 300' style='width:110px;padding:.4rem .65rem;border:1.5px solid #c3d3ee;border-radius:8px;font-size:14px;font-weight:600;color:"+B+";background:#fff'/>"
@@ -3612,7 +3657,8 @@ function rPrem(){
     +"</div></div>"
     +"<div style='display:flex;gap:12px;flex-wrap:wrap;align-items:center'>"
     +"<div style='display:flex;align-items:center;gap:8px'><i class='ti ti-calendar' style='color:#888;font-size:16px'></i>"
-    +"<span style='font-size:12px;font-weight:600;color:#555;white-space:nowrap'>Mes / Ano:</span>"+mSel("pm",sm)+"</div>"
+    +"<span style='font-size:12px;font-weight:600;color:#555;white-space:nowrap'>Mes:</span><select id='pm-mes' onchange='rPrem()' style='"+pmSel+"'>"+pmMesOpts+"</select>"
+    +"<span style='font-size:12px;font-weight:600;color:#555;white-space:nowrap;margin-left:4px'>Ano:</span><select id='pm-ano' onchange='rPrem()' style='"+pmSel+"'>"+pmAnoOpts+"</select></div>"
     +"<div style='display:flex;align-items:center;gap:8px;flex:1;min-width:220px'><i class='ti ti-search' style='color:#888;font-size:16px'></i>"
     +"<span style='font-size:12px;font-weight:600;color:#555;white-space:nowrap'>Colaborador:</span>"
     +"<input type='text' id='pn' value='"+esc(sn)+"' placeholder='Buscar...' oninput='rPrem()' style='flex:1;max-width:280px;padding:.4rem .75rem;border:1.5px solid #dfe5ee;border-radius:8px;font-size:13px'/></div>"
@@ -3621,19 +3667,18 @@ function rPrem(){
     +(ativosMes.length===0?"<div class='card' style='color:#aaa;text-align:center;padding:2rem'>Nenhum colaborador ativo. Cadastre ou ative colaboradores na tela Colaboradores.</div>":"")
     +(fil.length===0&&ativosMes.length>0?"<div class='card' style='color:#aaa;text-align:center;padding:1.5rem;font-size:13px'>Nenhum encontrado.</div>":"")
     +(fil.length>0?"<div class='card' style='padding:0;overflow:hidden'>"
-    +"<div style='overflow-x:auto'><table style='min-width:820px'><thead><tr style='background:"+B+";color:#fff'>"
-    +"<th style='width:32%'>Colaborador</th><th style='width:18%'>Premio (R$)</th><th style='width:30%'>Ocorrencias no mes</th><th style='width:20%;text-align:right'>A Receber</th>"
+    +"<div style='overflow-x:auto'><table style='min-width:900px'><thead><tr style='background:"+B+";color:#fff'>"
+    +"<th style='width:30%'>Colaborador</th><th style='width:10%;text-align:center'>Tipo de vinculo</th><th style='width:16%'>Premio (R$)</th><th style='width:26%'>Ocorrencias no mes</th><th style='width:18%;text-align:right'>A Receber</th>"
     +"</tr></thead><tbody>"
     +rows
     +"</tbody></table></div></div>":"");
-  document.getElementById("pm").addEventListener("change",rPrem);
 }
 
 function aplTodos(){
   var v=parseFloat(document.getElementById("ptodos").value);
   if(isNaN(v)||v<=0){alert("Informe um valor valido.");return;}
-  var ativos=DB.emp.filter(ativoVis);
-  if(!confirm("Aplicar "+fmtBRL(v)+" para todos os "+ativos.length+" colaboradores ativos?"))return;
+  var ativos=DB.emp.filter(function(e){return ativoVis(e)&&!isMEI(e);});
+  if(!confirm("Aplicar "+fmtBRL(v)+" para todos os "+ativos.length+" colaboradores CLT ativos?"))return;
   ativos.forEach(function(e){DB.pr=DB.pr.filter(function(p){return p.eid!==e.id;});DB.pr.push({eid:e.id,val:v});});
   dbSave();rPrem();var inp=document.getElementById("ptodos");if(inp)inp.value=v;
 }
@@ -4118,8 +4163,8 @@ function gerarEmpPDF(){
   var grpLb={cc:"centro de custo",empresa:"empresa",func:"função",nenhum:""}[grp];
   var K=mkPdfKit("Cadastro de Colaboradores",sitLb+(grpLb?"  |  Agrupado por "+grpLb:"")+"  |  "+lista.length+" colaborador"+(lista.length!==1?"es":""),"landscape",papel),doc=K.doc,C=K.C,cw=K.cw;
   // larguras proporcionais ao conteudo de cada coluna
-  var PESO={empresa:1.05,nome:2.3,func:1.3,cc:1.45,vinc:.55,sit:.88,adm:.98,tempo:.85,aniv:.98,horario:1.08,sal:1.15,terco:1.12,dec13:1.15,cesta:1.05,assid:1.05,pmetas:1.05,bonus:1.05,refeit:1.05,custo:1.25};
-  var PL={empresa:"EMPRESA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
+  var PESO={adic:1.15,pgto:.9,empresa:1.05,nome:2.3,func:1.3,cc:1.45,vinc:.55,sit:.88,adm:.98,tempo:.85,aniv:.98,horario:1.08,sal:1.15,terco:1.12,dec13:1.15,cesta:1.05,assid:1.05,pmetas:1.05,bonus:1.05,refeit:1.05,custo:1.25};
+  var PL={adic:"ADICIONAL SALÁRIO",pgto:"TIPO PAGTO",empresa:"EMPRESA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
     sal:"SALÁRIO",terco:"1/3 FÉRIAS",dec13:"13º SALÁRIO",cesta:"CESTA BÁSICA",assid:"ASSIDUID.",pmetas:"PRÊMIO METAS",bonus:"BÔNUS ANUAL",refeit:"REFEITÓRIO",custo:"CUSTO MENSAL"};
   var pesos=cols0.map(function(c){return PESO[c.k]||1;}),somaP=pesos.reduce(function(a,b){return a+b;},0)+0.35;
   var unit=cw/somaP;
@@ -4149,14 +4194,14 @@ function gerarEmpPDF(){
   function linhaTot(lb,t,grand){var r={_total:true,_grand:!!grand};r[colLbl]=lb;moneyCols.forEach(function(k){r[k]=fmtBRL(t[k]);});return r;}
   // ── indicadores ──
   var T=somar(lista),nAt=lista.filter(isAtivo).length,comSal=lista.filter(function(e){return typeof e.sal==="number";});
-  var benef=T.cesta+T.assid+T.pmetas+T.refeit,prov=(T.terco+T.dec13+T.bonus)/12;
+  var benef=T.adic+T.cesta+T.assid+T.pmetas+T.refeit,prov=(T.terco+T.dec13+T.bonus)/12;
   var y=K.header();
   K.section("Indicadores",y);y+=3.5;
   var ks=[
     ["Colaboradores",String(lista.length),nAt+" ativo"+(nAt!==1?"s":"")+" · "+(lista.length-nAt)+" inativo"+(lista.length-nAt!==1?"s":""),C.b],
     ["Folha salarial",fmtBRL(T.sal),comSal.length+" com salário cadastrado",C.bl],
     ["Salário médio",fmtBRL(comSal.length?T.sal/comSal.length:0),"média de quem tem salário",C.grn],
-    ["Benefícios mensais",fmtBRL(benef),"cesta, assiduidade, metas, refeitório",C.pur],
+    ["Benefícios mensais",fmtBRL(benef),"adicional, cesta, assiduidade, metas, refeitório",C.pur],
     ["Provisões mensais",fmtBRL(prov),"1/12 de 1/3 férias, 13º e bônus",C.gld],
     ["Custo empresa mensal",fmtBRL(T.custo),"total do relatório",C.ink]
   ];
@@ -4192,7 +4237,7 @@ function gerarEmpPDF(){
       {h:"FOLHA SALARIAL",k:"sal",w:cw*.14,al:"r"},{h:"SALÁRIO MÉDIO",k:"med",w:cw*.12,al:"r"},{h:"BENEFÍCIOS",k:"ben",w:cw*.11,al:"r"},
       {h:"PROVISÕES",k:"prov",w:cw*.10,al:"r"},{h:"CUSTO MENSAL",k:"cu",w:cw*.13,al:"r",b:true,cor:function(){return C.b;}}];
     var rr=grupos.map(function(g){var t=somar(g.emps),ns=g.emps.filter(function(e){return typeof e.sal==="number";}).length;
-      return {g:g.lb,n:g.emps.length,sal:fmtBRL(t.sal),med:fmtBRL(ns?t.sal/ns:0),ben:fmtBRL(t.cesta+t.assid+t.pmetas+t.refeit),prov:fmtBRL((t.terco+t.dec13+t.bonus)/12),cu:fmtBRL(t.custo)};});
+      return {g:g.lb,n:g.emps.length,sal:fmtBRL(t.sal),med:fmtBRL(ns?t.sal/ns:0),ben:fmtBRL(t.adic+t.cesta+t.assid+t.pmetas+t.refeit),prov:fmtBRL((t.terco+t.dec13+t.bonus)/12),cu:fmtBRL(t.custo)};});
     rr.push({_total:true,_grand:true,g:"TOTAL",n:lista.length,sal:fmtBRL(T.sal),med:fmtBRL(comSal.length?T.sal/comSal.length:0),ben:fmtBRL(benef),prov:fmtBRL(prov),cu:fmtBRL(T.custo)});
     y=K.table(y,rc,rr,{rh:6,fs:7.6,titulo:"Resumo por "+grpLb})+6;
   }
@@ -4344,7 +4389,7 @@ function relMes(m,se){
   var r={m:m,linhas:[],pot:0,pago:0,perd:0,lf:0,la:0,ls:0,nf:0,na:0,ns:0,ok:0,absF:0,absBase:0};
   DB.emp.forEach(function(e){
     if(se&&e.id!==se)return;
-    if(!contaNoMes(e,m))return;
+    if(!contaNoMes(e,m)||isMEI(e))return;
     var pr=DB.pr.find(function(p){return p.eid===e.id;});if(!pr)return;
     var d=calcDesc(e.id,m,pr.val);
     var pf=0,pa=0,ps=0;
@@ -4510,7 +4555,7 @@ function rRel(){
   var se=gv("re");
   var anos={};anos[anoAtual]=1;DB.oc.forEach(function(o){anos[o.data.slice(0,4)]=1;});
   var anoOpts=Object.keys(anos).sort().reverse().map(function(a){return "<option value='"+a+"'"+(a===selAno?" selected":"")+">"+a+"</option>";}).join("");
-  var emps=DB.emp.filter(function(e){return vis(e)&&DB.pr.some(function(p){return p.eid===e.id;});}).sort(function(a,b){return a.nome.localeCompare(b.nome);});
+  var emps=DB.emp.filter(function(e){return vis(e)&&!isMEI(e)&&DB.pr.some(function(p){return p.eid===e.id;});}).sort(function(a,b){return a.nome.localeCompare(b.nome);});
   var eOpts="<option value=''>Todos os colaboradores</option>"+emps.map(function(e){return "<option value='"+e.id+"'"+(se===e.id?" selected":"")+">"+esc(e.nome)+(isAtivo(e)?"":" (inativo)")+"</option>";}).join("");
 
   var meses=mesesRel(selAno);
