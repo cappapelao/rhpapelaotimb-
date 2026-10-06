@@ -386,6 +386,30 @@ input:focus-visible,select:focus-visible{outline:none}
 .ro-mode #p-direcionar .dir-bar,.ro-mode #p-backup .seg{display:none!important}
 .ro-mode .etab-sal,.ro-mode .etab-cc,.ro-mode #p-premios input[type=number],.ro-mode #p-motivos input,.ro-mode #p-direcionar tbody tr{pointer-events:none}
 .ro-mode .etab-sal{background:transparent!important}
+.ro-mode #p-encargos .btnp,.ro-mode #p-encargos .btng{display:none!important}
+.ro-mode #p-encargos input{pointer-events:none}
+.mq-boxes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.6rem}
+.mq-box{position:relative;background:#fff;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:7px;padding:.28rem 1.6rem .28rem .55rem;cursor:pointer;min-width:96px;transition:background .12s}
+.mq-box:hover{background:#f4f7fc}
+.mq-box.tot{background:#e6edf8;padding-right:.6rem}
+.mq-box.off{opacity:.45}
+.mq-nm{font-size:10.5px;font-weight:700;color:#6b7580;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.mq-v{font-size:16px;font-weight:800;color:var(--c);line-height:1.15}
+.mq-d{font-size:10.5px;font-weight:700;margin-left:5px}
+.mq-eye{position:absolute;top:3px;right:3px;background:none;border:none;color:#9aa3ad;font-size:14px;padding:1px;line-height:1}
+.mq-eye:hover{color:#00348F}
+.enc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;align-items:start}
+.enc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:.55rem 0;border-bottom:1px solid #f1f4f8}
+.enc-row:last-child{border-bottom:none}
+.enc-row .enc-l{font-size:13px;font-weight:600;color:#333}
+.enc-row .enc-l small{display:block;font-weight:400;color:#999;font-size:11px}
+.enc-pct{display:flex;align-items:center;gap:6px}
+.enc-pct input{width:90px;text-align:right;font-weight:700}
+.enc-tot{background:#e6edf8;border-radius:8px;padding:.6rem .8rem;display:flex;justify-content:space-between;font-weight:800;color:#00348F;margin-top:.5rem}
+.enc-chk{display:flex;align-items:flex-start;gap:10px;padding:.55rem 0;border-bottom:1px solid #f1f4f8;cursor:pointer}
+.enc-chk:last-child{border-bottom:none}
+.enc-chk input{width:auto;margin-top:3px;accent-color:#00348F}
+.enc-chk b{font-size:13px;color:#333}.enc-chk span{display:block;font-size:11px;color:#999}
 .ro-mode .pg-hd .sub::after{content:"  ·  somente visualizacao";color:#8a5a00;font-weight:700}
 .lg-opts{display:flex;justify-content:space-between;align-items:center;margin:-.2rem 0 .9rem}
 .lg-chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#555;cursor:pointer;user-select:none}
@@ -487,6 +511,7 @@ input:focus-visible,select:focus-visible{outline:none}
       <button class="nb" id="nb-lancamento" onclick="go('lancamento')"><i class="ti ti-clipboard-list" style="font-size:18px;flex-shrink:0"></i><span class="nl">Lancamentos</span></button>
       <button class="nb" id="nb-premios" onclick="go('premios')"><i class="ti ti-gift" style="font-size:18px;flex-shrink:0"></i><span class="nl">Premios</span></button>
       <button class="nb" id="nb-indices" onclick="go('indices')"><i class="ti ti-adjustments" style="font-size:18px;flex-shrink:0"></i><span class="nl">Indices</span></button>
+      <button class="nb" id="nb-encargos" onclick="go('encargos')"><i class="ti ti-receipt-tax" style="font-size:18px;flex-shrink:0"></i><span class="nl">Encargos INSS/FGTS</span></button>
       <button class="nb" id="nb-motivos" onclick="go('motivos')"><i class="ti ti-tags" style="font-size:18px;flex-shrink:0"></i><span class="nl">Motivos</span></button>
       <button class="nb" id="nb-relatorio" onclick="go('relatorio')"><i class="ti ti-chart-bar" style="font-size:18px;flex-shrink:0"></i><span class="nl">Relatorios</span></button>
       <button class="nb" id="nb-calendario" onclick="go('calendario')"><i class="ti ti-calendar-heart" style="font-size:18px;flex-shrink:0"></i><span class="nl">Aniversarios</span></button>
@@ -514,6 +539,7 @@ input:focus-visible,select:focus-visible{outline:none}
     <div id="p-lancamento" class="page"></div>
     <div id="p-premios" class="page"></div>
     <div id="p-indices" class="page"></div>
+    <div id="p-encargos" class="page"></div>
     <div id="p-motivos" class="page"></div>
     <div id="p-relatorio" class="page"></div>
     <div id="p-calendario" class="page"></div>
@@ -991,6 +1017,7 @@ document.addEventListener("keydown",function(ev){
   if(document.getElementById("md-afast")){closeAfastModal();return;}
   if(document.getElementById("md-dem")){closeDemModal();return;}
   if(document.getElementById("md-emppdf")){fecharEmpPDF();return;}
+  if(document.getElementById("md-mong")){fecharMonGrupo();return;}
   if(document.getElementById("md-reaj")){fecharReaj();return;}
   if(document.getElementById("md-grp")){fecharGrupoMd();return;}
   if(document.getElementById("md-acs")){acsFechar();return;}
@@ -1046,7 +1073,7 @@ function go(p){
   document.getElementById("nb-"+p).classList.add("on");
   pg=p;
   document.getElementById("main").classList.toggle("ro-mode",!!ACESSO&&permTela(p)==="ver");
-  ({dashboard:rDash,centros:rCC,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,resumo:function(){empCtx='res';rResumo();},folha:rFolha,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
+  ({dashboard:rDash,centros:rCC,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,resumo:function(){empCtx='res';rResumo();},folha:rFolha,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,encargos:rEnc,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
 }
 function toggleSB(){
   sbOpen=!sbOpen;
@@ -1746,11 +1773,15 @@ function rEmp(){
       +"<div class='fr'><label class='lbl'>1/3 Ferias <span class='opt'>(automatico)</span></label><input type='text' id='eterco' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div>"
       +"<div class='fr'><label class='lbl'>13o Salario <span class='opt'>(automatico)</span></label><input type='text' id='e13' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div></div>"
       +"<div class='hint' style='margin-top:-6px;margin-bottom:.8rem'>1/3 de ferias = salario &divide; 3 &middot; 13o salario = salario integral (12/12).</div></div>"
+      +"<div class='fr2'>"
+      +"<div class='fr'><label class='lbl'>INSS (R$) <span class='opt'>(automatico, editavel)</span></label><input type='number' id='einss' min='0' step='0.01' oninput='updSalCalc()'/></div>"
+      +"<div class='fr'><label class='lbl'>FGTS (R$) <span class='opt'>(automatico, editavel)</span></label><input type='number' id='efgts' min='0' step='0.01' oninput='updSalCalc()'/></div></div>"
+      +"<div class='hint' id='enchint' style='margin-top:-6px;margin-bottom:.8rem'></div>"
       +"<div class='fr2'>"+BENEF.map(function(b){return "<div class='fr'><label class='lbl'>"+b.lb+" (R$) <span class='opt'>("+(b.anual?"anual":"mensal")+")</span></label><input type='number' id='e"+b.k+"' min='0' step='0.01' placeholder='0,00' oninput='updSalCalc()'/></div>";}).join("")+"</div>"
       +"<div class='fr'><label class='lbl'>Assiduidade - Premio Cartao <span class='opt'>(vem da tela Premios)</span></label><input type='text' id='eassidv' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/>"
       +"<div class='hint' id='eassidh'>Valor do premio definido em Premios - Cartao Beneficio, ja descontadas as faltas, atrasos e 5S do mes atual.</div></div>"
       +"<div class='fr'><label class='lbl'>Custo empresa mensal <span class='opt'>(automatico)</span></label><input type='text' id='ecusto' readonly tabindex='-1' style='background:#f1f4f8;font-weight:800;color:#00348F'/>"
-      +"<div class='hint'>Salario (MEI por hora = valor x horas no mes) + adicional de salario + cesta basica + assiduidade (so CLT) + premio metas + refeitorio + 1/12 de: 1/3 ferias e 13o (so CLT) e bonus anual.</div></div>"
+      +"<div class='hint'>Salario (MEI por hora = valor x horas no mes) + adicional de salario + INSS + FGTS + cesta basica + assiduidade (so CLT) + premio metas + refeitorio + 1/12 de: 1/3 ferias e 13o (so CLT) e bonus anual.</div></div>"
       +"<div class='fr'><label class='lbl'>Situacao na empresa</label>"
       +"<input type='hidden' id='eativo' value='1'/>"
       +"<div class='seg seg-full'>"
@@ -1779,7 +1810,7 @@ function setEmpFiltro(k){
 }
 // ═══ TABELA DE COLABORADORES: colunas, classificar, filtrar e ocultar ═══
 
-var MONEY_K=["sal","adic","terco","dec13","cesta","assid","pmetas","bonus","refeit","custo"];
+var MONEY_K=["sal","adic","inss","fgts","terco","dec13","cesta","assid","pmetas","bonus","refeit","custo"];
 // t: txt (texto), dt (data editavel), in (valor editavel), calc (calculado)
 var EMP_COLS=[
   {k:"empresa",lb:"EMPRESA",t:"txt"},
@@ -1798,6 +1829,8 @@ var EMP_COLS=[
   {k:"adic",lb:"ADICIONAL DE SALÁRIO",t:"in"},
   {k:"terco",lb:"1/3 FÉRIAS",t:"calc"},
   {k:"dec13",lb:"13º SALÁRIO",t:"calc"},
+  {k:"inss",lb:"INSS",t:"enc"},
+  {k:"fgts",lb:"FGTS",t:"enc"},
   {k:"cesta",lb:"CESTA BÁSICA",t:"in"},
   {k:"assid",lb:"ASSIDUIDADE",t:"calc"},
   {k:"pmetas",lb:"PRÊMIO METAS",t:"in"},
@@ -1809,10 +1842,11 @@ function empColKey(){return "timbo_emp_cols_ocultas"+(empCtx==="res"?"_res":"");
 function empColOcultas(){try{return JSON.parse(localStorage.getItem(empColKey())||"[]");}catch(e){return [];}}
 function setEmpColOcultas(a){try{localStorage.setItem(empColKey(),JSON.stringify(a));}catch(e){}}
 function empColsVis(){var o=empColOcultas();return EMP_COLS.filter(function(c){return c.fixa||o.indexOf(c.k)<0;});}
-function empTemValores(e){return typeof e.sal==="number"||!!assidInfo(e)||BENEF.some(function(b){return typeof e[b.k]==="number";});}
+function empTemValores(e){return typeof e.sal==="number"||encManual(e,"inss")||encManual(e,"fgts")||!!assidInfo(e)||BENEF.some(function(b){return typeof e[b.k]==="number";});}
 function empCampoVal(e,k){
   if(k==="terco"||k==="dec13")return typeof e.sal==="number"?(isMEI(e)?0:calcSal(e.sal)[k]):null;
   if(k==="sal")return typeof e.sal==="number"?salMensal(e):null;
+  if(k==="inss"||k==="fgts")return typeof e.sal==="number"||encManual(e,k)?encVal(e,k):null;
   if(k==="custo")return empTemValores(e)?calcCusto(e):null;
   if(k==="assid"){var ai=assidInfo(e);return ai?ai.rec:null;}
   return typeof e[k]==="number"?e[k]:null;
@@ -1862,6 +1896,11 @@ function rEmpList(){
     }
     var ro=empRO();
     if(ro&&(c.k==="cc"||c.t==="dt"))return "<td class='c'>"+esc(empTxt(e,c.k))+"</td>";
+    if(c.t==="enc"){var ev=empCampoVal(e,c.k),man=encManual(e,c.k);
+      if(ro)return "<td class='r'>"+(ev===null?"":fmtBRL(ev))+"</td>";
+      return "<td class='in'><input type='number' min='0' step='0.01' class='etab-sal' id='et"+c.k+"-"+e.id+"' value='"+(ev===null?"":ev)+"' placeholder='auto' data-col='"+c.k+"'"
+        +" title='"+(man?"Valor manual. Apague para voltar ao automatico ("+fmtBRL(encAuto(e,c.k))+")":(isMEI(e)&&!encCfg().mei?"MEI: sem encargo automatico":"Automatico: "+pct2(encPct(c.k))+" da base de calculo ("+fmtBRL(encBase(e))+")"))+"'"
+        +(man?" style='color:#1E5BC6;font-weight:800'":"")+" onchange=\"setEncInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
     if(ro&&c.t==="in"){var vr=empCampoVal(e,c.k);return "<td class='r'>"+(vr===null?"":fmtBRL(vr))+"</td>";}
     if(c.k==="grupo"){var gt=empTxt(e,"grupo");return "<td class='c'>"+(gt?"<span class='bdg' style='background:#e6edf8;color:#00348F'>"+esc(gt)+"</span>":"<span style='color:#b0b8c1'>—</span>")+"</td>";}
     if(c.k==="cc")return "<td class='in'><select class='etab-sal etab-cc' data-col='cc' onchange=\"setCCInline('"+e.id+"',this.value)\"><option value=''>—</option>"
@@ -2003,11 +2042,20 @@ function setValInline(id,key,v){
     emp=n;return n;
   });
   if(!emp)return;
-  ["terco","dec13","custo"].forEach(function(x){var el=document.getElementById("et"+x+"-"+id),val=empCampoVal(emp,x);if(el)el.textContent=val===null?"":fmtBRL(val);});
+  ["terco","dec13","custo","inss","fgts"].forEach(function(x){var el=document.getElementById("et"+x+"-"+id),val=empCampoVal(emp,x);if(!el)return;if(el.tagName==="INPUT")el.value=val===null?"":val;else el.textContent=val===null?"":fmtBRL(val);});
   var tot={};MONEY_K.forEach(function(x){tot[x]=0;});
   empListaVisivel().forEach(function(e){if(isAtivo(e))MONEY_K.forEach(function(x){tot[x]+=empCampoVal(e,x)||0;});});
   MONEY_K.forEach(function(x){var el=document.getElementById("ettot-"+x);if(el)el.textContent=fmtBRL(tot[x]);});
   dbSave();
+}
+function setEncInline(id,k,v){
+  var tx=(v||"").toString().trim(),s=tx===""?null:parseFloat(tx.replace(",","."));
+  if(s!==null&&(isNaN(s)||s<0)){alert("Informe um valor valido.");return;}
+  var e=DB.emp.find(function(x){return x.id===id;});if(!e)return;
+  // valor igual ao automatico = volta para automatico
+  if(s!==null&&Math.abs(s-encAuto(e,k))<0.005)s=null;
+  DB.emp=DB.emp.map(function(x){if(x.id!==id)return x;var n=Object.assign({},x);if(s===null)delete n[k+"Man"];else n[k+"Man"]=+s.toFixed(2);if(empTemValores(n))n.custo=calcCusto(n);return n;});
+  filtEmp();dbSave();
 }
 function setSalInline(id,v){setValInline(id,"sal",v);}
 // Enter / setas: vai para o salario da linha de baixo ou de cima (como na planilha)
@@ -2026,6 +2074,22 @@ function empVinc(e){return e&&e.vinc==="MEI"?"MEI":"CLT";}
 function isMEI(e){return empVinc(e)==="MEI";}
 // Salario mensal: MEI por hora = valor da hora x horas no mes
 function salMensal(e){if(!e||typeof e.sal!=="number")return 0;if(isMEI(e)&&e.meiTipo==="hora")return +(e.sal*(+e.meiHoras||220)).toFixed(2);return e.sal;}
+// Encargos sobre salario + adicional (CLT). Valor manual (inssMan/fgtsMan) substitui o automatico
+// Configuracao editavel na tela "Encargos INSS/FGTS" (guardada junto dos Indices, registro cfg_enc)
+var ENC_DEF={inss:20,rat:0,terc:0,fgts:8,bAdic:true,bMetas:false,bProv:false,mei:false};
+function encCfg(){var r=(DB.idx||[]).find(function(x){return x.id==="cfg_enc";});return Object.assign({},ENC_DEF,r&&r.cfg?r.cfg:{});}
+function encPct(k,c){c=c||encCfg();return k==="inss"?(+c.inss||0)+(+c.rat||0)+(+c.terc||0):(+c.fgts||0);}
+function encBase(e,c){
+  c=c||encCfg();
+  if(isMEI(e)&&!c.mei)return 0;
+  var s=salMensal(e),ad=c.bAdic?(+e.adic||0):0,b=s+ad;
+  if(c.bMetas)b+=+e.pmetas||0;
+  if(c.bProv&&!isMEI(e)){var x=calcSal(s+ad);b+=(x.terco+x.dec13)/12;}
+  return +b.toFixed(2);
+}
+function encAuto(e,k,c){c=c||encCfg();return +(encBase(e,c)*encPct(k,c)/100).toFixed(2);}
+function encVal(e,k){var m=e[k+"Man"];return typeof m==="number"?m:encAuto(e,k);}
+function encManual(e,k){return typeof e[k+"Man"]==="number";}
 function meiPgto(e){return isMEI(e)&&e.meiTipo==="hora"?"HORA ("+(+e.meiHoras||220)+"h)":"MENSAL";}
 function vincBdg(e){return empVinc(e)==="MEI"?"<span class='bdg bdg-mei' title='Prestador de servico MEI'>MEI</span>":"<span class='bdg bdg-clt' title='Contratado CLT'>CLT</span>";}
 function setEmpVinc(v){
@@ -2596,6 +2660,7 @@ function carregarAcesso(user){
   });
 }
 function permTela(p){
+  if(p==="encargos")p="indices"; // mesma permissao da tela Indices
   if(!ACESSO)return "nenhum";
   if(ACESSO.master)return "editar";
   var v=ACESSO.perms[p];
@@ -2611,6 +2676,7 @@ function primeiraTela(){
 // Mostra/oculta os itens do menu conforme as permissoes
 function aplicarPermissoes(){
   TELAS.forEach(function(t){var b=document.getElementById("nb-"+t.k);if(b)b.style.display=permTela(t.k)==="nenhum"?"none":"";});
+  var nbe=document.getElementById("nb-encargos");if(nbe)nbe.style.display=permTela("encargos")==="nenhum"?"none":"";
 
   var u=document.getElementById("sb-user");
   if(u)u.innerHTML=ACESSO?"<i class='ti "+(ACESSO.master?"ti-crown":"ti-user")+"'></i><span class='nl'>"+esc(ACESSO.master?ACESSO.email+" (master)":ACESSO.nome)+"</span>":"";
@@ -2748,7 +2814,7 @@ function assidInfo(e,mes){
   return {bruto:pr.val,pct:d.pct,desc:+d.desc.toFixed(2),rec:+d.rec.toFixed(2),mes:mes};
 }
 function calcCusto(e,mes){
-  var sal=salMensal(e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal),t=sal+(c.terco+c.dec13)/12;
+  var sal=salMensal(e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal),t=sal+(c.terco+c.dec13)/12+encVal(e,"inss")+encVal(e,"fgts");
   var ai=assidInfo(e,mes);if(ai)t+=ai.rec;
   BENEF.forEach(function(b){var v=+e[b.k]||0;t+=b.anual?v/12:v;});
   return +t.toFixed(2);
@@ -2768,6 +2834,9 @@ function updSalCalc(){
   if(cu){
     var o={id:gv("eid"),vinc:mei?"MEI":"CLT",meiTipo:hora?"hora":"mensal",meiHoras:hrs,sal:ok?v:undefined},alg=ok||!!ai;
     BENEF.forEach(function(x){var n=numVal("e"+x.k);if(n!==null&&!isNaN(n)){o[x.k]=n;alg=true;}});
+    ["inss","fgts"].forEach(function(k){var n=numVal("e"+k),el=document.getElementById("e"+k);if(n!==null&&!isNaN(n)){o[k+"Man"]=n;alg=true;}if(el)el.placeholder="Auto: "+fmtBRL(encAuto(o,k));});
+    var eh=document.getElementById("enchint");
+    if(eh)eh.textContent=mei&&!encCfg().mei?"MEI: sem INSS/FGTS automatico. Preencha somente se houver encargo.":"Automatico: INSS "+pct2(encPct("inss"))+" e FGTS "+pct2(encPct("fgts"))+" sobre a base de calculo ("+fmtBRL(encBase(o))+"), definida na tela Encargos INSS/FGTS. Digite um valor para substituir; deixe vazio para voltar ao automatico.";
     cu.value=alg?fmtBRL(calcCusto(o)):"";
   }
 }
@@ -2793,8 +2862,11 @@ function savEmp(){
   if(vinc==="MEI"){obj.meiTipo=gv("emeitipo")==="hora"?"hora":"mensal";
     if(obj.meiTipo==="hora"){var hh=numVal("emeihoras");if(isNaN(hh)){alert("Informe as horas por mes validas.");return;}obj.meiHoras=hh&&hh>0?hh:220;}else delete obj.meiHoras;}
   else{delete obj.meiTipo;delete obj.meiHoras;}
+  var encM={};for(var ei=0,ek=["inss","fgts"];ei<2;ei++){var nv=numVal("e"+ek[ei]);if(isNaN(nv)){alert("Valor invalido em "+ek[ei].toUpperCase()+".");return;}encM[ek[ei]]=nv;}
   BENEF.forEach(function(b){if(bv[b.k]===null)delete obj[b.k];else obj[b.k]=+bv[b.k].toFixed(2);});
   delete obj.assid;
+  ["inss","fgts"].forEach(function(k){if(encM[k]===null)delete obj[k+"Man"];else obj[k+"Man"]=+encM[k].toFixed(2);});
+  ["inss","fgts"].forEach(function(k){if(encManual(obj,k)&&Math.abs(obj[k+"Man"]-encAuto(obj,k))<0.005)delete obj[k+"Man"];});
   obj.custo=calcCusto(obj);
   if(ativo){obj.dem="";delete obj.motdem;delete obj.obsdem;delete obj.inat;}
   else if(!obj.dem&&!obj.inat){obj.inat=hoje();}
@@ -2813,6 +2885,7 @@ function edtEmp(id){
   var sl=document.getElementById("esal");if(sl)sl.value=(e.sal!==undefined&&e.sal!==null)?e.sal:"";
   var ep=document.getElementById("eempresa");if(ep)ep.value=e.empresa||"";
   var hr=document.getElementById("ehorario");if(hr)hr.value=e.horario||"";
+  ["inss","fgts"].forEach(function(k){var el=document.getElementById("e"+k);if(el)el.value=encManual(e,k)?e[k+"Man"]:"";});
   BENEF.forEach(function(b){var el=document.getElementById("e"+b.k);if(el)el.value=(typeof e[b.k]==="number")?e[b.k]:"";});
   updSalCalc();
   document.getElementById("eftt").textContent="Editar colaborador";
@@ -2826,7 +2899,7 @@ function edtEmp(id){
   openMd("md-emp");
 }
 function canEmp(){
-  ["eid","enome","efunc","eadm","eaniv","esal","eempresa","ehorario","eadic","ecesta","eassid","epmetas","ebonus","erefeit","emeihoras"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  ["eid","enome","efunc","eadm","eaniv","esal","eempresa","ehorario","eadic","ecesta","eassid","epmetas","ebonus","erefeit","emeihoras","einss","efgts"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   updSalCalc();
   var cc=document.getElementById("ecc");if(cc)cc.value="";
   var t=document.getElementById("eftt");if(t)t.textContent="Novo colaborador";
@@ -3688,6 +3761,88 @@ function savPr(eid){
   DB.pr=DB.pr.filter(function(p){return p.eid!==eid;});DB.pr.push({eid:eid,val:v});dbSave();rPrem();
 }
 
+// ENCARGOS INSS / FGTS - base de calculo
+function encLerForm(){
+  var c=encCfg();
+  ["inss","rat","terc","fgts"].forEach(function(k){var el=document.getElementById("enc-"+k);if(el){var v=parseFloat((el.value||"0").replace(",","."));c[k]=isNaN(v)||v<0?0:v;}});
+  ["bAdic","bMetas","bProv","mei"].forEach(function(k){var el=document.getElementById("enc-"+k);if(el)c[k]=el.checked;});
+  return c;
+}
+function rEnc(){
+  var c=encCfg(),salvo=(DB.idx||[]).find(function(x){return x.id==="cfg_enc";});
+  function pctIn(k,lb,sub){return "<div class='enc-row'><div class='enc-l'>"+lb+"<small>"+sub+"</small></div><div class='enc-pct'><input type='number' id='enc-"+k+"' min='0' step='0.01' value='"+c[k]+"' oninput='rEncPrev()'/><b>%</b></div></div>";}
+  function chk(k,lb,sub,dis){return "<label class='enc-chk'><input type='checkbox' id='enc-"+k+"'"+(c[k]||dis?" checked":"")+(dis?" disabled":"")+" onchange='rEncPrev()'/><div><b>"+lb+"</b><span>"+sub+"</span></div></label>";}
+  document.getElementById("p-encargos").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Encargos INSS / FGTS</h1>"
+    +"<div class='sub'>Aliquotas e base de calculo usadas no calculo automatico do Cadastro de Colaborador"
+    +(salvo&&salvo.em?" &middot; ultima alteracao em "+new Date(salvo.em).toLocaleString("pt-BR"):" &middot; usando o padrao (INSS 20% / FGTS 8%)")+"</div></div>"
+    +"<div style='display:flex;gap:8px'><button class='btng btn-ic' onclick='restEnc()'><i class='ti ti-arrow-back-up'></i>Restaurar padrao</button>"
+    +"<button class='btnp btn-ic' onclick='savEnc()'><i class='ti ti-device-floppy'></i>Salvar</button></div></div>"
+    +"<div class='enc-grid'>"
+    +"<div class='card'><div style='font-weight:800;font-size:15px;color:"+B+";margin-bottom:.4rem'><i class='ti ti-percentage'></i> Aliquotas</div>"
+    +pctIn("inss","INSS patronal","Cota da empresa (padrao 20%). Simples Nacional normalmente 0%")
+    +pctIn("rat","RAT / SAT ajustado (RAT x FAP)","Risco de acidente de trabalho, normalmente de 0,5% a 6%")
+    +pctIn("terc","Outras entidades (terceiros)","Salario-educacao, SESI/SENAI, SEBRAE, INCRA... normalmente 5,8%")
+    +"<div class='enc-tot'><span>Total INSS</span><span id='enc-tinss'></span></div>"
+    +pctIn("fgts","FGTS","Deposito mensal (padrao 8%; jovem aprendiz 2%)")
+    +"</div>"
+    +"<div class='card'><div style='font-weight:800;font-size:15px;color:"+B+";margin-bottom:.4rem'><i class='ti ti-stack-2'></i> Base de calculo</div>"
+    +chk("_sal","Salario","Sempre incluido. MEI por hora = valor da hora x horas no mes",true)
+    +chk("bAdic","Adicional de salario","Soma o adicional de salario na base")
+    +chk("bMetas","Premio metas","Soma o premio metas na base")
+    +chk("bProv","Provisao de 1/3 ferias e 13o","Soma 1/12 do 1/3 de ferias e do 13o (somente CLT)")
+    +chk("mei","Aplicar tambem a MEI","Desmarcado: MEI fica sem INSS/FGTS automatico")
+    +"</div>"
+    +"<div class='card'><div style='font-weight:800;font-size:15px;color:"+B+";margin-bottom:.4rem'><i class='ti ti-calculator'></i> Simulacao</div>"
+    +"<div class='fr2'><div class='fr'><label class='lbl'>Salario exemplo</label><input type='number' id='enc-xsal' value='3000' step='0.01' oninput='rEncPrev()'/></div>"
+    +"<div class='fr'><label class='lbl'>Adicional exemplo</label><input type='number' id='enc-xadic' value='0' step='0.01' oninput='rEncPrev()'/></div></div>"
+    +"<div id='enc-sim'></div></div>"
+    +"</div>"
+    +"<div class='card' style='margin-top:1rem'><div style='font-weight:800;font-size:15px;color:"+B+";margin-bottom:.6rem'><i class='ti ti-users'></i> Impacto nos colaboradores ativos</div><div id='enc-imp'></div></div>";
+  rEncPrev();
+}
+function rEncPrev(){
+  var c=encLerForm();
+  var ti=document.getElementById("enc-tinss");if(ti)ti.textContent=pct2(encPct("inss",c));
+  var xs=parseFloat(gv("enc-xsal"))||0,xa=parseFloat(gv("enc-xadic"))||0,ex={sal:xs,adic:xa};
+  var b=encBase(ex,c),ii=encAuto(ex,"inss",c),ff=encAuto(ex,"fgts",c);
+  var sim=document.getElementById("enc-sim");
+  if(sim)sim.innerHTML="<div class='enc-row'><div class='enc-l'>Base de calculo</div><b>"+fmtBRL(b)+"</b></div>"
+    +"<div class='enc-row'><div class='enc-l'>INSS ("+pct2(encPct("inss",c))+")</div><b style='color:"+RED+"'>"+fmtBRL(ii)+"</b></div>"
+    +"<div class='enc-row'><div class='enc-l'>FGTS ("+pct2(encPct("fgts",c))+")</div><b style='color:"+RED+"'>"+fmtBRL(ff)+"</b></div>"
+    +"<div class='enc-tot'><span>Total de encargos</span><span>"+fmtBRL(ii+ff)+"</span></div>";
+  var at=DB.emp.filter(isAtivo),tI0=0,tF0=0,tI=0,tF=0,nMan=0,nBase=0;
+  at.forEach(function(e){
+    tI0+=encVal(e,"inss");tF0+=encVal(e,"fgts");
+    tI+=encManual(e,"inss")?e.inssMan:encAuto(e,"inss",c);
+    tF+=encManual(e,"fgts")?e.fgtsMan:encAuto(e,"fgts",c);
+    if(encManual(e,"inss")||encManual(e,"fgts"))nMan++;
+    if(encBase(e,c)>0)nBase++;
+  });
+  var dif=(tI+tF)-(tI0+tF0);
+  var imp=document.getElementById("enc-imp");
+  if(imp)imp.innerHTML="<div class='ga'>"
+    +sCard("INSS mensal",fmtBRL(tI),RED,"ti-receipt-tax","com esta configuracao")
+    +sCard("FGTS mensal",fmtBRL(tF),GLD,"ti-building-bank","com esta configuracao")
+    +sCard("Total de encargos",fmtBRL(tI+tF),B,"ti-sum",nBase+" colaborador"+(nBase!==1?"es":"")+" com base")
+    +sCard("Diferenca x salvo",(dif>=0?"+":"")+fmtBRL(dif),dif>0.004?RED:dif<-0.004?GRN:"#6b7580","ti-arrows-diff","antes: "+fmtBRL(tI0+tF0))
+    +sCard("Valores manuais",nMan,PUR,"ti-pencil","nao mudam com esta tela")
+    +"</div>"
+    +(nMan?"<div class='hint' style='margin-top:.6rem'>Colaboradores com INSS ou FGTS digitado manualmente mantem o valor manual. Para voltar ao automatico, apague o valor no Cadastro de Colaborador.</div>":"");
+}
+function savEnc(){
+  var c=encLerForm();
+  if(encPct("inss",c)>100||encPct("fgts",c)>100){alert("Aliquota acima de 100%. Confira os valores.");return;}
+  var rec={id:"cfg_enc",tipo:"cfg_enc",cfg:{inss:c.inss,rat:c.rat,terc:c.terc,fgts:c.fgts,bAdic:c.bAdic,bMetas:c.bMetas,bProv:c.bProv,mei:c.mei},em:new Date().toISOString()};
+  DB.idx=(DB.idx||[]).filter(function(x){return x.id!=="cfg_enc";});DB.idx.push(rec);
+  dbSave();rEnc();
+}
+function restEnc(){
+  if(!confirm("Restaurar o padrao (INSS 20%, FGTS 8%, base = salario + adicional)?"))return;
+  DB.idx=(DB.idx||[]).filter(function(x){return x.id!=="cfg_enc";});
+  dbSave();rEnc();
+}
+
 // INDICES
 var idxT="falta";
 function rIdx(){
@@ -3795,7 +3950,7 @@ function rMon(){
   function fimMes(m){var p=m.split("-");var d=new Date(+p[0],+p[1],0);return p[0]+"-"+p[1]+"-"+String(d.getDate()).padStart(2,"0");}
   function prevMes(m){var p=m.split("-").map(Number);var d=new Date(p[0],p[1]-2,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
   var EMPV=DB.emp.filter(vis),ocV=ocVisF();
-  function quadro(m){var f=fimMes(m);return EMPV.filter(function(e){return (!e.adm||e.adm<=f)&&(!e.dem||e.dem>f);}).length;}
+  function quadro(m,fn){var f=fimMes(m);return EMPV.filter(function(e){return (!e.adm||e.adm<=f)&&(!e.dem||e.dem>f)&&(!fn||fn(e));}).length;}
   function contr(m){return EMPV.filter(function(e){return e.adm&&e.adm.slice(0,7)===m;});}
   function demit(m){return EMPV.filter(function(e){return e.dem&&e.dem.slice(0,7)===m;});}
 
@@ -3803,7 +3958,12 @@ function rMon(){
   if(selAno>anoAtual)ultimo=12;
   var meses=[];for(var i=1;i<=ultimo;i++)meses.push(selAno+"-"+String(i).padStart(2,"0"));
   var lbl=meses.map(function(m){return MOS[parseInt(m.split("-")[1],10)-1];});
-  var aQuadro=meses.map(quadro),aContr=meses.map(function(m){return contr(m).length;}),aDem=meses.map(function(m){return demit(m).length;});
+  var GPALQ=["#00348F","#1E5BC6","#16a085","#e6a817","#7b3fa0","#a868d0","#d35400","#5d6d7e","#c0392b","#1a7a4a"];
+  var gsQ=gruposOrd(),idsQ={};gsQ.forEach(function(g){idsQ[g.id]=1;});
+  var aQuadroG=gsQ.map(function(g,i){return{id:g.id,lb:g.nome,cor:GPALQ[i%GPALQ.length],data:meses.map(function(m){return quadro(m,function(e){return e.grupo===g.id;});})};});
+  var semGQ=meses.map(function(m){return quadro(m,function(e){return !(e.grupo&&idsQ[e.grupo]);});});
+  if(semGQ.some(function(v){return v>0;}))aQuadroG.push({id:"_sem",lb:"Sem grupo",cor:"#b0b8c1",data:semGQ});
+  var aQuadro=meses.map(function(m){return quadro(m);}),aContr=meses.map(function(m){return contr(m).length;}),aDem=meses.map(function(m){return demit(m).length;});
 
   var ativos=EMPV.filter(isAtivo).length,inativos=EMPV.length-ativos;
   var qMes=quadro(selMes),qIni=quadro(prevMes(selMes));
@@ -3915,8 +4075,14 @@ function rMon(){
     +sCard("Absenteismo do ano",pctF(absAno),"#a04000","ti-calendar-stats",absAnoF+" falta"+(absAnoF!==1?"s":"")+" · "+duAno+" dias uteis · "+selAno)
     +"</div>"
 
+    +"<div class='card' style='padding:.9rem;margin-bottom:1rem'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.55rem'>"
+    +"<div style='font-weight:700;font-size:13px;color:"+B+"'><i class='ti ti-users' style='margin-right:4px'></i>Total de colaboradores por mes e por grupo - "+selAno+"</div>"
+    +"<button class='btng btn-ic' style='padding:.3rem .65rem;font-size:12px' onclick='abrirMonGrupos(event)'><i class='ti ti-eye-cog'></i>Grupos do grafico</button></div>"
+    +"<div id='mq-boxes' class='mq-boxes'></div>"
+    +"<div style='height:300px;position:relative'><canvas id='ch-mquadro'></canvas></div>"
+    +"<div class='hint' style='margin-top:4px'>Clique numa caixa ou numa barra para ver os colaboradores alocados no grupo. O grupo considerado e o atual de cada colaborador.</div></div>"
     +"<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem;margin-bottom:1rem'>"
-    +chartCard("Total de colaboradores por mes - "+selAno,B,"ti-users","<canvas id='ch-mquadro'></canvas>",230)
     +chartCard("Contratados x Demitidos por mes - "+selAno,GRN,"ti-arrows-exchange","<canvas id='ch-mmov'></canvas>",230)
     +"</div>"
     +"<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem;margin-bottom:1rem'>"
@@ -3949,11 +4115,17 @@ function rMon(){
     +chartCard("Movimentacoes - "+mlb,B,"ti-list-details","<div style='max-height:250px;overflow-y:auto'>"+movHTML+"</div>")
     +"</div>";
 
-  window._monStats={selAno:selAno,selMes:selMes,mlb:mlb,meses:meses,lbl:lbl,ativos:ativos,inativos:inativos,qMes:qMes,
+  window._monStats={aQuadroG:aQuadroG,selAno:selAno,selMes:selMes,mlb:mlb,meses:meses,lbl:lbl,ativos:ativos,inativos:inativos,qMes:qMes,
     cMes:cMes.length,dMes:dMes.length,cAno:cAno.length,dAno:dAno.length,turn:turn,absMes:absMes,absAno:absAno,absAnoF:absAnoF,duAno:duAno,
     aQuadro:aQuadro,aContr:aContr,aDem:aDem,aAbs:aAbs,aAbsAcc:aAbsAcc,ccAbs:ccAbs,rankAbs:rankAbs,bdMes:bdMes,bdAno:bdAno,movs:movs};
   var M=window._monStats;
+  rMonBoxes();
   CH.mquadro=new Chart(document.getElementById("ch-mquadro"),monCfgQuadro(M,1));
+  (function(ch){var cv=ch.canvas;
+    cv.addEventListener("click",function(ev){var els=ch.getElementsAtEventForMode(ev,"nearest",{intersect:true},true);if(!els.length)return;
+      var ds=ch.data.datasets[els[0].datasetIndex];if(!ds||!ds.gid)return;abrirMonGrupo(ds.gid,M.meses[els[0].index]);});
+    cv.addEventListener("mousemove",function(ev){var els=ch.getElementsAtEventForMode(ev,"nearest",{intersect:true},false);cv.style.cursor=els.length&&ch.data.datasets[els[0].datasetIndex].gid?"pointer":"default";});
+  })(CH.mquadro);
   CH.mmov=new Chart(document.getElementById("ch-mmov"),monCfgMov(M,1));
   CH.mabs=new Chart(document.getElementById("ch-mabs"),monCfgAbs(M,1));
   var cvcc=document.getElementById("ch-mabscc");if(cvcc)CH.mabscc=new Chart(cvcc,monCfgAbsCC(M,1));
@@ -3969,11 +4141,100 @@ function monDL(s,fmt){return{display:function(c){return c.dataset.data[c.dataInd
   color:function(c){return c.dataset.dlc;},font:{size:12.5*s,weight:800},formatter:fmt};}
 function monBase(s){return{responsive:s===1,maintainAspectRatio:false,animation:s===1?{}:false};}
 function monX(s){return{ticks:{font:{size:12*s,weight:600},color:"#555"},grid:{display:false}};}
+// ---- Grupos no grafico do quadro (ocultar / caixas / lista de colaboradores) ----
+function monOcultos(){try{return JSON.parse(localStorage.getItem("timbo_mon_grp_ocultos")||"[]");}catch(e){return [];}}
+function setMonOcultos(a){try{localStorage.setItem("timbo_mon_grp_ocultos",JSON.stringify(a));}catch(e){}}
+function monGVis(M){var o=monOcultos();return (M.aQuadroG||[]).filter(function(g){return o.indexOf(g.id)<0;});}
+function togMonGrupo(id,ev){if(ev)ev.stopPropagation();var o=monOcultos(),i=o.indexOf(id);if(i>=0)o.splice(i,1);else o.push(id);setMonOcultos(o);rMon();}
+function rMonBoxes(){
+  var M=window._monStats,el=document.getElementById("mq-boxes");if(!M||!el)return;
+  var ix=M.meses.indexOf(M.selMes);if(ix<0)ix=M.meses.length-1;
+  var o=monOcultos(),vis=0;
+  var html=(M.aQuadroG||[]).map(function(g){
+    var off=o.indexOf(g.id)>=0,v=g.data[ix]||0,ant=ix>0?g.data[ix-1]||0:v,d=v-ant;if(!off)vis+=v;
+    return "<div class='mq-box"+(off?" off":"")+"' style='--c:"+g.cor+"' onclick=\"abrirMonGrupo('"+g.id+"','"+M.meses[ix]+"')\" title='Ver colaboradores de "+esc(g.lb)+"'>"
+      +"<div class='mq-nm'>"+esc(g.lb)+"</div>"
+      +"<div class='mq-v'>"+v+(d?"<span class='mq-d' style='color:"+(d>0?GRN:RED)+"'>"+(d>0?"+":"")+d+"</span>":"")+"</div>"
+      +"<button class='mq-eye' title='"+(off?"Mostrar":"Ocultar")+" no grafico' onclick=\"togMonGrupo('"+g.id+"',event)\"><i class='ti "+(off?"ti-eye-off":"ti-eye")+"'></i></button></div>";
+  }).join("");
+  el.innerHTML="<div class='mq-box tot' style='--c:"+B+"' onclick=\"abrirMonGrupo('_all','"+M.meses[ix]+"')\" title='Ver todos'><div class='mq-nm'>Total "+esc(fmtM(M.meses[ix]||M.selMes))+"</div><div class='mq-v'>"+vis+"</div></div>"+html;
+}
+function abrirMonGrupos(ev){
+  ev.stopPropagation();
+  var ja=document.getElementById("etab-menu");if(ja&&ja.dataset.k==="_mong"){fecharColMenu();return;}
+  fecharColMenu();
+  var M=window._monStats;if(!M)return;var o=monOcultos();
+  var m=document.createElement("div");m.id="etab-menu";m.className="etab-menu";m.dataset.k="_mong";
+  m.innerHTML="<div class='etab-mt'>Grupos exibidos no grafico</div><div class='etab-mvals' style='max-height:320px'>"
+    +(M.aQuadroG||[]).map(function(g){return "<label class='etab-mchk'><input type='checkbox' "+(o.indexOf(g.id)<0?"checked":"")+" data-id='"+g.id+"'/><span style='width:10px;height:10px;border-radius:3px;background:"+g.cor+";display:inline-block'></span>"+esc(g.lb)+"</label>";}).join("")
+    +"</div><div class='etab-mft'><button class='btng' onclick=\"document.querySelectorAll('#etab-menu .etab-mvals input').forEach(function(i){i.checked=true;})\">Todos</button><button class='btnp' onclick='aplicarMonGrupos()'>OK</button></div>";
+  document.body.appendChild(m);
+  var r=ev.currentTarget.getBoundingClientRect(),w=260;
+  m.style.left=Math.max(8,Math.min(r.right-w,window.innerWidth-w-8))+"px";m.style.top=(r.bottom+4)+"px";
+}
+function aplicarMonGrupos(){
+  var o=[];document.querySelectorAll("#etab-menu .etab-mvals input").forEach(function(i){if(!i.checked)o.push(i.dataset.id);});
+  setMonOcultos(o);fecharColMenu();rMon();
+}
+// Lista dos colaboradores alocados no grupo no fim do mes
+function abrirMonGrupo(gid,mes){
+  var M=window._monStats;if(!M)return;
+  var f=fimMesStr(mes),ids={};DB.grupos.forEach(function(g){ids[g.id]=1;});
+  var o=monOcultos();
+  var g=(M.aQuadroG||[]).find(function(x){return x.id===gid;});
+  var lista=DB.emp.filter(function(e){
+    if(!vis(e)||!((!e.adm||e.adm<=f)&&(!e.dem||e.dem>f)))return false;
+    if(gid==="_all"){var k=e.grupo&&ids[e.grupo]?e.grupo:"_sem";return o.indexOf(k)<0;}
+    if(gid==="_sem")return !(e.grupo&&ids[e.grupo]);
+    return e.grupo===gid;
+  }).sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||a.nome.localeCompare(b.nome);});
+  var oc={};DB.oc.forEach(function(x){if(gmk(x.data)!==mes)return;var r=oc[x.eid]||(oc[x.eid]={f:0,a:0,s:0});if(x.tipo==="falta")r.f++;else if(x.tipo==="atraso")r.a++;else if(x.tipo==="5s")r.s++;});
+  var cor=g?g.cor:B,tit=gid==="_all"?"Todos os grupos visiveis":g?g.lb:"Grupo";
+  var tc=0;
+  var rows=lista.map(function(e){
+    var r=oc[e.id]||{f:0,a:0,s:0},cu=empTemValores(e)?custoNoMes(e,mes):0;tc+=cu;
+    return "<tr><td class='nm'>"+esc(e.nome)+"</td><td>"+esc(e.empresa||"")+"</td><td class='c'>"+esc(e.func||"")+"</td>"
+      +(gid==="_all"?"<td class='c'>"+(esc(empTxt(e,"grupo"))||"<span style='color:#b0b8c1'>Sem grupo</span>")+"</td>":"")
+      +"<td class='c'>"+vincBdg(e)+"</td><td class='c'>"+(e.adm?fmtD(e.adm):"")+"</td>"
+      +"<td class='c' style='color:"+(r.f?RED:"#b0b8c1")+";font-weight:700'>"+r.f+"</td><td class='c' style='color:"+(r.a?"#b8820a":"#b0b8c1")+";font-weight:700'>"+r.a+"</td><td class='c' style='color:"+(r.s?PUR:"#b0b8c1")+";font-weight:700'>"+r.s+"</td>"
+      +"<td class='r' style='font-weight:700;color:"+B+"'>"+(cu?fmtBRL(cu):"—")+"</td>"
+      +(permTela("employees")==="editar"?"<td class='act'><button class='ibedt' title='Editar cadastro' onclick=\"fecharMonGrupo();go('employees');setTimeout(function(){edtEmp('"+e.id+"');},40)\"><i class='ti ti-edit'></i></button></td>":"")+"</tr>";
+  }).join("");
+  fecharMonGrupo();
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-mong";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:1000px'>"
+    +"<div class='mdl-hd'><div><div class='mdl-tt' style='color:"+cor+"'><span style='width:12px;height:12px;border-radius:3px;background:"+cor+";display:inline-block'></span>"+esc(tit)+"</div>"
+    +"<div class='sub' style='font-size:12px'>"+fmtM(mes)+" &middot; "+lista.length+" colaborador"+(lista.length!==1?"es":"")+" &middot; custo mensal "+fmtBRL(tc)+"</div></div>"
+    +"<button class='mdl-x' onclick='fecharMonGrupo()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd' style='padding-top:.6rem'>"
+    +(lista.length?"<div class='etab-wrap' style='max-height:62vh'><table class='etab'><thead><tr>"
+      +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>EMPRESA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+      +(gid==="_all"?"<th class='c' style='cursor:default'>GRUPO</th>":"")
+      +"<th class='c' style='cursor:default'>VÍNCULO</th><th class='c' style='cursor:default'>ADMISSÃO</th><th class='c' style='cursor:default'>FALTAS</th><th class='c' style='cursor:default'>ATRASOS</th><th class='c' style='cursor:default'>5S</th><th class='c' style='cursor:default'>CUSTO MENSAL</th>"
+      +(permTela("employees")==="editar"?"<th class='c' style='cursor:default'></th>":"")+"</tr></thead><tbody>"+rows+"</tbody></table></div>"
+      :"<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador neste grupo em "+fmtM(mes)+".</div>")
+    +(permTela("direcionar")==="editar"?"<div class='mdl-ft'><button class='btng btn-ic' onclick=\"fecharMonGrupo();go('direcionar')\"><i class='ti ti-arrows-split-2'></i>Direcionar colaboradores para grupos</button></div>":"")
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharMonGrupo();});
+}
+function fecharMonGrupo(){var m=document.getElementById("md-mong");if(m)m.remove();}
 function monCfgQuadro(M,s){
+  var G=monGVis(M);
+  var tot=M.meses.map(function(m,i){return G.reduce(function(a,g){return a+(g.data[i]||0);},0);});
+  var mxT=Math.max.apply(null,tot.concat([1]));
+  var ds=G.map(function(g){return{label:g.lb,gid:g.id,data:g.data,order:1,backgroundColor:vGrad(g.cor),hoverBackgroundColor:g.cor,
+    borderRadius:3*s,borderSkipped:false,maxBarThickness:18*s,categoryPercentage:.86,barPercentage:.92,
+    datalabels:{display:function(c){return c.dataset.data[c.dataIndex]>0;},anchor:"end",align:"top",offset:1,color:g.cor,font:{size:9.5*s,weight:800}}};});
+  ds.unshift({type:"line",label:"Total",data:tot,yAxisID:"y1",order:0,borderColor:B,backgroundColor:B,borderWidth:2*s,borderDash:[5*s,4*s],
+    pointRadius:3*s,pointBackgroundColor:"#fff",pointBorderColor:B,pointBorderWidth:2*s,tension:.3,datalabels:relPill(B,s,function(v){return v;})});
   return{type:"bar",plugins:relDL(),
-    data:{labels:M.lbl,datasets:[{label:"Colaboradores",data:M.aQuadro,backgroundColor:vGrad(BL),hoverBackgroundColor:BL,dlc:B,borderRadius:6*s,borderSkipped:false,maxBarThickness:60*s}]},
-    options:Object.assign(monBase(s),{plugins:{legend:{display:false},datalabels:monDL(s)},
-      scales:{y:{beginAtZero:true,grace:"15%",ticks:{precision:0,font:{size:11*s},color:"#7a838c"},grid:{color:"#f1f4f8"},border:{display:false}},x:monX(s)}})};
+    data:{labels:M.lbl,datasets:ds},
+    options:Object.assign(monBase(s),{plugins:{legend:Object.assign(relLegend(s),{onClick:function(){}}),
+        tooltip:{filter:function(i){return i.raw>0;}}},
+      scales:{y:{beginAtZero:true,grace:"70%",ticks:{precision:0,font:{size:11*s},color:"#7a838c"},grid:{color:"#f1f4f8"},border:{display:false}},
+              y1:{display:false,min:-mxT*1.25,max:mxT*1.3},
+              x:monX(s)}})};
 }
 function monCfgMov(M,s){
   return{type:"bar",plugins:relDL(),
@@ -4163,8 +4424,8 @@ function gerarEmpPDF(){
   var grpLb={cc:"centro de custo",empresa:"empresa",func:"função",nenhum:""}[grp];
   var K=mkPdfKit("Cadastro de Colaboradores",sitLb+(grpLb?"  |  Agrupado por "+grpLb:"")+"  |  "+lista.length+" colaborador"+(lista.length!==1?"es":""),"landscape",papel),doc=K.doc,C=K.C,cw=K.cw;
   // larguras proporcionais ao conteudo de cada coluna
-  var PESO={adic:1.15,pgto:.9,empresa:1.05,nome:2.3,func:1.3,cc:1.45,vinc:.55,sit:.88,adm:.98,tempo:.85,aniv:.98,horario:1.08,sal:1.15,terco:1.12,dec13:1.15,cesta:1.05,assid:1.05,pmetas:1.05,bonus:1.05,refeit:1.05,custo:1.25};
-  var PL={adic:"ADICIONAL SALÁRIO",pgto:"TIPO PAGTO",empresa:"EMPRESA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
+  var PESO={inss:1.05,fgts:1.05,adic:1.15,pgto:.9,empresa:1.05,nome:2.3,func:1.3,cc:1.45,vinc:.55,sit:.88,adm:.98,tempo:.85,aniv:.98,horario:1.08,sal:1.15,terco:1.12,dec13:1.15,cesta:1.05,assid:1.05,pmetas:1.05,bonus:1.05,refeit:1.05,custo:1.25};
+  var PL={inss:"INSS",fgts:"FGTS",adic:"ADICIONAL SALÁRIO",pgto:"TIPO PAGTO",empresa:"EMPRESA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
     sal:"SALÁRIO",terco:"1/3 FÉRIAS",dec13:"13º SALÁRIO",cesta:"CESTA BÁSICA",assid:"ASSIDUID.",pmetas:"PRÊMIO METAS",bonus:"BÔNUS ANUAL",refeit:"REFEITÓRIO",custo:"CUSTO MENSAL"};
   var pesos=cols0.map(function(c){return PESO[c.k]||1;}),somaP=pesos.reduce(function(a,b){return a+b;},0)+0.35;
   var unit=cw/somaP;
@@ -4271,7 +4532,7 @@ function gerarMonitorPDF(){
   ks.forEach(function(k,i){K.kpi(mg+i*(kw+gap),y,kw,kh,k[0],k[1],k[2],k[3]);});
   y+=kh+4;
   var hw=(cw-gap)/2,ph=(K.H-12-y-gap)/2;
-  K.chartPanel(monCfgQuadro(M,1.5),mg,y,hw,ph,"Total de colaboradores por mês - "+M.selAno,C.b);
+  K.chartPanel(monCfgQuadro(M,1.5),mg,y,hw,ph,"Total de colaboradores por mês e por grupo - "+M.selAno,C.b);
   K.chartPanel(monCfgMov(M,1.5),mg+hw+gap,y,hw,ph,"Contratados x Demitidos por mês - "+M.selAno,C.grn);
   y+=ph+gap;
   K.chartPanel(monCfgAbs(M,1.5),mg,y,hw,ph,"Absenteísmo por mês e acumulado do ano - "+M.selAno,C.org);
