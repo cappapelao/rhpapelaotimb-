@@ -451,6 +451,34 @@ input:focus-visible,select:focus-visible{outline:none}
 #lgw::after{background:linear-gradient(90deg,var(--deep),var(--blue))}
 .h1,.mdl-tt{color:var(--ink)}
 .nb.on{background:rgba(30,91,198,.16)}
+
+/* Folha: rolagem horizontal visivel */
+.fl-wrap{max-height:none!important}
+.fl-wrap::-webkit-scrollbar,.fl-scroll-top::-webkit-scrollbar{height:14px;width:12px}
+.fl-wrap::-webkit-scrollbar-track,.fl-scroll-top::-webkit-scrollbar-track{background:#e9eef5;border-radius:7px}
+.fl-wrap::-webkit-scrollbar-thumb,.fl-scroll-top::-webkit-scrollbar-thumb{background:#7d95bd;border-radius:7px;border:3px solid #e9eef5}
+.fl-wrap::-webkit-scrollbar-thumb:hover,.fl-scroll-top::-webkit-scrollbar-thumb:hover{background:#1E5BC6}
+.fl-wrap,.fl-scroll-top{scrollbar-width:auto;scrollbar-color:#7d95bd #e9eef5}
+.fl-scroll-top{overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:6px}
+.fl-scroll-top>div{height:1px}
+/* Monitoramento compacto */
+#p-monitor .pg-hd{margin-bottom:.8rem}
+#p-monitor .h1{font-size:19px}
+#p-monitor .card{padding:.7rem .85rem!important;border-radius:10px;box-shadow:0 1px 4px rgba(10,31,74,.07)}
+.mon-kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(10,31,74,.07);margin-bottom:.8rem;overflow:hidden}
+.mon-kpi{padding:.55rem .8rem;border-right:1px solid #eef1f6;position:relative;min-width:0}
+.mon-kpi:last-child{border-right:none}
+.mon-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+.mon-kpi .k-l{font-size:10px;font-weight:700;color:#8a94a0;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-kpi .k-v{font-size:19px;font-weight:800;color:var(--c);line-height:1.2}
+.mon-kpi .k-s{font-size:10.5px;color:#9aa3ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;margin-bottom:.8rem}
+.mon-tt{font-weight:700;font-size:12px;margin-bottom:.4rem;display:flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:.3px}
+#p-monitor .mq-boxes{gap:5px;margin-bottom:.4rem}
+#p-monitor .mq-box{min-width:84px;padding:.2rem 1.5rem .2rem .5rem}
+#p-monitor .mq-v{font-size:14px}
+@media (max-width:1200px){.mon-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.mon-g3{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.mon-kpis{grid-template-columns:1fr 1fr}.mon-g3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -498,7 +526,8 @@ input:focus-visible,select:focus-visible{outline:none}
       <button onclick="toggleSB()" class="sb-tog" aria-label="Recolher menu"><i class="ti ti-chevron-left" id="sbic"></i></button>
     </div>
     <nav style="flex:1;padding:.5rem 0">
-      <button class="nb on" id="nb-dashboard" onclick="go('dashboard')"><i class="ti ti-layout-dashboard" style="font-size:18px;flex-shrink:0"></i><span class="nl">Dashboard</span></button>
+      <button class="nb on" id="nb-monitor" onclick="go('monitor')"><i class="ti ti-chart-dots-3" style="font-size:18px;flex-shrink:0"></i><span class="nl">Monitoramento</span></button>
+      <button class="nb" id="nb-dashboard" onclick="go('dashboard')"><i class="ti ti-layout-dashboard" style="font-size:18px;flex-shrink:0"></i><span class="nl">Dashboard</span></button>
       <button class="nb" id="nb-centros" onclick="go('centros')"><i class="ti ti-building" style="font-size:18px;flex-shrink:0"></i><span class="nl">Centros de Custo</span></button>
       <button class="nb" id="nb-employees" onclick="go('employees')"><i class="ti ti-users" style="font-size:18px;flex-shrink:0"></i><span class="nl">Cadastro de Colaborador</span></button>
       <button class="nb" id="nb-reajustes" onclick="go('reajustes')"><i class="ti ti-trending-up" style="font-size:18px;flex-shrink:0"></i><span class="nl">Reajuste Salarial</span></button>
@@ -506,7 +535,6 @@ input:focus-visible,select:focus-visible{outline:none}
       <button class="nb" id="nb-direcionar" onclick="go('direcionar')"><i class="ti ti-arrows-split-2" style="font-size:18px;flex-shrink:0"></i><span class="nl">Direcionar p/ Grupos</span></button>
       <button class="nb" id="nb-resumo" onclick="go('resumo')"><i class="ti ti-report-money" style="font-size:18px;flex-shrink:0"></i><span class="nl">Resumo dos Custos</span></button>
       <button class="nb" id="nb-folha" onclick="go('folha')"><i class="ti ti-table" style="font-size:18px;flex-shrink:0"></i><span class="nl">Custo Total da Folha</span></button>
-      <button class="nb" id="nb-monitor" onclick="go('monitor')"><i class="ti ti-chart-dots-3" style="font-size:18px;flex-shrink:0"></i><span class="nl">Monitoramento</span></button>
       <button class="nb" id="nb-5s" onclick="go('5s')"><i class="ti ti-clipboard-check" style="font-size:18px;flex-shrink:0"></i><span class="nl">Infracao 5S</span></button>
       <button class="nb" id="nb-lancamento" onclick="go('lancamento')"><i class="ti ti-clipboard-list" style="font-size:18px;flex-shrink:0"></i><span class="nl">Lancamentos</span></button>
       <button class="nb" id="nb-premios" onclick="go('premios')"><i class="ti ti-gift" style="font-size:18px;flex-shrink:0"></i><span class="nl">Premios</span></button>
@@ -526,7 +554,7 @@ input:focus-visible,select:focus-visible{outline:none}
     </div>
   </div>
   <div id="main">
-    <div id="p-dashboard" class="page active"></div>
+    <div id="p-dashboard" class="page"></div>
     <div id="p-centros" class="page"></div>
     <div id="p-employees" class="page"></div>
     <div id="p-reajustes" class="page"></div>
@@ -534,7 +562,7 @@ input:focus-visible,select:focus-visible{outline:none}
     <div id="p-direcionar" class="page"></div>
     <div id="p-resumo" class="page"></div>
     <div id="p-folha" class="page"></div>
-    <div id="p-monitor" class="page"></div>
+    <div id="p-monitor" class="page active"></div>
     <div id="p-5s" class="page"></div>
     <div id="p-lancamento" class="page"></div>
     <div id="p-premios" class="page"></div>
@@ -1056,7 +1084,7 @@ function segGrad(colors){
 }
 
 // NAV
-var sbOpen=true,pg="dashboard",CH={};
+var sbOpen=true,pg="monitor",CH={};
 function killCH(){Object.values(CH).forEach(function(c){try{c.destroy();}catch(e){}});CH={};}
 function go(p){
   if(ACESSO&&permTela(p)==="nenhum"){showSync("Voce nao tem acesso a esta tela.",false,true);return;}
@@ -1898,7 +1926,7 @@ function rEmpList(){
     if(ro&&(c.k==="cc"||c.t==="dt"))return "<td class='c'>"+esc(empTxt(e,c.k))+"</td>";
     if(c.t==="enc"){var ev=empCampoVal(e,c.k),man=encManual(e,c.k);
       if(ro)return "<td class='r'>"+(ev===null?"":fmtBRL(ev))+"</td>";
-      return "<td class='in'><input type='number' min='0' step='0.01' class='etab-sal' id='et"+c.k+"-"+e.id+"' value='"+(ev===null?"":ev)+"' placeholder='auto' data-col='"+c.k+"'"
+      return "<td class='in'><input type='text' inputmode='decimal' class='etab-sal' id='et"+c.k+"-"+e.id+"' value='"+(ev===null?"":fmtBRL(ev))+"' placeholder='auto' data-col='"+c.k+"' onfocus='brlFocus(this)' onblur='brlBlur(this)'"
         +" title='"+(man?"Valor manual. Apague para voltar ao automatico ("+fmtBRL(encAuto(e,c.k))+")":(isMEI(e)&&!encCfg().mei?"MEI: sem encargo automatico":"Automatico: "+pct2(encPct(c.k))+" da base de calculo ("+fmtBRL(encBase(e))+")"))+"'"
         +(man?" style='color:#1E5BC6;font-weight:800'":"")+" onchange=\"setEncInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
     if(ro&&c.t==="in"){var vr=empCampoVal(e,c.k);return "<td class='r'>"+(vr===null?"":fmtBRL(vr))+"</td>";}
@@ -1911,7 +1939,7 @@ function rEmpList(){
       return "<td class='c'><span class='bdg "+cl+"'"+(s==="AFASTADO"?" style='background:#fdecd2;color:#8a5a00'":"")+">"+s+"</span></td>";}
     if(c.t==="dt")return "<td class='in'><input type='date' class='etab-sal etab-dt' value='"+(e[c.k]||"")+"' data-col='"+c.k+"' onchange=\"setDataInline('"+e.id+"','"+c.k+"',this)\" onkeydown='salKey(event,this)'/></td>";
     if(c.t==="in"){var v=typeof e[c.k]==="number"?e[c.k]:"";
-      return "<td class='in'><input type='number' min='0' step='0.01' class='etab-sal' value='"+v+"' placeholder='0,00'"+(c.k==="sal"&&isMEI(e)&&e.meiTipo==="hora"?" title='Valor por hora x "+(+e.meiHoras||220)+"h no mes = "+fmtBRL(salMensal(e))+"'":"")+" data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
+      return "<td class='in'><input type='text' inputmode='decimal' class='etab-sal' value='"+(v===""?"":fmtBRL(v))+"' placeholder='R$ 0,00' onfocus='brlFocus(this)' onblur='brlBlur(this)'"+(c.k==="sal"&&isMEI(e)&&e.meiTipo==="hora"?" title='Valor por hora x "+(+e.meiHoras||220)+"h no mes = "+fmtBRL(salMensal(e))+"'":"")+" data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
     if(c.k==="assid"){var ai=assidInfo(e);
       if(!ai)return "<td class='r' style='color:#b0b8c1' title='Sem premio cadastrado na tela Premios'>—</td>";
       return "<td class='r' title='Premio "+fmtBRL(ai.bruto)+(ai.pct>0?" - desconto "+pct1(ai.pct)+" ("+fmtBRL(ai.desc)+")":" - sem descontos")+" em "+fmtM(ai.mes)+"'>"
@@ -2029,8 +2057,13 @@ function setDataInline(id,k,el){
     if(td&&ix>=0&&td.children[ix])td.children[ix].textContent=v?tEmp(v,e.dem):"";}
 }
 // Valor digitado direto na tabela: salva e recalcula 1/3 ferias, 13o e custo mensal
+// Formato contabil R$ nos campos editaveis da tabela de colaboradores
+function parseBRL(t){t=String(t==null?"":t).replace(/R\$|\s/g,"");if(t==="")return NaN;if(t.indexOf(",")>=0)t=t.replace(/\./g,"").replace(",",".");return parseFloat(t);}
+function fmtNum(v){return (+v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function brlFocus(el){var n=parseBRL(el.value);el.value=isNaN(n)?"":fmtNum(n);setTimeout(function(){try{el.select();}catch(e){}},0);}
+function brlBlur(el){var n=parseBRL(el.value);el.value=isNaN(n)?"":fmtBRL(n);}
 function setValInline(id,key,v){
-  var t=(v||"").toString().trim(),s=t===""?null:parseFloat(t.replace(",","."));
+  var t=(v||"").toString().trim(),s=t===""?null:parseBRL(t);
   if(s!==null&&(isNaN(s)||s<0)){alert("Informe um valor valido.");return;}
   var emp=null;
   DB.emp=DB.emp.map(function(e){
@@ -2042,14 +2075,14 @@ function setValInline(id,key,v){
     emp=n;return n;
   });
   if(!emp)return;
-  ["terco","dec13","custo","inss","fgts"].forEach(function(x){var el=document.getElementById("et"+x+"-"+id),val=empCampoVal(emp,x);if(!el)return;if(el.tagName==="INPUT")el.value=val===null?"":val;else el.textContent=val===null?"":fmtBRL(val);});
+  ["terco","dec13","custo","inss","fgts"].forEach(function(x){var el=document.getElementById("et"+x+"-"+id),val=empCampoVal(emp,x);if(!el)return;if(el.tagName==="INPUT")el.value=val===null?"":(document.activeElement===el?fmtNum(val):fmtBRL(val));else el.textContent=val===null?"":fmtBRL(val);});
   var tot={};MONEY_K.forEach(function(x){tot[x]=0;});
   empListaVisivel().forEach(function(e){if(isAtivo(e))MONEY_K.forEach(function(x){tot[x]+=empCampoVal(e,x)||0;});});
   MONEY_K.forEach(function(x){var el=document.getElementById("ettot-"+x);if(el)el.textContent=fmtBRL(tot[x]);});
   dbSave();
 }
 function setEncInline(id,k,v){
-  var tx=(v||"").toString().trim(),s=tx===""?null:parseFloat(tx.replace(",","."));
+  var tx=(v||"").toString().trim(),s=tx===""?null:parseBRL(tx);
   if(s!==null&&(isNaN(s)||s<0)){alert("Informe um valor valido.");return;}
   var e=DB.emp.find(function(x){return x.id===id;});if(!e)return;
   // valor igual ao automatico = volta para automatico
@@ -2588,10 +2621,20 @@ function rFolha(){
     +sCard("% s/ receita",tRec?pct(soma(function(d){return d.rec?d.geral:0;}),tRec):"—",GLD,"ti-percentage","meses com receita")
     +sCard("Media mensal",v(mF===null?0:mF+mT),"#14213D","ti-calendar-stats","custo total / mes")
     +"</div>"
-    +"<div class='card'><div class='etab-wrap' style='max-height:none'><table class='etab ftab' style='min-width:"+(420+(gp.length+gt.length)*120+5*125)+"px'><thead>"+head+"</thead><tbody>"+body+"</tbody><tfoot>"+foot+"</tfoot></table></div>"
+    +"<div class='card'><div class='fl-scroll-top' id='fl-top'><div id='fl-top-in'></div></div><div class='etab-wrap fl-wrap' id='fl-wrap'><table class='etab ftab' style='min-width:"+(420+(gp.length+gt.length)*120+5*125)+"px'><thead>"+head+"</thead><tbody>"+body+"</tbody><tfoot>"+foot+"</tfoot></table></div>"
     +"<div class='hint' style='margin-top:.7rem'>Total da Folha = soma dos grupos de pessoal proprio &middot; Total Custo Terceiros = soma dos terceirizados &middot; Custo Total = Folha + Terceiros &middot; % s/ Receita = Custo Total &divide; Receita. "
     +"Meses abertos se atualizam sozinhos; use <b>Fechar</b> para congelar os valores de um mes encerrado.</div></div>";
+  setTimeout(flSyncScroll,0);
 }
+// Barra de rolagem superior sincronizada com a tabela da folha
+function flSyncScroll(){
+  var w=document.getElementById("fl-wrap"),t=document.getElementById("fl-top"),i=document.getElementById("fl-top-in");if(!w||!t||!i)return;
+  i.style.width=w.scrollWidth+"px";t.style.display=w.scrollWidth>w.clientWidth+1?"":"none";
+  var lock=false;
+  t.onscroll=function(){if(lock){lock=false;return;}lock=true;w.scrollLeft=t.scrollLeft;};
+  w.onscroll=function(){if(lock){lock=false;return;}lock=true;t.scrollLeft=w.scrollLeft;};
+}
+window.addEventListener("resize",function(){if(pg==="folha")flSyncScroll();});
 function pct2(x){return (x||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";}
 function setReceita(m,val){
   var t=(val||"").toString().trim(),v=t===""?null:parseFloat(t.replace(",","."));
@@ -2626,6 +2669,7 @@ function reabrirMes(m){
 // O Supabase (RLS) confere as mesmas permissoes ao gravar - nao depende so da tela.
 // ═══════════════════════════════════════
 var TELAS=[
+  {k:"monitor",lb:"Monitoramento",ic:"ti-chart-dots-3",soVer:true},
   {k:"dashboard",lb:"Dashboard",ic:"ti-layout-dashboard"},
   {k:"centros",lb:"Centros de Custo",ic:"ti-building"},
   {k:"employees",lb:"Cadastro de Colaborador",ic:"ti-users"},
@@ -2634,7 +2678,6 @@ var TELAS=[
   {k:"direcionar",lb:"Direcionar p/ Grupos",ic:"ti-arrows-split-2"},
   {k:"resumo",lb:"Resumo dos Custos",ic:"ti-report-money",soVer:true},
   {k:"folha",lb:"Custo Total da Folha",ic:"ti-table"},
-  {k:"monitor",lb:"Monitoramento",ic:"ti-chart-dots-3",soVer:true},
   {k:"5s",lb:"Infracao 5S",ic:"ti-clipboard-check"},
   {k:"lancamento",lb:"Lancamentos",ic:"ti-clipboard-list"},
   {k:"premios",lb:"Premios",ic:"ti-gift"},
@@ -2669,6 +2712,7 @@ function permTela(p){
   return v==="ver"||v==="editar"?v:"nenhum";
 }
 function primeiraTela(){
+  if(permTela("monitor")!=="nenhum")return "monitor";
   if(permTela("dashboard")!=="nenhum")return "dashboard";
   var t=TELAS.find(function(x){return permTela(x.k)!=="nenhum";});
   return t?t.k:null;
@@ -4042,12 +4086,13 @@ function rMon(){
         +"<div style='font-size:11px;color:#999'>"+(c?"Admissao":"Demissao")+" em "+fmtD(x.d)+(c?"":" &middot; "+esc(motDemNome(x.e.motdem)))+"</div></div></div>";
     }).join("");
 
+  function kpi(lb,v,c,sub){return "<div class='mon-kpi' style='--c:"+c+"'><div class='k-l'>"+lb+"</div><div class='k-v'>"+v+"</div><div class='k-s'>"+esc(sub)+"</div></div>";}
   function chartCard(title,color,icon,inner,h){
-    return "<div class='card' style='padding:.9rem'>"
-      +"<div style='font-weight:700;font-size:13px;color:"+color+";margin-bottom:.5rem'><i class='ti "+icon+"' style='margin-right:4px'></i>"+title+"</div>"
+    return "<div class='card'>"
+      +"<div class='mon-tt' style='color:"+color+"'><i class='ti "+icon+"'></i>"+title+"</div>"
       +(h?"<div style='height:"+h+"px;position:relative'>"+inner+"</div>":inner)+"</div>";
   }
-  function semDados(msg){return "<div class='empty' style='padding:2.5rem 1rem'><i class='ti ti-chart-pie'></i>"+msg+"</div>";}
+  function semDados(msg){return "<div class='empty' style='padding:1.5rem 1rem'><i class='ti ti-chart-pie'></i>"+msg+"</div>";}
 
   document.getElementById("p-monitor").innerHTML=
     "<div class='pg-hd'><div><h1 class='h1'>Monitoramento de Colaboradores</h1>"
@@ -4065,55 +4110,50 @@ function rMon(){
     +"<button class='btnp btn-ic' onclick=\"go('employees');setTimeout(novoEmp,30)\"><i class='ti ti-user-plus'></i>Novo colaborador</button>"
     +"</div></div>"
 
-    +"<div class='ga' style='margin-bottom:1.25rem'>"
-    +sCard("Total de colaboradores",ativos,B,"ti-users",inativos+" inativo"+(inativos!==1?"s":""))
-    +sCard("Quadro no fim do mes",qMes,BL,"ti-id-badge-2",mlb)
-    +sCard("Contratados no mes",cMes.length,GRN,"ti-user-plus",mlb+" · "+cAno.length+" no ano")
-    +sCard("Demitidos no mes",dMes.length,RED,"ti-user-minus",mlb+" · "+dAno.length+" no ano")
-    +sCard("Turnover do mes",turn.toLocaleString("pt-BR",{maximumFractionDigits:1})+"%",GLD,"ti-arrows-exchange",mlb)
-    +sCard("Absenteismo do mes",pctF(absMes.pct),"#d35400","ti-calendar-x",absMes.faltas+" falta"+(absMes.faltas!==1?"s":"")+" · "+absMes.du+" dias uteis")
-    +sCard("Absenteismo do ano",pctF(absAno),"#a04000","ti-calendar-stats",absAnoF+" falta"+(absAnoF!==1?"s":"")+" · "+duAno+" dias uteis · "+selAno)
+    +"<div class='mon-kpis'>"
+    +kpi("Colaboradores ativos",ativos,B,inativos+" inativo"+(inativos!==1?"s":""))
+    +kpi("Quadro fim do mes",qMes,BL,mlb)
+    +kpi("Contratados",cMes.length,GRN,mlb+" · "+cAno.length+" no ano")
+    +kpi("Demitidos",dMes.length,RED,mlb+" · "+dAno.length+" no ano")
+    +kpi("Turnover",turn.toLocaleString("pt-BR",{maximumFractionDigits:1})+"%",GLD,mlb)
+    +kpi("Absenteismo mes",pctF(absMes.pct),"#d35400",absMes.faltas+" falta"+(absMes.faltas!==1?"s":"")+" · "+absMes.du+" d.u.")
+    +kpi("Absenteismo ano",pctF(absAno),"#a04000",absAnoF+" falta"+(absAnoF!==1?"s":"")+" · "+selAno)
     +"</div>"
 
-    +"<div class='card' style='padding:.9rem;margin-bottom:1rem'>"
-    +"<div style='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.55rem'>"
-    +"<div style='font-weight:700;font-size:13px;color:"+B+"'><i class='ti ti-users' style='margin-right:4px'></i>Total de colaboradores por mes e por grupo - "+selAno+"</div>"
-    +"<button class='btng btn-ic' style='padding:.3rem .65rem;font-size:12px' onclick='abrirMonGrupos(event)'><i class='ti ti-eye-cog'></i>Grupos do grafico</button></div>"
+    +"<div class='card' style='margin-bottom:.8rem'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.4rem'>"
+    +"<div class='mon-tt' style='color:"+B+";margin:0'><i class='ti ti-users'></i>Colaboradores por mes e por grupo - "+selAno+"</div>"
+    +"<button class='btng btn-ic' style='padding:.25rem .6rem;font-size:11.5px' onclick='abrirMonGrupos(event)' title='Clique numa caixa ou barra para ver os colaboradores do grupo'><i class='ti ti-eye-cog'></i>Grupos do grafico</button></div>"
     +"<div id='mq-boxes' class='mq-boxes'></div>"
-    +"<div style='height:300px;position:relative'><canvas id='ch-mquadro'></canvas></div>"
-    +"<div class='hint' style='margin-top:4px'>Clique numa caixa ou numa barra para ver os colaboradores alocados no grupo. O grupo considerado e o atual de cada colaborador.</div></div>"
-    +"<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem;margin-bottom:1rem'>"
-    +chartCard("Contratados x Demitidos por mes - "+selAno,GRN,"ti-arrows-exchange","<canvas id='ch-mmov'></canvas>",230)
+    +"<div style='height:230px;position:relative'><canvas id='ch-mquadro'></canvas></div></div>"
+
+    +"<div class='mon-g3'>"
+    +chartCard("Contratados x Demitidos - "+selAno,GRN,"ti-arrows-exchange","<canvas id='ch-mmov'></canvas>",200)
+    +chartCard("Absenteismo mensal e acumulado - "+selAno,"#d35400","ti-calendar-x","<canvas id='ch-mabs'></canvas>",200)
+    +chartCard("Absenteismo por centro de custo","#d35400","ti-building",ccAbs.length
+      ?"<div style='height:200px;overflow-y:auto'><div style='height:"+Math.max(200,ccAbs.length*34+40)+"px;position:relative'><canvas id='ch-mabscc'></canvas></div></div>"
+      :semDados("Sem colaboradores com centro de custo"))
     +"</div>"
-    +"<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem;margin-bottom:1rem'>"
-    +chartCard("Absenteismo por mes e acumulado do ano - "+selAno,"#d35400","ti-calendar-x","<div style='height:230px;position:relative'><canvas id='ch-mabs'></canvas></div>"
-      +"<div class='hint' style='margin-top:6px'>Absenteismo = faltas &divide; (colaboradores no mes &times; dias uteis seg-sex) &times; 100. No mes atual, conta os dias ate hoje.</div>")
-    +chartCard("Absenteismo por centro de custo - "+mlb+" x ano "+selAno,"#d35400","ti-building",ccAbs.length
-      ?"<div style='height:"+Math.max(230,ccAbs.length*48+50)+"px;position:relative'><canvas id='ch-mabscc'></canvas></div>"
-      :semDados("Sem colaboradores com centro de custo em "+selAno))
+
+    +"<div class='mon-g3'>"
+    +chartCard("Motivos de saida - "+mlb,RED,"ti-chart-pie",bdMes.labels.length?"<div style='height:190px;position:relative'><canvas id='ch-mmotm'></canvas></div>":semDados("Sem demissoes em "+mlb))
+    +chartCard("Motivos de saida - "+selAno,RED,"ti-chart-donut",bdAno.labels.length?"<div style='height:190px;position:relative'><canvas id='ch-mmota'></canvas></div>":semDados("Sem demissoes em "+selAno))
+    +chartCard("Movimentacoes - "+mlb,B,"ti-list-details","<div style='height:190px;overflow-y:auto'>"+movHTML+"</div>")
     +"</div>"
-    +chartCard("Absenteismo do ano por colaborador - "+selAno+" <span style='color:#999;font-weight:500'>("+rankAbs.length+" com faltas no ano)</span>","#a04000","ti-calendar-stats",
+
+    +chartCard("Absenteismo do ano por colaborador - "+selAno+" <span style='color:#999;font-weight:500;text-transform:none'>("+rankAbs.length+" com faltas)</span>","#a04000","ti-calendar-stats",
       rankAbs.length===0?semDados("Nenhuma falta em "+selAno):
-      "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:0 2rem;max-height:340px;overflow-y:auto'>"
+      "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0 1.5rem;max-height:240px;overflow-y:auto'>"
       +rankAbs.map(function(x,i){
         var mx=rankAbs[0].pct||1,w=Math.max(3,x.pct/mx*100),cor=i<3?"#a04000":"#d35400";
-        return "<div style='display:flex;align-items:center;gap:10px;padding:.45rem 0;border-bottom:1px solid #f1f4f8'>"
-          +"<span style='width:22px;height:22px;border-radius:50%;background:"+cor+(i<3?"":"22")+";color:"+(i<3?"#fff":cor)+";font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0'>"+(i+1)+"</span>"
-          +"<div style='min-width:0;flex:1'>"
-          +"<div style='display:flex;justify-content:space-between;gap:8px'><span style='font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+esc(x.e.nome)+(isAtivo(x.e)?"":" <span class='bdg bdg-off'>INATIVO</span>")+"</span>"
-          +"<span style='font-weight:800;color:"+cor+";font-size:13px;flex-shrink:0'>"+pctF(x.pct)+"</span></div>"
-          +"<div style='display:flex;align-items:center;gap:8px;margin-top:3px'>"
-          +"<div style='flex:1;height:6px;background:#f3ebe5;border-radius:3px;overflow:hidden'><div style='width:"+w+"%;height:100%;border-radius:3px;background:linear-gradient(90deg,#f0a77a,"+cor+")'></div></div>"
-          +"<span style='font-size:11px;color:#999;flex-shrink:0'>"+x.f+" falta"+(x.f!==1?"s":"")+" / "+x.du+" dias</span></div>"
-          +"</div></div>";
+        return "<div style='display:flex;align-items:center;gap:8px;padding:.3rem 0;border-bottom:1px solid #f1f4f8'>"
+          +"<span style='width:18px;height:18px;border-radius:50%;background:"+cor+(i<3?"":"22")+";color:"+(i<3?"#fff":cor)+";font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0'>"+(i+1)+"</span>"
+          +"<span style='font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:38%'>"+esc(x.e.nome)+"</span>"
+          +"<div style='flex:1;height:5px;background:#f3ebe5;border-radius:3px;overflow:hidden'><div style='width:"+w+"%;height:100%;border-radius:3px;background:linear-gradient(90deg,#f0a77a,"+cor+")'></div></div>"
+          +"<span style='font-size:10.5px;color:#999;flex-shrink:0'>"+x.f+"/"+x.du+"</span>"
+          +"<span style='font-weight:800;color:"+cor+";font-size:12px;flex-shrink:0;width:48px;text-align:right'>"+pctF(x.pct)+"</span></div>";
       }).join("")+"</div>")
-    +"<div style='height:1rem'></div>"
-
-    +"<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem'>"
-    +chartCard("Motivos de saida - "+mlb,RED,"ti-chart-pie",bdMes.labels.length?"<div style='height:230px;position:relative'><canvas id='ch-mmotm'></canvas></div>":semDados("Sem demissoes em "+mlb))
-    +chartCard("Motivos de saida - "+selAno,RED,"ti-chart-donut",bdAno.labels.length?"<div style='height:230px;position:relative'><canvas id='ch-mmota'></canvas></div>":semDados("Sem demissoes em "+selAno))
-    +chartCard("Movimentacoes - "+mlb,B,"ti-list-details","<div style='max-height:250px;overflow-y:auto'>"+movHTML+"</div>")
-    +"</div>";
+    +"<div class='hint' style='margin-top:.5rem'>Absenteismo = faltas &divide; (colaboradores no mes &times; dias uteis seg-sex) &times; 100. No mes atual, conta os dias ate hoje. Clique numa caixa ou barra do grafico de grupos para ver os colaboradores.</div>";
 
   window._monStats={aQuadroG:aQuadroG,selAno:selAno,selMes:selMes,mlb:mlb,meses:meses,lbl:lbl,ativos:ativos,inativos:inativos,qMes:qMes,
     cMes:cMes.length,dMes:dMes.length,cAno:cAno.length,dAno:dAno.length,turn:turn,absMes:absMes,absAno:absAno,absAnoF:absAnoF,duAno:duAno,
@@ -4230,7 +4270,7 @@ function monCfgQuadro(M,s){
     pointRadius:3*s,pointBackgroundColor:"#fff",pointBorderColor:B,pointBorderWidth:2*s,tension:.3,datalabels:relPill(B,s,function(v){return v;})});
   return{type:"bar",plugins:relDL(),
     data:{labels:M.lbl,datasets:ds},
-    options:Object.assign(monBase(s),{plugins:{legend:Object.assign(relLegend(s),{onClick:function(){}}),
+    options:Object.assign(monBase(s),{plugins:{legend:s===1?{display:false}:Object.assign(relLegend(s),{onClick:function(){}}),
         tooltip:{filter:function(i){return i.raw>0;}}},
       scales:{y:{beginAtZero:true,grace:"70%",ticks:{precision:0,font:{size:11*s},color:"#7a838c"},grid:{color:"#f1f4f8"},border:{display:false}},
               y1:{display:false,min:-mxT*1.25,max:mxT*1.3},
