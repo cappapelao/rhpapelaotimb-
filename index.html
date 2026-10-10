@@ -77,7 +77,7 @@ var _db = {
 };
 
 // Cada tabela em uma linha separada
-var COLECOES = ["emp","oc","pr","idx","cc","oc5","motivos","sensos","motdem","motafas","reaj","grupos","receita","folhafech"];
+var COLECOES = ["emp","oc","pr","idx","cc","oc5","motivos","sensos","motdem","motafas","reaj","grupos","receita","folhafech","percap"];
 
 window._fbLoad = function(){
   return _sb.from(TABELA).select("id,conteudo").in("id", COLECOES).then(function(r){
@@ -102,6 +102,7 @@ window._fbLoad = function(){
       window.DB.motafas = window.initMotAfas();
     }
     ["sensos","motdem","grupos","motafas"].forEach(function(c){ if(!_antes[c] && (window.DB[c]||[]).length) window._seeded[c] = true; });
+    if(window.mvMigrar) window.mvMigrar();
     window._dbLoaded = true;
   });
 };
@@ -479,6 +480,64 @@ input:focus-visible,select:focus-visible{outline:none}
 #p-monitor .mq-v{font-size:14px}
 @media (max-width:1200px){.mon-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.mon-g3{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.mon-kpis{grid-template-columns:1fr 1fr}.mon-g3{grid-template-columns:1fr}}
+
+/* Cadastro: rolagem horizontal visivel + barra superior */
+.xs-wrap::-webkit-scrollbar,.xs-top::-webkit-scrollbar{height:14px;width:12px}
+.xs-wrap::-webkit-scrollbar-track,.xs-top::-webkit-scrollbar-track{background:#e9eef5;border-radius:7px}
+.xs-wrap::-webkit-scrollbar-thumb,.xs-top::-webkit-scrollbar-thumb{background:#7d95bd;border-radius:7px;border:3px solid #e9eef5}
+.xs-wrap::-webkit-scrollbar-thumb:hover,.xs-top::-webkit-scrollbar-thumb:hover{background:#1E5BC6}
+.xs-wrap,.xs-top{scrollbar-width:auto;scrollbar-color:#7d95bd #e9eef5}
+.xs-top{overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:6px}
+.xs-top>div{height:1px}
+.mes-fil{display:flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #dfe5ee;border-radius:8px;padding:.2rem .5rem}
+.mes-fil i{color:#888;font-size:15px}
+.mes-fil select{border:none!important;box-shadow:none!important;width:auto!important;padding:.15rem .2rem!important;font-weight:700;color:#00348F;background:transparent}
+.mes-info{font-size:12px;color:#55606c;background:#eef3fb;border:1px solid #dbe6f5;border-radius:8px;padding:.4rem .7rem;margin-bottom:.6rem}
+.mes-info i{color:#1E5BC6;margin-right:3px}
+.ft-box{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fdf3f2;border:1px solid #f3d3cf;border-radius:8px;padding:.45rem .7rem;font-size:12.5px;margin:-.3rem 0 .8rem}
+.ft-row{display:flex;align-items:center;gap:8px;border:1.5px solid #e6eaf0;border-radius:9px;padding:.35rem .5rem;margin-bottom:6px}
+.ft-row.on{border-color:#c0392b;background:#fdf3f2}
+.ft-pick{flex:1;display:flex;align-items:center;gap:8px;background:none;border:none;text-align:left;font-weight:700;font-size:13px;color:#333;cursor:pointer;padding:.25rem}
+.ft-pick i{color:#c0392b;font-size:17px}
+.ft-chk{display:flex;align-items:center;gap:4px;font-size:11.5px;color:#666;white-space:nowrap}
+
+/* Analise per capita */
+.pc-bar{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:.6rem}
+.pc-bar label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:700;color:#8a94a0;text-transform:uppercase;letter-spacing:.3px}
+.pc-bar input{width:150px;padding:.35rem .55rem;font-size:13px;font-weight:700;color:#00348F}
+.pc-kpi{display:flex;flex-direction:column;padding:.2rem .8rem;border-left:3px solid #dbe6f5}
+.pc-kpi span{font-size:10.5px;font-weight:700;color:#8a94a0;text-transform:uppercase}
+.pc-kpi b{font-size:16px;color:#00348F}
+.pc-leg{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:#666;flex-wrap:wrap}
+.pc-leg .lg{width:14px;height:14px;border-radius:3px;display:inline-block;margin-left:8px;border:1px solid #d5dbe3}
+.pc-leg .lg.fds{background:#eef1f6}.pc-leg .lg.fer{background:#fdecec}.pc-leg .lg.trab{background:#1a7a4a}.pc-leg .lg.ed{background:#fff;border:2px solid #1E5BC6}
+.pc-wrap{max-height:calc(100vh - 290px)}
+.pc-tab{border-collapse:separate;border-spacing:0;font-size:11.5px;min-width:100%}
+.pc-tab th,.pc-tab td{border-right:1px solid #eef1f6;border-bottom:1px solid #eef1f6;padding:0;text-align:center;white-space:nowrap}
+.pc-tab thead th{position:sticky;top:0;z-index:3;background:#00348F;color:#fff;font-weight:800;padding:.3rem .15rem;cursor:pointer;line-height:1.1}
+.pc-tab thead th small{font-size:9.5px;font-weight:600;opacity:.8}
+.pc-tab thead th.fds{background:#5b6b84}.pc-tab thead th.fer{background:#c0392b}.pc-tab thead th.trab{background:#1a7a4a}
+.pc-tab .pc-lb{position:sticky;left:0;z-index:2;background:#fff;text-align:left;padding:.3rem .6rem;min-width:270px;max-width:320px;white-space:normal;font-weight:600;color:#2a3542;border-right:2px solid #dbe3ee}
+.pc-tab thead .pc-lb{z-index:4;background:#00348F;color:#fff;cursor:default}
+.pc-tab .pc-lb small{display:block;font-size:10px;color:#8a94a0;font-weight:600}
+.pc-tab td{min-width:58px;height:27px;color:#333}
+.pc-tab td.fds{background:#eef1f6}.pc-tab td.fer{background:#fdecec}
+.pc-tab td.ed,.pc-tab td.ed .pc-in{color:#1E5BC6;font-weight:800}
+.pc-tab td.ed{box-shadow:inset 0 0 0 1.5px #9db8e6}
+.pc-tab .pc-tot{position:sticky;right:0;background:#e6edf8;font-weight:800;color:#00348F;padding:0 .5rem;min-width:84px;border-left:2px solid #c9d6ea}
+.pc-tab thead .pc-tot{background:#0A1F4A;color:#fff;cursor:default}
+.pc-tab tr.b td,.pc-tab tr.b .pc-lb{font-weight:800}
+.pc-tab tr.k-tot td:not(.fds):not(.fer):not(.pc-tot),.pc-tab tr.k-sub td:not(.fds):not(.fer):not(.pc-tot){background:#f2f6fc}
+.pc-tab tr.k-tot .pc-lb,.pc-tab tr.k-sub .pc-lb{background:#f2f6fc;color:#0A1F4A}
+.pc-tab tr.big td,.pc-tab tr.big .pc-lb{font-size:13.5px}
+.pc-tab tr.k-prod td:not(.pc-tot),.pc-tab tr.k-prod .pc-lb{background:#fff8e1}
+.pc-tab tr.k-pc td:not(.pc-tot),.pc-tab tr.k-pc .pc-lb{background:#eef8f2;color:#145c39}
+.pc-tab tr.k-meta td:not(.pc-tot),.pc-tab tr.k-meta .pc-lb{background:#f6f2fb}
+.pc-tab tr.red td,.pc-tab tr.red .pc-lb{color:#c0392b}
+.pc-in{width:100%;height:100%;min-height:26px;border:none;background:transparent;text-align:center;font:inherit;color:inherit;padding:0 2px;outline:none}
+.pc-in:focus{background:#fff;box-shadow:inset 0 0 0 2px #1E5BC6;border-radius:2px}
+.pc-tag{font-size:9px;font-weight:800;background:#f1f4f8;color:#888;border-radius:4px;padding:1px 5px;margin-left:4px}
+.pc-tag.pj{background:#f1e7f8;color:#7b3fa0}
 </style>
 </head>
 <body>
@@ -528,13 +587,15 @@ input:focus-visible,select:focus-visible{outline:none}
     <nav style="flex:1;padding:.5rem 0">
       <button class="nb on" id="nb-monitor" onclick="go('monitor')"><i class="ti ti-chart-dots-3" style="font-size:18px;flex-shrink:0"></i><span class="nl">Monitoramento</span></button>
       <button class="nb" id="nb-dashboard" onclick="go('dashboard')"><i class="ti ti-layout-dashboard" style="font-size:18px;flex-shrink:0"></i><span class="nl">Dashboard</span></button>
-      <button class="nb" id="nb-centros" onclick="go('centros')"><i class="ti ti-building" style="font-size:18px;flex-shrink:0"></i><span class="nl">Centros de Custo</span></button>
+      <button class="nb" id="nb-centros" onclick="go('centros')"><i class="ti ti-building" style="font-size:18px;flex-shrink:0"></i><span class="nl">Centro de Custos Senior</span></button>
+      <button class="nb" id="nb-vincularcc" onclick="go('vincularcc')"><i class="ti ti-link" style="font-size:18px;flex-shrink:0"></i><span class="nl">Vincular p/ Centro de Custos</span></button>
       <button class="nb" id="nb-employees" onclick="go('employees')"><i class="ti ti-users" style="font-size:18px;flex-shrink:0"></i><span class="nl">Cadastro de Colaborador</span></button>
       <button class="nb" id="nb-reajustes" onclick="go('reajustes')"><i class="ti ti-trending-up" style="font-size:18px;flex-shrink:0"></i><span class="nl">Reajuste Salarial</span></button>
       <button class="nb" id="nb-grupos" onclick="go('grupos')"><i class="ti ti-category" style="font-size:18px;flex-shrink:0"></i><span class="nl">Grupos de Custo</span></button>
       <button class="nb" id="nb-direcionar" onclick="go('direcionar')"><i class="ti ti-arrows-split-2" style="font-size:18px;flex-shrink:0"></i><span class="nl">Direcionar p/ Grupos</span></button>
       <button class="nb" id="nb-resumo" onclick="go('resumo')"><i class="ti ti-report-money" style="font-size:18px;flex-shrink:0"></i><span class="nl">Resumo dos Custos</span></button>
       <button class="nb" id="nb-folha" onclick="go('folha')"><i class="ti ti-table" style="font-size:18px;flex-shrink:0"></i><span class="nl">Custo Total da Folha</span></button>
+      <button class="nb" id="nb-percap" onclick="go('percap')"><i class="ti ti-chart-histogram" style="font-size:18px;flex-shrink:0"></i><span class="nl">Analise por Categoria</span></button>
       <button class="nb" id="nb-5s" onclick="go('5s')"><i class="ti ti-clipboard-check" style="font-size:18px;flex-shrink:0"></i><span class="nl">Infracao 5S</span></button>
       <button class="nb" id="nb-lancamento" onclick="go('lancamento')"><i class="ti ti-clipboard-list" style="font-size:18px;flex-shrink:0"></i><span class="nl">Lancamentos</span></button>
       <button class="nb" id="nb-premios" onclick="go('premios')"><i class="ti ti-gift" style="font-size:18px;flex-shrink:0"></i><span class="nl">Premios</span></button>
@@ -556,6 +617,7 @@ input:focus-visible,select:focus-visible{outline:none}
   <div id="main">
     <div id="p-dashboard" class="page"></div>
     <div id="p-centros" class="page"></div>
+    <div id="p-vincularcc" class="page"></div>
     <div id="p-employees" class="page"></div>
     <div id="p-reajustes" class="page"></div>
     <div id="p-grupos" class="page"></div>
@@ -563,6 +625,7 @@ input:focus-visible,select:focus-visible{outline:none}
     <div id="p-resumo" class="page"></div>
     <div id="p-folha" class="page"></div>
     <div id="p-monitor" class="page active"></div>
+    <div id="p-percap" class="page"></div>
     <div id="p-5s" class="page"></div>
     <div id="p-lancamento" class="page"></div>
     <div id="p-premios" class="page"></div>
@@ -585,7 +648,7 @@ input:focus-visible,select:focus-visible{outline:none}
 // ═══════════════════════════════════════
 // DB GLOBAL
 // ═══════════════════════════════════════
-var DB={emp:[],oc:[],pr:[],idx:[],cc:[],oc5:[],motivos:[],sensos:[],motdem:[],motafas:[],reaj:[],grupos:[],receita:[],folhafech:[]};
+var DB={emp:[],oc:[],pr:[],idx:[],cc:[],oc5:[],motivos:[],sensos:[],motdem:[],motafas:[],reaj:[],grupos:[],receita:[],folhafech:[],percap:[]};
 var SAVE_TIMER=null;
 
 function dbLoad(){
@@ -843,12 +906,19 @@ function getPct(tipo,data){
   if(at.length>0)return at[at.length-1].pct;
   return {falta:15,atraso:5,"5s":10}[tipo]||0;
 }
+// Tipos de falta (Suspensao, Falta Justificada, Falta Injustificada...) - parametro "desconta do premio"
+var FT_PAD=[{id:"ft_injust",tipo:"ftipo",nome:"Falta Injustificada",desconta:true},{id:"ft_just",tipo:"ftipo",nome:"Falta Justificada",desconta:false},{id:"ft_susp",tipo:"ftipo",nome:"Suspensão",desconta:true}];
+function fTipos(){var l=(DB.motivos||[]).filter(function(m){return m.tipo==="ftipo";});return l.length?l:FT_PAD.map(function(x){return Object.assign({},x);});}
+function fTiposMat(){if(!(DB.motivos||[]).some(function(m){return m.tipo==="ftipo";}))FT_PAD.forEach(function(x){DB.motivos.push(Object.assign({},x));});}
+function ftInfo(id){return id?fTipos().find(function(x){return x.id===id;})||null:null;}
+function ftDesconta(id){var f=ftInfo(id);return !f||f.desconta!==false;}
+function ocPct(o){return o.tipo==="falta"&&!ftDesconta(o.ftipo)?0:getPct(o.tipo,o.data);}
 function calcDesc(eid,mes,val){
   var ocs=DB.oc.filter(function(x){return x.eid===eid&&gmk(x.data)===mes;});
   var f=ocs.filter(function(x){return x.tipo==="falta";}).length;
   var a=ocs.filter(function(x){return x.tipo==="atraso";}).length;
   var s=ocs.filter(function(x){return x.tipo==="5s";}).length;
-  var pct=0;ocs.forEach(function(x){pct+=getPct(x.tipo,x.data);});
+  var pct=0;ocs.forEach(function(x){pct+=ocPct(x);});
   pct=Math.min(100,pct);
   return{f:f,a:a,s:s,pct:pct,desc:(pct/100)*val,rec:val*(1-pct/100)};
 }
@@ -874,7 +944,19 @@ function sCard(lb,val,col,ic,sub){
 
 // ═══ STATUS DO COLABORADOR ═══
 // Ativo: campo "ativo" (novo). Cadastros antigos sem o campo: ativo se nao tiver data de demissao.
-function isAtivo(e){return e.ativo===undefined?!e.dem:e.ativo!==false;}
+function isAtivo(e){
+  var a=e.ativo===undefined?!e.dem:e.ativo!==false;
+  // Inativo com vigencia: antes do inicio ou depois do fim volta a contar como ativo
+  if(!a&&!e.dem&&e.inat){var h=hoje();if(e.inat>h)return true;if(e.inatFim&&e.inatFim<h)return true;}
+  return a;
+}
+// Inativo (temporario) em uma data
+function inatEm(e,ds){
+  if(e.dem&&e.dem<ds)return false;
+  if(e.inatHist&&e.inatHist.length)return e.inatHist.some(function(x){return x.ini&&x.ini<=ds&&(!x.fim||x.fim>=ds);});
+  if(e.ativo===false&&!e.dem)return (!e.inat||e.inat<=ds)&&(!e.inatFim||e.inatFim>=ds);
+  return false;
+}
 // Conta para o mes (premios/relatorios): ativo, ou saiu (demissao/inativacao) depois daquele mes.
 function empNoMes(e,mes){
   if(isAtivo(e))return true;
@@ -1101,7 +1183,7 @@ function go(p){
   document.getElementById("nb-"+p).classList.add("on");
   pg=p;
   document.getElementById("main").classList.toggle("ro-mode",!!ACESSO&&permTela(p)==="ver");
-  ({dashboard:rDash,centros:rCC,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,resumo:function(){empCtx='res';rResumo();},folha:rFolha,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,encargos:rEnc,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
+  ({dashboard:rDash,centros:rCC,vincularcc:rVcc,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,resumo:function(){empCtx='res';rResumo();},folha:rFolha,percap:rPercap,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,encargos:rEnc,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
 }
 function toggleSB(){
   sbOpen=!sbOpen;
@@ -1628,15 +1710,21 @@ function gerarRelatorioPDF(){
 // CENTROS DE CUSTO
 function rCC(){
   var q=gv("ccbsc");
+  var semC=DB.emp.filter(function(e){return isAtivo(e)&&!(e.ccid&&DB.cc.some(function(c){return c.id===e.ccid;}));}).length;
   document.getElementById("p-centros").innerHTML=
-    "<div class='pg-hd'><div><h1 class='h1'>Centros de Custo</h1>"
-    +"<div class='sub'>Cadastre os centros de custo da empresa</div></div>"
-    +"<button class='btnp btn-ic' onclick='novoCC()'><i class='ti ti-plus'></i>Novo centro de custo</button></div>"
+    "<div class='pg-hd'><div><h1 class='h1'>Centro de Custos Senior</h1>"
+    +"<div class='sub'>Centros de custo da empresa conforme o sistema Senior</div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap'><button class='btng btn-ic' onclick=\"abrirCCRel('pdf')\"><i class='ti ti-file-type-pdf'></i>Relatorio PDF</button>"
+    +"<button class='btng btn-ic' onclick=\"abrirCCRel('xlsx')\"><i class='ti ti-file-spreadsheet'></i>Relatorio Excel</button>"
+    +"<button class='btng btn-ic' onclick=\"go('vincularcc')\"><i class='ti ti-link'></i>Vincular colaboradores</button>"
+    +"<button class='btnp btn-ic' onclick='novoCC()'><i class='ti ti-plus'></i>Novo centro de custo</button></div></div>"
+    +(semC?"<div class='warn' style='margin-bottom:1rem'><i class='ti ti-alert-triangle'></i> "+semC+" colaborador"+(semC>1?"es ativos estao":" ativo esta")+" sem centro de custo. <a href='#' onclick=\"go('vincularcc');return false\" style='color:inherit'>Vincular agora</a></div>":"")
     +"<div class='card'>"
-    +"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.5rem'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.6rem'>"
     +"<div style='font-weight:700;font-size:15px;color:"+B+"'>"+DB.cc.length+" centro"+(DB.cc.length!==1?"s":"")+" de custo</div>"
     +"<input type='text' id='ccbsc' value='"+esc(q)+"' placeholder='Buscar por codigo, descricao ou responsavel...' oninput='filtCC()' style='width:300px;max-width:100%'/></div>"
-    +"<div id='cclist'></div></div>"
+    +"<div id='cclist'></div>"
+    +"<div class='hint' style='margin-top:.7rem'>O custo mensal atual soma o custo empresa dos colaboradores ativos vinculados a cada centro de custo.</div></div>"
     +mdShell("md-cc","Novo centro de custo","ccft",
       "<input type='hidden' id='cceid'/>"
       +"<div class='fr2'>"
@@ -1650,21 +1738,20 @@ function rCC(){
 }
 function rCCList(list){
   if(list.length===0)return "<div class='empty'><i class='ti ti-building'></i>"+(DB.cc.length?"Nenhum centro encontrado.":"Nenhum centro cadastrado. Clique em Novo centro de custo.")+"</div>";
-  return list.map(function(cc){
-    var cnt=DB.emp.filter(function(e){return e.ccid===cc.id&&ativoVis(e);}).length;
-    return "<div class='erow'>"
-      +"<div class='erow-main'>"
-      +"<div style='display:flex;align-items:center;gap:8px;margin-bottom:2px'>"
-      +"<span style='background:#e6edf8;color:"+B+";border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;flex-shrink:0'>"+esc(cc.cod)+"</span>"
-      +"<span style='font-weight:700;font-size:14px'>"+esc(cc.desc)+"</span></div>"
-      +"<div class='erow-sub'>"+(cc.resp?"<i class='ti ti-user' style='font-size:11px'></i> "+esc(cc.resp)+" &middot; ":"")
-      +"<span style='color:"+BL+";font-weight:600'>"+cnt+" colaborador"+(cnt!==1?"es":"")+" ativo"+(cnt!==1?"s":"")+"</span></div>"
-      +(cc.obs?"<div class='erow-meta'>"+esc(cc.obs)+"</div>":"")+"</div>"
-      +"<div class='erow-act'>"
-      +"<button class='ibedt' data-fn='edtCC' data-id='"+cc.id+"' title='Editar'><i class='ti ti-edit'></i></button>"
-      +"<button class='ibdel' data-fn='delCC' data-id='"+cc.id+"' title='Excluir'><i class='ti ti-trash'></i></button>"
-      +"</div></div>";
-  }).join("");
+  return "<div class='etab-wrap'><table class='etab'><thead><tr>"
+    +"<th class='c' style='cursor:default;width:110px'>CÓDIGO</th><th style='cursor:default'>CENTRO DE CUSTO</th><th style='cursor:default'>RESPONSÁVEL</th>"
+    +"<th class='c' style='cursor:default'>COLABORADORES ATIVOS</th><th class='c' style='cursor:default'>CUSTO MENSAL ATUAL</th><th class='c' style='cursor:default'>AÇÕES</th></tr></thead><tbody>"
+    +list.map(function(cc){
+      var emps=DB.emp.filter(function(e){return e.ccid===cc.id&&isAtivo(e);});
+      var cu=emps.reduce(function(a,e){return a+(empTemValores(e)?calcCusto(e):0);},0);
+      return "<tr><td class='c'><span class='bdg' style='background:#e6edf8;color:"+B+"'>"+esc(cc.cod)+"</span></td>"
+        +"<td class='nm'>"+esc(cc.desc)+(cc.obs?"<div style='font-size:11px;color:#999;font-weight:500'>"+esc(cc.obs)+"</div>":"")+"</td>"
+        +"<td>"+esc(cc.resp||"")+"</td>"
+        +"<td class='c'><a href='#' onclick=\"go('vincularcc');setTimeout(function(){setVccFiltro('"+cc.id+"')},30);return false\" style='color:"+BL+";font-weight:700'>"+emps.length+"</a></td>"
+        +"<td class='r' style='font-weight:700;color:"+B+"'>"+fmtBRL(cu)+"</td>"
+        +"<td class='act'><button class='ibedt' data-fn='edtCC' data-id='"+cc.id+"' title='Editar'><i class='ti ti-edit'></i></button>"
+        +"<button class='ibdel' data-fn='delCC' data-id='"+cc.id+"' title='Excluir'><i class='ti ti-trash'></i></button></td></tr>";
+    }).join("")+"</tbody></table></div>";
 }
 function filtCC(){
   var el=document.getElementById("cclist");if(!el)return;
@@ -1709,6 +1796,93 @@ function delCC(id){
   dbSave();rCC();
 }
 
+// ═══ VINCULAR COLABORADORES AOS CENTROS DE CUSTO SENIOR ═══
+var vccSel=[];
+function ccOrd(){return (DB.cc||[]).slice().sort(function(a,b){return a.cod.localeCompare(b.cod);});}
+function ccNome(c){return c.cod+" - "+c.desc;}
+function rVcc(){
+  vccSel=[];
+  var cs=ccOrd(),emps={};DB.emp.forEach(function(e){if(e.empresa)emps[e.empresa]=1;});
+  var cont=cs.map(function(c){var n=DB.emp.filter(function(e){return e.ccid===c.id&&isAtivo(e);}).length;
+    return "<button class='dir-chip' style='border-color:#00348F33' onclick=\"setVccFiltro('"+c.id+"')\"><span>"+esc(ccNome(c))+"</span><b style='color:#00348F'>"+n+"</b></button>";}).join("");
+  var semC=DB.emp.filter(function(e){return isAtivo(e)&&!(e.ccid&&DB.cc.some(function(c){return c.id===e.ccid;}));}).length;
+  document.getElementById("p-vincularcc").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Vincular Colaboradores aos Centros de Custo</h1><div class='sub'>Selecione um ou varios colaboradores e escolha o centro de custo Senior</div></div>"
+    +"<button class='btng btn-ic' onclick=\"go('centros')\"><i class='ti ti-building'></i>Centro de Custos Senior</button></div>"
+    +"<div class='dir-chips'>"+cont+"<button class='dir-chip warnc' onclick=\"setVccFiltro('_sem')\"><span>Sem centro de custo</span><b>"+semC+"</b></button></div>"
+    +"<div class='card'>"
+    +"<div class='dir-bar'>"
+    +"<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>"
+    +"<span class='lbl' style='margin:0'>Centro de custo de destino</span>"
+    +"<select id='vcc-dest' style='width:260px'><option value=''>Selecione o centro de custo...</option>"
+    +cs.map(function(c){return "<option value='"+c.id+"'>"+esc(ccNome(c))+"</option>";}).join("")+"</select>"
+    +"<button class='btnp btn-ic' onclick='aplicarVcc()'><i class='ti ti-arrow-right'></i>Vincular selecionados</button>"
+    +"<button class='btng btn-ic' onclick='removerVcc()'><i class='ti ti-x'></i>Tirar do centro de custo</button>"
+    +"<span id='vcc-cnt' class='dir-cnt'>0 selecionados</span></div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;margin:.75rem 0'>"
+    +"<input type='text' id='vcc-q' placeholder='Buscar por nome ou funcao...' oninput='renderVcc()' style='flex:1;min-width:200px'/>"
+    +"<select id='vcc-emp' onchange='renderVcc()' style='width:auto'><option value=''>Todas as categorias</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
+    +"<select id='vcc-fc' onchange='renderVcc()' style='width:auto'><option value=''>Todos os centros de custo</option><option value='_sem'>Sem centro de custo</option>"
+    +cs.map(function(c){return "<option value='"+c.id+"'>"+esc(ccNome(c))+"</option>";}).join("")+"</select>"
+    +"<select id='vcc-sit' onchange='renderVcc()' style='width:auto'><option value='ativos'>Ativos</option><option value='todos'>Todos</option></select></div>"
+    +"<div id='vcc-lista'></div></div>";
+  renderVcc();
+}
+function setVccFiltro(c){var s=document.getElementById("vcc-fc");if(s){s.value=c;renderVcc();}}
+function vccLista(){
+  var q=(gv("vcc-q")||"").toLowerCase(),em=gv("vcc-emp"),fc=gv("vcc-fc"),sit=gv("vcc-sit")||"ativos";
+  var ids={};DB.cc.forEach(function(c){ids[c.id]=1;});
+  return DB.emp.filter(function(e){
+    if(sit==="ativos"&&!isAtivo(e))return false;
+    if(em&&e.empresa!==em)return false;
+    if(fc==="_sem"&&e.ccid&&ids[e.ccid])return false;
+    if(fc&&fc!=="_sem"&&e.ccid!==fc)return false;
+    return !q||e.nome.toLowerCase().includes(q)||(e.func||"").toLowerCase().includes(q);
+  }).sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||(a.func||"").localeCompare(b.func||"")||a.nome.localeCompare(b.nome);});
+}
+function renderVcc(){
+  var el=document.getElementById("vcc-lista");if(!el)return;
+  var l=vccLista();
+  var todos=l.length&&l.every(function(e){return vccSel.indexOf(e.id)>=0;});
+  el.innerHTML=l.length===0?"<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador encontrado.</div>":
+    "<div class='etab-wrap'><table class='etab'><thead><tr>"
+    +"<th class='c' style='cursor:default;width:42px'><input type='checkbox' "+(todos?"checked":"")+" onchange='vccTodos(this.checked)' title='Selecionar todos' style='width:auto'/></th>"
+    +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>CATEGORIA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+    +"<th class='c' style='cursor:default'>GRUPO</th><th class='c' style='cursor:default'>CENTRO DE CUSTO ATUAL</th><th class='c' style='cursor:default'>CUSTO MENSAL</th></tr></thead><tbody>"
+    +l.map(function(e){
+      var on=vccSel.indexOf(e.id)>=0,ct=empTxt(e,"cc"),cu=empTemValores(e)?calcCusto(e):null;
+      return "<tr class='"+(on?"dir-on":"")+(isAtivo(e)?"":" off")+"' onclick=\"vccTog('"+e.id+"')\" style='cursor:pointer'>"
+        +"<td class='c'><input type='checkbox' "+(on?"checked":"")+" style='width:auto;pointer-events:none'/></td>"
+        +"<td class='nm'>"+esc(e.nome)+"</td><td>"+esc(e.empresa||"")+"</td><td class='c'>"+esc(e.func||"")+"</td>"
+        +"<td class='c'>"+esc(empTxt(e,"grupo")||"")+"</td>"
+        +"<td class='c'>"+(ct?"<span class='bdg' style='background:#e6edf8;color:#00348F'>"+esc(ct)+"</span>":"<span class='bdg' style='background:#fdecd2;color:#8a5a00'>SEM CENTRO DE CUSTO</span>")+"</td>"
+        +"<td class='r'>"+(cu===null?"—":fmtBRL(cu))+"</td></tr>";
+    }).join("")+"</tbody></table></div>";
+  var c=document.getElementById("vcc-cnt");if(c)c.textContent=vccSel.length+" selecionado"+(vccSel.length!==1?"s":"");
+}
+function vccTog(id){var i=vccSel.indexOf(id);if(i>=0)vccSel.splice(i,1);else vccSel.push(id);renderVcc();}
+function vccTodos(on){var l=vccLista().map(function(e){return e.id;});vccSel=vccSel.filter(function(x){return l.indexOf(x)<0;});if(on)vccSel=vccSel.concat(l);renderVcc();}
+function aplicarVcc(){
+  var c=gv("vcc-dest");
+  if(!vccSel.length){alert("Selecione ao menos um colaborador.");return;}
+  if(!c){alert("Escolha o centro de custo de destino.");return;}
+  var cn=ccNome(DB.cc.find(function(x){return x.id===c;}));
+  DB.emp=DB.emp.map(function(e){return vccSel.indexOf(e.id)>=0?Object.assign({},e,{ccid:c}):e;});
+  var n=vccSel.length;vccSel=[];dbSave();
+  var keep=[gv("vcc-q"),gv("vcc-emp"),gv("vcc-fc"),gv("vcc-sit")];
+  rVcc();
+  ["vcc-q","vcc-emp","vcc-fc","vcc-sit"].forEach(function(id,i){var el=document.getElementById(id);if(el)el.value=keep[i];});
+  document.getElementById("vcc-dest").value=c;renderVcc();
+  showSync(n+" colaborador"+(n>1?"es vinculados":" vinculado")+" a "+cn,true);
+  setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
+}
+function removerVcc(){
+  if(!vccSel.length){alert("Selecione ao menos um colaborador.");return;}
+  if(!confirm("Tirar "+vccSel.length+" colaborador(es) do centro de custo atual?"))return;
+  DB.emp=DB.emp.map(function(e){return vccSel.indexOf(e.id)<0?e:Object.assign({},e,{ccid:""});});
+  vccSel=[];dbSave();rVcc();
+}
+
 // COLABORADORES
 // Estado separado por tela: "cad" = Cadastro de Colaborador, "res" = Resumo dos Custos (somente leitura)
 var empCtx="cad",EMP_ST={cad:{aba:"ativos",sort:{k:"empresa",d:1},fil:{}},res:{aba:"ativos",sort:{k:"empresa",d:1},fil:{}}};
@@ -1749,7 +1923,7 @@ function motAfasNome(id){if(!DB.motafas)return "Sem motivo";var m=id?DB.motafas.
 function motAfasOpts(sel){
   if(!DB.motafas)DB.motafas=[];
   return "<option value=''>Selecione o motivo...</option>"
-    +DB.motafas.map(function(m){return "<option value='"+m.id+"'"+(m.id===sel?" selected":"")+">"+esc(m.nome)+"</option>";}).join("");
+    +DB.motafas.filter(function(m){return m.tipo!=="inat";}).map(function(m){return "<option value='"+m.id+"'"+(m.id===sel?" selected":"")+">"+esc(m.nome)+"</option>";}).join("");
 }
 function rEmp(){
   var ccOpts="<option value=''>Selecione o centro...</option>";
@@ -1769,13 +1943,20 @@ function rEmp(){
     +"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.5rem'>"
     +"<div class='seg' id='efseg'>"+segBtn("ativos","Ativos",nAt)+segBtn("afastados","Afastados",nAf)+segBtn("inativos","Inativos",nIn)+segBtn("todos","Todos",DB.emp.length)+"</div>"
     +"<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'>"
+    +"<div class='mes-fil'><i class='ti ti-calendar'></i><select id='emp-mes' onchange='setEmpMes()' title='Mes dos valores'>"
+    +MOS.map(function(x,i){var v=String(i+1).padStart(2,"0");return "<option value='"+v+"'"+(v===empMesSel().slice(5)?" selected":"")+">"+x+"</option>";}).join("")+"</select>"
+    +"<select id='emp-ano' onchange='setEmpMes()' title='Ano dos valores'>"+(function(){var a0=+curMes().slice(0,4),ys={};ys[a0-1]=1;ys[a0]=1;ys[a0+1]=1;ys[+empMesSel().slice(0,4)]=1;
+      DB.emp.forEach(function(e){if(e.mv)Object.keys(e.mv).forEach(function(m){ys[+m.slice(0,4)]=1;});});
+      return Object.keys(ys).sort().map(function(y){return "<option value='"+y+"'"+(y===empMesSel().slice(0,4)?" selected":"")+">"+y+"</option>";}).join("");})()+"</select></div>"
+    +"<button class='btng btn-ic' onclick='abrirCopiaMes()' title='Copiar os valores de outro mes para o mes selecionado'><i class='ti ti-copy'></i>Copiar de outro mes</button>"
     +"<button class='btng btn-ic' id='btn-cols' onclick='abrirPainelCols(event)'></button>"
-    +"<input type='text' id='ebsc' value='"+esc(q)+"' placeholder='Buscar por empresa, nome, funcao, horario...' oninput='filtEmp()' style='width:260px;max-width:100%'/></div></div>"
+    +"<input type='text' id='ebsc' value='"+esc(q)+"' placeholder='Buscar por categoria, nome, funcao, horario...' oninput='filtEmp()' style='width:240px;max-width:100%'/></div></div>"
+    +"<div id='emp-mesinfo' class='mes-info'></div>"
     +"<div id='elist'>"+rEmpList()+"</div></div>"
     +mdShell("md-emp","Novo colaborador","eftt",
       "<input type='hidden' id='eid'/>"
       +"<div class='fr2'>"
-      +"<div class='fr'><label class='lbl'>Empresa <span class='opt'>(opcional)</span></label><input type='text' id='eempresa' list='eempresa-lst' placeholder='Ex: Timbo Papeis Especiais'/>"
+      +"<div class='fr'><label class='lbl'>Categoria <span class='opt'>(opcional)</span></label><input type='text' id='eempresa' list='eempresa-lst' placeholder='Ex: Industriais Diretos - 1º T'/>"
       +"<datalist id='eempresa-lst'>"+empresasCad().map(function(x){return "<option value='"+esc(x)+"'>";}).join("")+"</datalist></div>"
       +"<div class='fr'><label class='lbl'>Horario <span class='opt'>(opcional)</span></label><input type='text' id='ehorario' placeholder='Ex: 07:00 as 17:00'/></div></div>"
       +"<div class='fr'><label class='lbl'>Nome completo (Funcionario)</label><input type='text' id='enome' placeholder='Ex: Joao Silva'/></div>"
@@ -1796,6 +1977,7 @@ function rEmp(){
       +"<button type='button' id='emthora' class='seg-b' onclick=\"setMeiTipo('hora')\"><i class='ti ti-clock'></i>Valor por hora</button></div></div>"
       +"<div class='fr' id='emeihrow' style='display:none'><label class='lbl'>Horas por mes</label><input type='number' id='emeihoras' min='1' step='1' placeholder='220' oninput='updSalCalc()'/></div>"
       +"</div></div>"
+      +"<div class='mes-info' id='emodmes' style='margin-bottom:.6rem'></div>"
       +"<div class='fr'><label class='lbl'><span id='esallb'>Salario (R$)</span> <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00' oninput='updSalCalc()'/><div class='hint' id='esalhint' style='display:none'></div></div>"
       +"<div id='ecltcalc'><div class='fr2'>"
       +"<div class='fr'><label class='lbl'>1/3 Ferias <span class='opt'>(automatico)</span></label><input type='text' id='eterco' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div>"
@@ -1816,10 +1998,21 @@ function rEmp(){
       +"<button type='button' id='eat1' class='seg-b on' onclick=\"setEmpAtivo('1')\"><i class='ti ti-circle-check'></i>Ativo</button>"
       +"<button type='button' id='eat0' class='seg-b' onclick=\"setEmpAtivo('0')\"><i class='ti ti-circle-minus'></i>Inativo</button></div>"
       +"<div class='hint'>Somente colaboradores ativos aparecem na tela de Premios.</div></div>"
+      +"<div id='einatarea' style='display:none;background:#f6f8fb;border:1px solid #e2e7ee;border-radius:10px;padding:.7rem .8rem;margin-bottom:.8rem'>"
+      +"<div class='fr'><label class='lbl'>Motivo da inatividade</label>"
+      +"<div style='display:flex;gap:6px'><select id='einatmot' style='flex:1;min-width:0'></select>"
+      +"<button type='button' class='btng btn-ic' onclick='togNovoMotInat()' style='white-space:nowrap'><i class='ti ti-plus'></i>Novo motivo</button></div>"
+      +"<div id='einatnovo' style='display:none;margin-top:6px;gap:6px'><input type='text' id='einatnovonm' placeholder='Nome do novo motivo' onkeydown=\"if(event.key==='Enter')addMotInat()\" style='flex:1;min-width:0'/>"
+      +"<button type='button' class='btnp' onclick='addMotInat()'>Salvar</button></div></div>"
+      +"<div class='fr2'><div class='fr'><label class='lbl'>Inativo a partir de</label><input type='date' id='einatini'/></div>"
+      +"<div class='fr'><label class='lbl'>Ate <span class='opt'>(retorno previsto)</span></label><input type='date' id='einatfim'/></div></div>"
+      +"<div class='hint' style='margin:0'>Deixe o fim em branco se nao houver previsao de retorno. Depois da data de fim o colaborador volta a ficar ativo sozinho. O historico fica salvo.</div>"
+      +"<div id='einathist'></div></div>"
       +"<div id='edemarea'></div>"
       +"<div class='mdl-ft'><button class='btng' onclick=\"closeMd('md-emp')\">Cancelar</button>"
       +"<button class='btnp' id='esav' onclick='savEmp()'>Cadastrar</button></div>"
     );
+  setTimeout(empMesInfo,0);
 }
 function empListaFiltrada(q){
   q=(q||"").toLowerCase();
@@ -1836,12 +2029,119 @@ function setEmpFiltro(k){
   document.querySelectorAll("#"+empId("efseg")+" .seg-b").forEach(function(b){b.classList.toggle("on",b.dataset.k===k);});
   filtEmp();
 }
+
+// ═══ VALORES MENSAIS DO COLABORADOR (lancados mes a mes no Cadastro) ═══
+// e.mv = {"2026-10":{sal,adic,cesta,pmetas,bonus,refeit,inssMan,fgtsMan}}
+// Os campos "atuais" do colaborador (e.sal, e.cesta...) espelham o ultimo mes lancado ate o mes atual,
+// assim as demais telas continuam funcionando com o valor vigente.
+var MV_K=["sal","adic","cesta","pmetas","bonus","refeit","inssMan","fgtsMan"];
+var empMesV=null;
+function empMesSel(){return empMesV||curMes();}
+function mvPick(e){var o={};MV_K.forEach(function(k){if(typeof e[k]==="number")o[k]=e[k];});return o;}
+function empView(e,m){
+  if(!e||!e.mv)return e;
+  var v=Object.assign({},e);MV_K.concat(["terco","dec13","custo"]).forEach(function(k){delete v[k];});
+  v._mes=m;var d=e.mv[m];
+  if(!d){v._semMes=true;return v;}
+  MV_K.forEach(function(k){if(typeof d[k]==="number")v[k]=d[k];});
+  if(typeof v.sal==="number"){var c=isMEI(v)?{terco:0,dec13:0}:calcSal(v.sal);v.terco=c.terco;v.dec13=c.dec13;}
+  return v;
+}
+function mvSync(n){
+  if(!n.mv)return n;
+  var cm=curMes(),ks=Object.keys(n.mv).filter(function(m){return m<=cm;}).sort();
+  if(!ks.length)return n;
+  var d=n.mv[ks[ks.length-1]];
+  MV_K.forEach(function(k){if(typeof d[k]==="number")n[k]=d[k];else delete n[k];});
+  if(typeof n.sal==="number"){var c=isMEI(n)?{terco:0,dec13:0}:calcSal(n.sal);n.terco=c.terco;n.dec13=c.dec13;}else{delete n.terco;delete n.dec13;}
+  if(empTemValores(n))n.custo=calcCusto(n);else delete n.custo;
+  return n;
+}
+// Primeira carga: preenche jan a out/2026 com os valores atuais (salario respeitando os reajustes). Nov e dez ficam em branco.
+function mvMigrar(){
+  var ms=[];for(var i=1;i<=10;i++)ms.push("2026-"+String(i).padStart(2,"0"));
+  (DB.emp||[]).forEach(function(e){
+    if(e.mv)return;
+    var mv={};
+    ms.forEach(function(m){
+      if(!empAtivoNoMes(e,m))return;
+      var d=mvPick(e),sm=salNoMes(e,m);if(sm===undefined)delete d.sal;else d.sal=sm;
+      if(Object.keys(d).length)mv[m]=d;
+    });
+    e.mv=mv;
+  });
+}
+window.mvMigrar=mvMigrar;
+function setEmpMes(){
+  var m=gv("emp-mes"),a=gv("emp-ano");if(!m||!a)return;
+  empMesV=a+"-"+m;filtEmp();empMesInfo();
+}
+function empMesInfo(){
+  var el=document.getElementById("emp-mesinfo");if(!el)return;
+  var m=empMesSel(),n=DB.emp.filter(function(e){return e.mv&&e.mv[m];}).length;
+  el.innerHTML="<i class='ti ti-calendar-dollar'></i> Valores de <b>"+fmtM(m)+"</b>"+(m===curMes()?" (mes atual)":m>curMes()?" (mes futuro)":"")
+    +" &middot; "+(n?n+" colaborador"+(n!==1?"es":"")+" com valores lancados":"<span style='color:#b45309;font-weight:700'>nenhum valor lancado neste mes</span>")
+    +" &middot; os valores digitados na tabela gravam neste mes";
+}
+function abrirCopiaMes(){
+  fecharCopiaMes();
+  var dest=empMesSel(),s={};
+  DB.emp.forEach(function(e){if(e.mv)Object.keys(e.mv).forEach(function(m){if(m!==dest)s[m]=(s[m]||0)+1;});});
+  var ms=Object.keys(s).sort().reverse();
+  if(!ms.length){alert("Nao ha outro mes com valores lancados para copiar.");return;}
+  var ant=ms.filter(function(m){return m<dest;})[0]||ms[0];
+  var nTela=empListaVisivel().length;
+  function radio(nm,v,lb,on){return "<label class='pdf-opt'><input type='radio' name='"+nm+"' value='"+v+"'"+(on?" checked":"")+"/>"+lb+"</label>";}
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-cpmes";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:480px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-copy'></i>Copiar valores de outro mes</div>"
+    +"<button class='mdl-x' onclick='fecharCopiaMes()' aria-label='Fechar'><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<div class='fr2'><div class='fr'><label class='lbl'>Copiar de</label><select id='cpm-ori'>"
+    +ms.map(function(m){return "<option value='"+m+"'"+(m===ant?" selected":"")+">"+fmtM(m)+" ("+s[m]+")</option>";}).join("")+"</select></div>"
+    +"<div class='fr'><label class='lbl'>Para</label><input type='text' value='"+fmtM(dest)+"' readonly style='background:#f1f4f8;font-weight:700'/></div></div>"
+    +"<div class='fr'><label class='lbl'>Colaboradores</label><div class='pdf-opts'>"
+    +radio("cpm-esc","tela","Os listados na tela ("+nTela+")",true)+radio("cpm-esc","todos","Todos com vinculo no mes")+"</div></div>"
+    +"<div class='fr'><label style='display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer'><input type='checkbox' id='cpm-sob' style='width:auto'/> Sobrescrever quem ja tem valores lancados em "+fmtM(dest)+"</label></div>"
+    +"<div class='hint'>Copia salario, adicional, cesta basica, premio metas, bonus anual, refeitorio e INSS/FGTS manuais. 1/3, 13o, assiduidade e custo sao recalculados.</div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='fecharCopiaMes()'>Cancelar</button><button class='btnp btn-ic' onclick='confCopiaMes()'><i class='ti ti-copy'></i>Copiar</button></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharCopiaMes();});
+}
+function fecharCopiaMes(){var m=document.getElementById("md-cpmes");if(m)m.remove();}
+function confCopiaMes(){
+  var ori=gv("cpm-ori"),dest=empMesSel(),sob=!!document.getElementById("cpm-sob").checked,esc0=_radio("cpm-esc")||"tela";
+  var ids={};(esc0==="tela"?empListaVisivel():DB.emp.filter(function(e){return empAtivoNoMes(e,dest);})).forEach(function(e){ids[e.id]=1;});
+  var n=0;
+  DB.emp=DB.emp.map(function(e){
+    if(!ids[e.id]||!e.mv||!e.mv[ori]||(!sob&&e.mv[dest]))return e;
+    var x=Object.assign({},e);x.mv=Object.assign({},e.mv);x.mv[dest]=Object.assign({},e.mv[ori]);mvSync(x);n++;return x;
+  });
+  fecharCopiaMes();
+  if(!n){alert("Nenhum valor copiado (os colaboradores ja tinham valores no mes ou nao tinham valores no mes de origem).");return;}
+  dbSave();filtEmp();empMesInfo();
+  showSync(n+" colaborador"+(n>1?"es":"")+" com valores copiados de "+fmtM(ori)+" para "+fmtM(dest),true);
+  setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
+}
+// Barra de rolagem superior sincronizada (tabelas largas)
+function xsSync(){
+  document.querySelectorAll(".xs-wrap").forEach(function(w){
+    var t=w.previousElementSibling;if(!t||!t.classList.contains("xs-top"))return;
+    var i=t.firstElementChild;i.style.width=w.scrollWidth+"px";
+    t.style.display=w.scrollWidth>w.clientWidth+1?"":"none";
+    var lock=false;
+    t.onscroll=function(){if(lock){lock=false;return;}lock=true;w.scrollLeft=t.scrollLeft;};
+    w.addEventListener("scroll",function(){if(lock){lock=false;return;}lock=true;t.scrollLeft=w.scrollLeft;});
+    t.scrollLeft=w.scrollLeft;
+  });
+}
+window.addEventListener("resize",function(){setTimeout(xsSync,50);});
 // ═══ TABELA DE COLABORADORES: colunas, classificar, filtrar e ocultar ═══
 
 var MONEY_K=["sal","adic","inss","fgts","terco","dec13","cesta","assid","pmetas","bonus","refeit","custo"];
 // t: txt (texto), dt (data editavel), in (valor editavel), calc (calculado)
 var EMP_COLS=[
-  {k:"empresa",lb:"EMPRESA",t:"txt"},
+  {k:"empresa",lb:"CATEGORIA",t:"txt"},
   {k:"nome",lb:"FUNCIONÁRIO",t:"txt",fixa:true},
   {k:"func",lb:"FUNÇÃO",t:"txt",c:1},
   {k:"cc",lb:"CENTRO DE CUSTO",t:"txt",c:1},
@@ -1870,8 +2170,9 @@ function empColKey(){return "timbo_emp_cols_ocultas"+(empCtx==="res"?"_res":"");
 function empColOcultas(){try{return JSON.parse(localStorage.getItem(empColKey())||"[]");}catch(e){return [];}}
 function setEmpColOcultas(a){try{localStorage.setItem(empColKey(),JSON.stringify(a));}catch(e){}}
 function empColsVis(){var o=empColOcultas();return EMP_COLS.filter(function(c){return c.fixa||o.indexOf(c.k)<0;});}
-function empTemValores(e){return typeof e.sal==="number"||encManual(e,"inss")||encManual(e,"fgts")||!!assidInfo(e)||BENEF.some(function(b){return typeof e[b.k]==="number";});}
+function empTemValores(e){if(e._semMes)return false;return typeof e.sal==="number"||encManual(e,"inss")||encManual(e,"fgts")||!!assidInfo(e)||BENEF.some(function(b){return typeof e[b.k]==="number";});}
 function empCampoVal(e,k){
+  if(e._semMes)return null;
   if(k==="terco"||k==="dec13")return typeof e.sal==="number"?(isMEI(e)?0:calcSal(e.sal)[k]):null;
   if(k==="sal")return typeof e.sal==="number"?salMensal(e):null;
   if(k==="inss"||k==="fgts")return typeof e.sal==="number"||encManual(e,k)?encVal(e,k):null;
@@ -1901,6 +2202,7 @@ function empSortVal(e,k){
 // Lista com busca + aba + filtros de coluna
 function empListaVisivel(){
   var l=empListaFiltrada(gv(empId("ebsc")));
+  if(empCtx==="cad"){var mm=empMesSel();l=l.map(function(e){return empView(e,mm);});}
   Object.keys(empColFil).forEach(function(k){var s=empColFil[k];l=l.filter(function(e){return s.indexOf(empTxt(e,k))>=0;});});
   var k=empSort.k,d=empSort.d;
   return l.sort(function(a,b){
@@ -1936,11 +2238,11 @@ function rEmpList(){
       +"<option value='__novo'>+ Cadastrar novo centro...</option></select></td>";
     if(c.k==="vinc")return "<td class='c'>"+vincBdg(e)+"</td>";
     if(c.k==="sit"){var s=empSitTxt(e),cl={ATIVO:"bdg-ok",AFASTADO:"",DEMITIDO:"bdg-dem",INATIVO:"bdg-off"}[s];
-      return "<td class='c'><span class='bdg "+cl+"'"+(s==="AFASTADO"?" style='background:#fdecd2;color:#8a5a00'":"")+">"+s+"</span></td>";}
+      return "<td class='c'"+(s==="INATIVO"&&e.motinat?" title='"+esc(motInatNome(e.motinat)+" · desde "+fmtD(e.inat)+(e.inatFim?" ate "+fmtD(e.inatFim):" (sem data de retorno)"))+"'":"")+"><span class='bdg "+cl+"'"+(s==="AFASTADO"?" style='background:#fdecd2;color:#8a5a00'":"")+">"+s+"</span></td>";}
     if(c.t==="dt")return "<td class='in'><input type='date' class='etab-sal etab-dt' value='"+(e[c.k]||"")+"' data-col='"+c.k+"' onchange=\"setDataInline('"+e.id+"','"+c.k+"',this)\" onkeydown='salKey(event,this)'/></td>";
     if(c.t==="in"){var v=typeof e[c.k]==="number"?e[c.k]:"";
       return "<td class='in'><input type='text' inputmode='decimal' class='etab-sal' value='"+(v===""?"":fmtBRL(v))+"' placeholder='R$ 0,00' onfocus='brlFocus(this)' onblur='brlBlur(this)'"+(c.k==="sal"&&isMEI(e)&&e.meiTipo==="hora"?" title='Valor por hora x "+(+e.meiHoras||220)+"h no mes = "+fmtBRL(salMensal(e))+"'":"")+" data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
-    if(c.k==="assid"){var ai=assidInfo(e);
+    if(c.k==="assid"){if(e._semMes)return "<td class='r'></td>";var ai=assidInfo(e,e._mes);
       if(!ai)return "<td class='r' style='color:#b0b8c1' title='Sem premio cadastrado na tela Premios'>—</td>";
       return "<td class='r' title='Premio "+fmtBRL(ai.bruto)+(ai.pct>0?" - desconto "+pct1(ai.pct)+" ("+fmtBRL(ai.desc)+")":" - sem descontos")+" em "+fmtM(ai.mes)+"'>"
         +(ai.pct>0?"<span class='assid-desc'>-"+pct1(ai.pct)+"</span>":"")+fmtBRL(ai.rec)+"</td>";}
@@ -1968,7 +2270,8 @@ function rEmpList(){
   var nTxt=0;while(nTxt<cols.length&&MONEY_K.indexOf(cols[nTxt].k)<0)nTxt++;
   var foot="<tr>"+(nTxt?"<td colspan='"+nTxt+"'>TOTAL (ativos)</td>":"")+cols.slice(nTxt).map(function(c){
     return MONEY_K.indexOf(c.k)>=0?"<td class='r'"+(empRO()?"":" id='ettot-"+c.k+"'")+">"+fmtBRL(tot[c.k])+"</td>":"<td></td>";}).join("")+(empRO()?"":"<td></td>")+"</tr>";
-  return aviso+"<div class='etab-wrap'><table class='etab' style='min-width:"+Math.max(700,cols.length*112+90)+"px'><thead><tr>"+head
+  setTimeout(xsSync,0);
+  return aviso+"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap'><table class='etab' style='min-width:"+Math.max(700,cols.length*112+90)+"px'><thead><tr>"+head
     +(empRO()?"":"<th class='c' style='cursor:default'>AÇÕES</th>")+"</tr></thead><tbody>"+rows+"</tbody><tfoot>"+foot+"</tfoot></table></div>";
 }
 // Menu do cabecalho (estilo Excel): classificar, filtrar valores, ocultar coluna
@@ -2065,14 +2368,14 @@ function brlBlur(el){var n=parseBRL(el.value);el.value=isNaN(n)?"":fmtBRL(n);}
 function setValInline(id,key,v){
   var t=(v||"").toString().trim(),s=t===""?null:parseBRL(t);
   if(s!==null&&(isNaN(s)||s<0)){alert("Informe um valor valido.");return;}
-  var emp=null;
+  var emp=null,mm=empCtx==="cad"?empMesSel():curMes();
   DB.emp=DB.emp.map(function(e){
     if(e.id!==id)return e;
-    var n=Object.assign({},e);
-    if(s===null)delete n[key];else n[key]=+s.toFixed(2);
-    if(key==="sal"){if(s===null){delete n.terco;delete n.dec13;}else{var c=isMEI(n)?{terco:0,dec13:0}:calcSal(s);n.terco=c.terco;n.dec13=c.dec13;}}
-    if(empTemValores(n))n.custo=calcCusto(n);else delete n.custo;
-    emp=n;return n;
+    var n=Object.assign({},e);n.mv=Object.assign({},n.mv||{});
+    var d=Object.assign({},n.mv[mm]||{});
+    if(s===null)delete d[key];else d[key]=+s.toFixed(2);
+    if(Object.keys(d).length)n.mv[mm]=d;else delete n.mv[mm];
+    mvSync(n);emp=empView(n,mm);return n;
   });
   if(!emp)return;
   ["terco","dec13","custo","inss","fgts"].forEach(function(x){var el=document.getElementById("et"+x+"-"+id),val=empCampoVal(emp,x);if(!el)return;if(el.tagName==="INPUT")el.value=val===null?"":(document.activeElement===el?fmtNum(val):fmtBRL(val));else el.textContent=val===null?"":fmtBRL(val);});
@@ -2085,9 +2388,12 @@ function setEncInline(id,k,v){
   var tx=(v||"").toString().trim(),s=tx===""?null:parseBRL(tx);
   if(s!==null&&(isNaN(s)||s<0)){alert("Informe um valor valido.");return;}
   var e=DB.emp.find(function(x){return x.id===id;});if(!e)return;
+  var mm=empCtx==="cad"?empMesSel():curMes(),ev=empView(e,mm);
   // valor igual ao automatico = volta para automatico
-  if(s!==null&&Math.abs(s-encAuto(e,k))<0.005)s=null;
-  DB.emp=DB.emp.map(function(x){if(x.id!==id)return x;var n=Object.assign({},x);if(s===null)delete n[k+"Man"];else n[k+"Man"]=+s.toFixed(2);if(empTemValores(n))n.custo=calcCusto(n);return n;});
+  if(s!==null&&Math.abs(s-encAuto(ev,k))<0.005)s=null;
+  DB.emp=DB.emp.map(function(x){if(x.id!==id)return x;var n=Object.assign({},x);n.mv=Object.assign({},n.mv||{});
+    var d=Object.assign({},n.mv[mm]||{});if(s===null)delete d[k+"Man"];else d[k+"Man"]=+s.toFixed(2);
+    if(Object.keys(d).length)n.mv[mm]=d;else delete n.mv[mm];mvSync(n);return n;});
   filtEmp();dbSave();
 }
 function setSalInline(id,v){setValInline(id,"sal",v);}
@@ -2100,9 +2406,12 @@ function salKey(ev,el){
 }
 function filtEmp(){
   var el=document.getElementById(empId("elist"));if(!el)return;
+  var w0=el.querySelector(".xs-wrap"),sl=w0?w0.scrollLeft:0,st=w0?w0.scrollTop:0; // mantem a posicao da rolagem
   el.innerHTML=rEmpList();
+  var w1=el.querySelector(".xs-wrap");if(w1){w1.scrollLeft=sl;w1.scrollTop=st;}
+  setTimeout(xsSync,0);
 }
-function novoEmp(){canEmp();openMd("md-emp");}
+function novoEmp(){canEmp();openMd("md-emp");var mdm=document.getElementById("emodmes");if(mdm)mdm.innerHTML="<i class='ti ti-calendar-dollar'></i> Os valores serao lancados em <b>"+fmtM(empMesSel())+"</b>";}
 function empVinc(e){return e&&e.vinc==="MEI"?"MEI":"CLT";}
 function isMEI(e){return empVinc(e)==="MEI";}
 // Salario mensal: MEI por hora = valor da hora x horas no mes
@@ -2150,6 +2459,32 @@ function setEmpAtivo(v){
   var b1=document.getElementById("eat1"),b0=document.getElementById("eat0");
   if(b1)b1.classList.toggle("on",v==="1");
   if(b0)b0.classList.toggle("on",v==="0");
+  var ar=document.getElementById("einatarea");if(!ar)return;
+  var e=DB.emp.find(function(x){return x.id===gv("eid");});
+  ar.style.display=v==="0"&&!(e&&e.dem)?"":"none";
+  var sm=document.getElementById("einatmot");if(sm&&!sm.options.length)sm.innerHTML=motInatOpts("");
+  var ii=document.getElementById("einatini");if(v==="0"&&ii&&!ii.value)ii.value=hoje();
+}
+// Motivos de inatividade (ficam junto dos motivos de afastamento, tipo "inat")
+var MI_PAD=[{id:"mi_lic",tipo:"inat",nome:"Licenca nao remunerada"},{id:"mi_aux",tipo:"inat",nome:"Auxilio-doenca (INSS)"},{id:"mi_mat",tipo:"inat",nome:"Licenca maternidade"},{id:"mi_susp",tipo:"inat",nome:"Contrato suspenso"},{id:"mi_out",tipo:"inat",nome:"Outros"}];
+function motInatList(){var l=(DB.motafas||[]).filter(function(m){return m.tipo==="inat";});return l.length?l:MI_PAD.slice();}
+function motInatNome(id){var m=motInatList().find(function(x){return x.id===id;});return m?m.nome:"";}
+function motInatOpts(sel){return "<option value=''>Selecione o motivo...</option>"+motInatList().map(function(m){return "<option value='"+m.id+"'"+(m.id===sel?" selected":"")+">"+esc(m.nome)+"</option>";}).join("");}
+function togNovoMotInat(){var r=document.getElementById("einatnovo");if(!r)return;var sh=r.style.display==="none";r.style.display=sh?"flex":"none";if(sh)document.getElementById("einatnovonm").focus();}
+function addMotInat(){
+  var nm=gv("einatnovonm").trim();if(!nm){alert("Informe o nome do motivo.");return;}
+  if(!DB.motafas)DB.motafas=[];
+  if(!DB.motafas.some(function(m){return m.tipo==="inat";}))MI_PAD.forEach(function(x){DB.motafas.push(Object.assign({},x));});
+  var ex=DB.motafas.find(function(m){return m.tipo==="inat"&&m.nome.toLowerCase()===nm.toLowerCase();});
+  var novo=ex||{id:uid(),tipo:"inat",nome:nm};if(!ex)DB.motafas.push(novo);
+  document.getElementById("einatmot").innerHTML=motInatOpts(novo.id);
+  document.getElementById("einatnovonm").value="";document.getElementById("einatnovo").style.display="none";
+}
+function inatHistHTML(e){
+  var h=(e&&e.inatHist||[]).slice().sort(function(a,b){return (b.ini||"").localeCompare(a.ini||"");});
+  if(!h.length)return "";
+  return "<div style='margin-top:.6rem'><div class='lbl' style='margin-bottom:4px'>Historico de inatividade</div>"+h.map(function(x){
+    return "<div style='font-size:11.5px;color:#666;padding:2px 0'><b>"+esc(motInatNome(x.mot)||"—")+"</b> &middot; "+fmtD(x.ini)+" &rarr; "+(x.fim?fmtD(x.fim):"sem data de retorno")+"</div>";}).join("")+"</div>";
 }
 
 // ═══════════════════════════════════════
@@ -2182,7 +2517,7 @@ function rReaj(){
   var selSt="padding:.4rem .7rem;border:1.5px solid var(--line);border-radius:8px;font-size:13px;color:"+B+";font-weight:700;background:#fff;width:auto";
   var rows=lista.length===0?"<div class='empty'><i class='ti ti-trending-up'></i>Nenhum reajuste no periodo. Clique em Novo reajuste.</div>":
     "<div class='etab-wrap' style='max-height:calc(100vh - 330px)'><table class='etab' style='min-width:1050px'><thead><tr>"
-    +"<th style='cursor:default'>DATA</th><th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>EMPRESA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+    +"<th style='cursor:default'>DATA</th><th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>CATEGORIA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
     +"<th class='c' style='cursor:default'>TIPO</th><th style='cursor:default'>MOTIVO</th><th class='c' style='cursor:default'>SALÁRIO ANTERIOR</th>"
     +"<th class='c' style='cursor:default'>%</th><th class='c' style='cursor:default'>NOVO SALÁRIO</th><th class='c' style='cursor:default'>DIFERENÇA</th><th class='c' style='cursor:default'>AÇÕES</th></tr></thead><tbody>"
     +lista.map(function(r){
@@ -2209,7 +2544,7 @@ function rReaj(){
     +"<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:.75rem'>"
     +"<select id='rj-ano' onchange='rReaj()' style='"+selSt+"'><option value='todos'"+(selAno==="todos"?" selected":"")+">Todos os anos</option>"+Object.keys(anos).sort().reverse().map(function(a){return "<option value='"+a+"'"+(a===selAno?" selected":"")+">"+a+"</option>";}).join("")+"</select>"
     +"<select id='rj-tipo' onchange='rReaj()' style='"+selSt+"'><option value=''>Todos os tipos</option><option value='sindicato'"+(selTipo==="sindicato"?" selected":"")+">Sindicato</option><option value='espontaneo'"+(selTipo==="espontaneo"?" selected":"")+">Espontaneo</option></select>"
-    +"<input type='text' id='rj-q' value='"+esc(q)+"' placeholder='Buscar colaborador, empresa ou motivo...' oninput='rReajLista()' style='width:280px;max-width:100%;margin-left:auto'/></div>"
+    +"<input type='text' id='rj-q' value='"+esc(q)+"' placeholder='Buscar colaborador, categoria ou motivo...' oninput='rReajLista()' style='width:280px;max-width:100%;margin-left:auto'/></div>"
     +"<div id='rj-lista'>"+rows+"</div></div>";
 }
 var _rjT=null;function rReajLista(){clearTimeout(_rjT);_rjT=setTimeout(function(){var p=document.activeElement&&document.activeElement.id;rReaj();var el=document.getElementById(p);if(el){el.focus();var v=el.value;el.value="";el.value=v;}},250);}
@@ -2237,7 +2572,7 @@ function novoReaj(){
     +"<div class='fr'><label class='lbl'>Colaboradores</label>"
     +"<div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px'>"
     +"<input type='text' id='rj-busca' placeholder='Buscar...' oninput='renderReajEmps()' style='flex:1;min-width:160px'/>"
-    +"<select id='rj-emp' onchange='renderReajEmps()' style='width:auto'><option value=''>Todas as empresas</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
+    +"<select id='rj-emp' onchange='renderReajEmps()' style='width:auto'><option value=''>Todas as categorias</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
     +"<button type='button' class='btng' onclick='rjMarcar(true)'>Marcar visiveis</button><button type='button' class='btng' onclick='rjMarcar(false)'>Desmarcar</button></div>"
     +"<div id='rj-emps' class='rj-emps'></div></div>"
     +"<div id='rj-prev'></div>"
@@ -2300,15 +2635,22 @@ function savReaj(){
   });
   if(regs.some(function(r){return r.novo<r.ant;})&&!confirm("Algum novo salario ficou menor que o atual. Continuar?"))return;
   if(!confirm("Aplicar reajuste ("+REAJ_TIPOS[rjTipo].lb+") para "+regs.length+" colaborador"+(regs.length>1?"es":"")+"?\nO salario no cadastro sera atualizado."))return;
-  regs.forEach(function(r){aplicarSalEmp(r.eid,r.novo);});
+  regs.forEach(function(r){aplicarSalEmp(r.eid,r.novo,r.data);});
   DB.reaj=(DB.reaj||[]).concat(regs);
   dbSave();fecharReaj();rReaj();
 }
 // Atualiza salario e recalcula 1/3, 13o e custo
-function aplicarSalEmp(id,sal){
+function aplicarSalEmp(id,sal,data){
   DB.emp=DB.emp.map(function(e){
     if(e.id!==id)return e;
-    var n=Object.assign({},e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal);n.sal=sal;n.terco=c.terco;n.dec13=c.dec13;n.custo=calcCusto(n);return n;
+    var n=Object.assign({},e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal);n.sal=sal;n.terco=c.terco;n.dec13=c.dec13;n.custo=calcCusto(n);
+    if(n.mv&&data){ // meses lancados a partir do reajuste recebem o novo salario
+      var dm=gmk(data),mv=Object.assign({},n.mv),ks=Object.keys(mv).sort(),alg=false;
+      ks.forEach(function(m){if(m>=dm){mv[m]=Object.assign({},mv[m],{sal:sal});alg=true;}});
+      if(!alg){var prev=ks.filter(function(m){return m<dm;}).pop();mv[dm]=Object.assign({},prev?mv[prev]:{},{sal:sal});}
+      n.mv=mv;mvSync(n);
+    }
+    return n;
   });
 }
 function delReaj(id){
@@ -2317,7 +2659,7 @@ function delReaj(id){
   var volta=e&&typeof e.sal==="number"&&Math.abs(e.sal-r.novo)<0.005;
   var msg="Excluir este reajuste?"+(volta?"\n\nO salario de "+e.nome+" volta para "+fmtBRL(r.ant)+".":"\n\nO salario atual nao sera alterado (ja foi modificado depois deste reajuste).");
   if(!confirm(msg))return;
-  if(volta)aplicarSalEmp(r.eid,r.ant);
+  if(volta)aplicarSalEmp(r.eid,r.ant,r.data);
   DB.reaj=DB.reaj.filter(function(x){return x.id!==id;});
   dbSave();rReaj();
 }
@@ -2442,7 +2784,7 @@ function rDir(){
     +"<span id='dir-cnt' class='dir-cnt'>0 selecionados</span></div></div>"
     +"<div style='display:flex;gap:8px;flex-wrap:wrap;margin:.75rem 0'>"
     +"<input type='text' id='dir-q' placeholder='Buscar por nome ou funcao...' oninput='renderDir()' style='flex:1;min-width:200px'/>"
-    +"<select id='dir-emp' onchange='renderDir()' style='width:auto'><option value=''>Todas as empresas</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
+    +"<select id='dir-emp' onchange='renderDir()' style='width:auto'><option value=''>Todas as categorias</option>"+Object.keys(emps).sort().map(function(x){return "<option value='"+esc(x)+"'>"+esc(x)+"</option>";}).join("")+"</select>"
     +"<select id='dir-fg' onchange='renderDir()' style='width:auto'><option value=''>Todos os grupos</option><option value='_sem'>Sem grupo</option>"
     +gs.map(function(g){return "<option value='"+g.id+"'>"+esc(g.nome)+"</option>";}).join("")+"</select>"
     +"<select id='dir-sit' onchange='renderDir()' style='width:auto'><option value='ativos'>Ativos</option><option value='todos'>Todos</option></select></div>"
@@ -2468,7 +2810,7 @@ function renderDir(){
   el.innerHTML=l.length===0?"<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador encontrado.</div>":
     "<div class='etab-wrap'><table class='etab'><thead><tr>"
     +"<th class='c' style='cursor:default;width:42px'><input type='checkbox' "+(todos?"checked":"")+" onchange='dirTodos(this.checked)' title='Selecionar todos' style='width:auto'/></th>"
-    +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>EMPRESA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+    +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>CATEGORIA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
     +"<th class='c' style='cursor:default'>CENTRO DE CUSTO</th><th class='c' style='cursor:default'>GRUPO ATUAL</th><th class='c' style='cursor:default'>CUSTO MENSAL</th></tr></thead><tbody>"
     +l.map(function(e){
       var on=dirSel.indexOf(e.id)>=0,gt=empTxt(e,"grupo"),cu=empTemValores(e)?calcCusto(e):null;
@@ -2521,7 +2863,7 @@ function rResumo(){
     +"<div class='seg' id='refseg'>"+segBtn("ativos","Ativos",nAt)+segBtn("afastados","Afastados",nAf)+segBtn("inativos","Inativos",nIn)+segBtn("todos","Todos",DB.emp.length)+"</div>"
     +"<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'>"
     +"<button class='btng btn-ic' id='rbtn-cols' onclick='abrirPainelCols(event)'></button>"
-    +"<input type='text' id='rebsc' value='"+esc(q)+"' placeholder='Buscar por empresa, nome, funcao, horario...' oninput='filtEmp()' style='width:260px;max-width:100%'/></div></div>"
+    +"<input type='text' id='rebsc' value='"+esc(q)+"' placeholder='Buscar por categoria, nome, funcao, horario...' oninput='filtEmp()' style='width:260px;max-width:100%'/></div></div>"
     +"<div id='relist'>"+rEmpList()+"</div></div>";
 }
 
@@ -2543,6 +2885,7 @@ function salNoMes(e,m){
   return rs.length?rs[0].ant:e.sal;
 }
 function custoNoMes(e,m){
+  if(e.mv&&e.mv[m]){var w=empView(e,m);return empTemValores(w)?calcCusto(w,m):0;} // valores lancados no mes
   var o=Object.assign({},e),s=salNoMes(e,m);
   if(s===undefined)delete o.sal;else o.sal=s;
   if(!(typeof o.sal==="number"||assidInfo(o,m)||BENEF.some(function(b){return typeof o[b.k]==="number";})))return 0;
@@ -2598,7 +2941,7 @@ function rFolha(){
       :"<button class='fl-st' onclick=\"fecharMes('"+d.m+"')\" title='Congelar os valores deste mes'><i class='ti ti-lock-open'></i>Fechar</button>";
     return "<tr class='"+(d.m===curMes()?"fl-cur":"")+"'><td class='nm'>"+mm+"</td>"+cells
       +"<td class='r fl-c'>"+(f?v(d.folha):"")+"</td><td class='r fl-c'>"+(f?v(d.terc):"")+"</td><td class='r fl-c fl-g'>"+(f?v(d.geral):"")+"</td>"
-      +"<td class='in fl-c'><input type='number' min='0' step='0.01' class='etab-sal' data-col='rec' value='"+(d.rec===null?"":d.rec)+"' placeholder='0,00' onchange=\"setReceita('"+d.m+"',this.value)\" onkeydown='salKey(event,this)'/></td>"
+      +"<td class='in fl-c'><input type='text' inputmode='decimal' class='etab-sal' data-col='rec' value='"+(d.rec===null?"":fmtBRL(d.rec))+"' placeholder='R$ 0,00' onfocus='brlFocus(this)' onblur='brlBlur(this)' onchange=\"setReceita('"+d.m+"',this.value)\" onkeydown='salKey(event,this)'/></td>"
       +"<td class='r fl-c fl-p'>"+(f&&d.rec?pct(d.geral,d.rec):"")+"</td><td class='c'>"+st+"</td></tr>";
   }).join("");
   var totG=gp.concat(gt).map(function(g){return "<td class='r'>"+fmtBRL(soma(function(d){return d.f.g[g.id]||0;}))+"</td>";}).join("");
@@ -2637,7 +2980,7 @@ function flSyncScroll(){
 window.addEventListener("resize",function(){if(pg==="folha")flSyncScroll();});
 function pct2(x){return (x||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";}
 function setReceita(m,val){
-  var t=(val||"").toString().trim(),v=t===""?null:parseFloat(t.replace(",","."));
+  var t=(val||"").toString().trim(),v=t===""?null:parseBRL(t);
   if(v!==null&&(isNaN(v)||v<0)){alert("Informe um valor valido.");return;}
   if(!DB.receita)DB.receita=[];
   DB.receita=DB.receita.filter(function(r){return r.id!==m;});
@@ -2671,13 +3014,15 @@ function reabrirMes(m){
 var TELAS=[
   {k:"monitor",lb:"Monitoramento",ic:"ti-chart-dots-3",soVer:true},
   {k:"dashboard",lb:"Dashboard",ic:"ti-layout-dashboard"},
-  {k:"centros",lb:"Centros de Custo",ic:"ti-building"},
+  {k:"centros",lb:"Centro de Custos Senior",ic:"ti-building"},
+  {k:"vincularcc",lb:"Vincular p/ Centro de Custos",ic:"ti-link"},
   {k:"employees",lb:"Cadastro de Colaborador",ic:"ti-users"},
   {k:"reajustes",lb:"Reajuste Salarial",ic:"ti-trending-up"},
   {k:"grupos",lb:"Grupos de Custo",ic:"ti-category"},
   {k:"direcionar",lb:"Direcionar p/ Grupos",ic:"ti-arrows-split-2"},
   {k:"resumo",lb:"Resumo dos Custos",ic:"ti-report-money",soVer:true},
   {k:"folha",lb:"Custo Total da Folha",ic:"ti-table"},
+  {k:"percap",lb:"Analise por Categoria",ic:"ti-chart-histogram"},
   {k:"5s",lb:"Infracao 5S",ic:"ti-clipboard-check"},
   {k:"lancamento",lb:"Lancamentos",ic:"ti-clipboard-list"},
   {k:"premios",lb:"Premios",ic:"ti-gift"},
@@ -2858,6 +3203,7 @@ function assidInfo(e,mes){
   return {bruto:pr.val,pct:d.pct,desc:+d.desc.toFixed(2),rec:+d.rec.toFixed(2),mes:mes};
 }
 function calcCusto(e,mes){
+  mes=mes||e._mes;
   var sal=salMensal(e),c=isMEI(e)?{terco:0,dec13:0}:calcSal(sal),t=sal+(c.terco+c.dec13)/12+encVal(e,"inss")+encVal(e,"fgts");
   var ai=assidInfo(e,mes);if(ai)t+=ai.rec;
   BENEF.forEach(function(b){var v=+e[b.k]||0;t+=b.anual?v/12:v;});
@@ -2911,9 +3257,26 @@ function savEmp(){
   delete obj.assid;
   ["inss","fgts"].forEach(function(k){if(encM[k]===null)delete obj[k+"Man"];else obj[k+"Man"]=+encM[k].toFixed(2);});
   ["inss","fgts"].forEach(function(k){if(encManual(obj,k)&&Math.abs(obj[k+"Man"]-encAuto(obj,k))<0.005)delete obj[k+"Man"];});
+  // valores do formulario = mes selecionado no filtro do Cadastro
+  var mmv=empMesSel(),dmv=mvPick(obj);obj.mv=Object.assign({},old&&old.mv||{});
+  if(Object.keys(dmv).length)obj.mv[mmv]=dmv;else delete obj.mv[mmv];
+  mvSync(obj);
   obj.custo=calcCusto(obj);
-  if(ativo){obj.dem="";delete obj.motdem;delete obj.obsdem;delete obj.inat;}
-  else if(!obj.dem&&!obj.inat){obj.inat=hoje();}
+  if(ativo){
+    if(obj.inatHist&&old&&!isAtivo(old)){var hj=hoje();obj.inatHist=obj.inatHist.map(function(x){return !x.fim||x.fim>=hj?Object.assign({},x,{fim:x.ini>hj?x.ini:hj}):x;});}
+    obj.dem="";delete obj.motdem;delete obj.obsdem;delete obj.inat;delete obj.motinat;delete obj.inatFim;
+  }
+  else if(!obj.dem){
+    var mi=gv("einatmot"),ii=gv("einatini")||hoje(),fi=gv("einatfim");
+    if(!mi){alert("Selecione o motivo da inatividade (ou cadastre um novo).");return;}
+    if(fi&&fi<ii){alert("A data de fim da inatividade nao pode ser anterior ao inicio.");return;}
+    if(!(DB.motafas||[]).some(function(m){return m.tipo==="inat";})){if(!DB.motafas)DB.motafas=[];MI_PAD.forEach(function(x){DB.motafas.push(Object.assign({},x));});}
+    var hist=(obj.inatHist||[]).slice(),ix=-1;
+    hist.forEach(function(x,i){if(x.ini===(old&&old.inat)||(!x.fim&&old&&!isAtivo(old)))ix=i;});
+    var reg={id:ix>=0?hist[ix].id:uid(),mot:mi,ini:ii,fim:fi||""};
+    if(ix>=0)hist[ix]=reg;else hist.push(reg);
+    obj.inatHist=hist;obj.inat=ii;obj.motinat=mi;obj.inatFim=fi||"";
+  }
   if(obj.dem&&adm>obj.dem){alert("A admissao nao pode ser posterior a demissao ("+fmtD(obj.dem)+").");return;}
   if(id){DB.emp=DB.emp.map(function(e){return e.id===id?obj:e;});}else{DB.emp.push(obj);}
   dbSave();rEmp();
@@ -2926,14 +3289,20 @@ function edtEmp(id){
   document.getElementById("ecc").value=e.ccid||"";
   document.getElementById("eadm").value=e.adm;
   var an=document.getElementById("eaniv");if(an)an.value=e.aniv||"";
-  var sl=document.getElementById("esal");if(sl)sl.value=(e.sal!==undefined&&e.sal!==null)?e.sal:"";
+  var ev=empView(e,empMesSel());
+  var sl=document.getElementById("esal");if(sl)sl.value=(typeof ev.sal==="number")?ev.sal:"";
   var ep=document.getElementById("eempresa");if(ep)ep.value=e.empresa||"";
   var hr=document.getElementById("ehorario");if(hr)hr.value=e.horario||"";
-  ["inss","fgts"].forEach(function(k){var el=document.getElementById("e"+k);if(el)el.value=encManual(e,k)?e[k+"Man"]:"";});
-  BENEF.forEach(function(b){var el=document.getElementById("e"+b.k);if(el)el.value=(typeof e[b.k]==="number")?e[b.k]:"";});
+  ["inss","fgts"].forEach(function(k){var el=document.getElementById("e"+k);if(el)el.value=encManual(ev,k)?ev[k+"Man"]:"";});
+  BENEF.forEach(function(b){var el=document.getElementById("e"+b.k);if(el)el.value=(typeof ev[b.k]==="number")?ev[b.k]:"";});
   updSalCalc();
+  var mdm=document.getElementById("emodmes");if(mdm)mdm.innerHTML="<i class='ti ti-calendar-dollar'></i> Valores de <b>"+fmtM(empMesSel())+"</b>"+(ev._semMes?" &middot; sem valores lancados neste mes":"")+" (troque o mes no filtro do Cadastro)";
   document.getElementById("eftt").textContent="Editar colaborador";
   document.getElementById("esav").textContent="Salvar alteracoes";
+  var sm0=document.getElementById("einatmot");if(sm0)sm0.innerHTML=motInatOpts(e.motinat||"");
+  var ii0=document.getElementById("einatini");if(ii0)ii0.value=!isAtivo(e)?(e.inat||""):"";
+  var if0=document.getElementById("einatfim");if(if0)if0.value=!isAtivo(e)?(e.inatFim||""):"";
+  var ih=document.getElementById("einathist");if(ih)ih.innerHTML=inatHistHTML(e);
   setEmpAtivo(isAtivo(e)?"1":"0");
   var mh=document.getElementById("emeihoras");if(mh)mh.value=e.meiHoras||"";
   setMeiTipo(e.meiTipo||"mensal");
@@ -2949,6 +3318,9 @@ function canEmp(){
   var t=document.getElementById("eftt");if(t)t.textContent="Novo colaborador";
   var btn=document.getElementById("esav");if(btn)btn.textContent="Cadastrar";
   var area=document.getElementById("edemarea");if(area)area.innerHTML="";
+  ["einatini","einatfim","einatnovonm"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  var sm1=document.getElementById("einatmot");if(sm1)sm1.innerHTML=motInatOpts("");
+  var ih1=document.getElementById("einathist");if(ih1)ih1.innerHTML="";
   setEmpAtivo("1");
   setMeiTipo("mensal");
   setEmpVinc("CLT");
@@ -3102,7 +3474,7 @@ function addMotAfas(){
   var nm=gv("afnovonm").trim();
   if(!nm){alert("Informe o nome do motivo.");return;}
   if(!DB.motafas)DB.motafas=[];
-  var ex=DB.motafas.find(function(m){return m.nome.toLowerCase()===nm.toLowerCase();});
+  var ex=DB.motafas.find(function(m){return m.tipo!=="inat"&&m.nome.toLowerCase()===nm.toLowerCase();});
   var novo=ex||{id:uid(),nome:nm};
   if(!ex){DB.motafas.push(novo);dbSave();}
   var sel=document.getElementById("afmot");if(sel)sel.innerHTML=motAfasOpts(novo.id);
@@ -3139,7 +3511,7 @@ function delAfast(eid,afid){
 }
 
 // LANCAMENTOS
-var lancT="falta";
+var lancT="falta",lancFT="";
 function motOpts(tipo,sel){
   return "<option value=''>Selecione o motivo...</option>"
     +DB.motivos.filter(function(m){return m.tipo===tipo;}).map(function(m){return "<option value='"+m.id+"'"+(m.id===sel?" selected":"")+">"+esc(m.nome)+"</option>";}).join("");
@@ -3171,10 +3543,10 @@ function rLanc(){
       return "<div style='border-bottom:1px solid #f1f4f8;padding:.65rem 0;display:flex;justify-content:space-between;align-items:center'>"
         +"<div style='display:flex;align-items:center;gap:10px'>"
         +"<div style='width:34px;height:34px;border-radius:8px;background:"+ti.co+"18;display:flex;align-items:center;justify-content:center;flex-shrink:0'><i class='ti "+ti.ic+"' style='font-size:16px;color:"+ti.co+"'></i></div>"
-        +"<div><div style='font-weight:600;font-size:13px'>"+(emp?esc(emp.nome):"—")+" &middot; <span style='color:"+ti.co+"'>"+ti.lb+"</span></div>"
+        +"<div><div style='font-weight:600;font-size:13px'>"+(emp?esc(emp.nome):"—")+" &middot; <span style='color:"+ti.co+"'>"+ti.lb+(o.tipo==="falta"&&ftInfo(o.ftipo)?" - "+esc(ftInfo(o.ftipo).nome):"")+"</span></div>"
         +"<div style='font-size:11px;color:#aaa'>"+fmtD(o.data)+(mot?" &middot; "+esc(mot.nome):"")+(o.obs?" &middot; "+esc(o.obs):"")+"</div></div></div>"
         +"<div style='display:flex;align-items:center;gap:4px;flex-shrink:0'>"
-        +"<span style='font-size:12px;font-weight:700;color:"+ti.co+"'>-"+getPct(o.tipo,o.data)+"%</span>"
+        +"<span style='font-size:12px;font-weight:700;color:"+(ocPct(o)?ti.co:"#1a7a4a")+"'>"+(ocPct(o)?"-"+ocPct(o)+"%":"sem desconto")+"</span>"
         +"<button class='ibedt' data-fn='edtLanc' data-id='"+o.id+"' title='Editar'><i class='ti ti-edit'></i></button>"
         +"<button class='ibdel' data-fn='delLanc' data-id='"+o.id+"' title='Excluir'><i class='ti ti-trash'></i></button>"
         +"</div></div>";
@@ -3194,6 +3566,7 @@ function rLanc(){
       "<div class='fr'><label class='lbl'>Colaborador</label><select id='lemp'>"+empOpts+"</select></div>"
       +"<div class='fr'><label class='lbl'>Tipo de ocorrencia</label>"
       +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"+tBtns+"</div></div>"
+      +"<div id='lftbox' class='ft-box' style='display:none'></div>"
       +"<div class='fr2'><div class='fr'><label class='lbl'>Data</label><input type='date' id='ldata' value='"+hoje()+"'/></div>"
       +"<div class='fr'><label class='lbl' style='display:flex;justify-content:space-between;align-items:center'><span>Motivo <span class='opt'>(opcional)</span></span><button type='button' class='lnk-add' onclick=\"togMotRap('lmotivo')\"><i class='ti ti-plus'></i>Novo motivo</button></label><select id='lmotivo'>"+motOpts(lancT,"")+"</select><div id='lmotivo-novo' class='mot-rap'><input type='text' id='lmotivo-nm' placeholder='Nome do novo motivo' onkeydown=\"if(event.key==='Enter')addMotRap('lmotivo')\"/><button type='button' class='btnp' onclick=\"addMotRap('lmotivo')\">Salvar</button></div></div>"+"</div>"
       +"<div class='fr'><label class='lbl'>Observacao <span class='opt'>(opcional)</span></label><input type='text' id='lobs' placeholder='Detalhe adicional...'/></div>"
@@ -3206,7 +3579,72 @@ function novoLanc(){
   var e=document.getElementById("lemp");if(e)e.value="";
   var o=document.getElementById("lobs");if(o)o.value="";
   var d=document.getElementById("ldata");if(d)d.value=hoje();
-  openMd("md-lanc");
+  lancFT="";openMd("md-lanc");lancInfo();
+  if(lancT==="falta")setTimeout(function(){abrirFTipo("novo");},60);
+}
+// Caixa com o tipo de falta escolhido + texto do desconto
+function lancInfo(){
+  var bx=document.getElementById("lftbox"),info=document.getElementById("linfo"),ti=TIPOS.find(function(x){return x.k===lancT;});
+  if(bx){
+    if(lancT!=="falta"){bx.style.display="none";}
+    else{var f=ftInfo(lancFT);bx.style.display="";
+      bx.innerHTML=f?"<span><i class='ti ti-tag'></i> Tipo de falta: <b>"+esc(f.nome)+"</b> "+(f.desconta!==false?"<span class='bdg' style='background:#fbe9e7;color:#c0392b'>DESCONTA O PREMIO</span>":"<span class='bdg' style='background:#e7f6ee;color:#1a7a4a'>NAO DESCONTA</span>")+"</span><button type='button' class='lnk-add' onclick=\"abrirFTipo('novo')\">Trocar</button>"
+        :"<span style='color:#b45309'><i class='ti ti-alert-triangle'></i> Escolha o tipo de falta</span><button type='button' class='lnk-add' onclick=\"abrirFTipo('novo')\">Escolher</button>";}
+  }
+  if(info&&ti){var semD=lancT==="falta"&&lancFT&&!ftDesconta(lancFT);
+    info.style.background=(semD?"#1a7a4a":ti.co)+"18";info.style.color=semD?"#1a7a4a":ti.co;
+    info.innerHTML="<i class='ti "+ti.ic+"'></i> "+(semD?"Nao desconta o premio":"Desconto: -"+getPct(lancT,gv("ldata")||hoje())+"% do premio");}
+}
+// Janela: tipo de falta (Suspensao, Justificada, Injustificada... + cadastrar mais)
+function abrirFTipo(ctx){
+  fecharFTipo();
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-ftipo";div.style.zIndex="9700";div.dataset.ctx=ctx;
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:440px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt' style='color:#c0392b'><i class='ti ti-calendar-x'></i>Tipo de falta</div>"
+    +"<button class='mdl-x' onclick='fecharFTipo()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'><div id='ftlist'></div>"
+    +"<div style='border-top:1px dashed #e2e7ee;margin-top:.6rem;padding-top:.6rem'>"
+    +"<div class='lbl'>Cadastrar novo tipo</div>"
+    +"<div style='display:flex;gap:6px;align-items:center;flex-wrap:wrap'><input type='text' id='ftnovo' placeholder='Ex: Falta abonada' style='flex:1;min-width:150px' onkeydown=\"if(event.key==='Enter')addFTipo()\"/>"
+    +"<label style='display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap'><input type='checkbox' id='ftdesc' checked style='width:auto'/>Desconta do premio</label>"
+    +"<button class='btnp' onclick='addFTipo()'>Cadastrar</button></div>"
+    +"<div class='hint' style='margin:.4rem 0 0'>Marque ou desmarque <b>Desconta do premio</b> em cada tipo para definir se a falta reduz o premio.</div></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharFTipo();});
+  renderFTipos();
+}
+function fecharFTipo(){var m=document.getElementById("md-ftipo");if(m)m.remove();}
+function renderFTipos(){
+  var el=document.getElementById("ftlist");if(!el)return;
+  var ctx=(document.getElementById("md-ftipo")||{}).dataset.ctx,sel=ctx==="edt"?gv("etft"):lancFT;
+  el.innerHTML=fTipos().map(function(f){
+    var on=f.id===sel,usos=DB.oc.filter(function(o){return o.ftipo===f.id;}).length;
+    return "<div class='ft-row"+(on?" on":"")+"'>"
+      +"<button class='ft-pick' onclick=\"escolherFTipo('"+f.id+"')\"><i class='ti "+(on?"ti-circle-check-filled":"ti-circle")+"'></i>"+esc(f.nome)+"</button>"
+      +"<label class='ft-chk' title='Parametro: esta falta desconta o premio?'><input type='checkbox' "+(f.desconta!==false?"checked":"")+" onchange=\"setFTDesc('"+f.id+"',this.checked)\" style='width:auto'/>Desconta</label>"
+      +"<button class='ibdel' title='"+(usos?"Em uso em "+usos+" lancamento(s)":"Excluir tipo")+"' "+(usos?"disabled style='opacity:.3'":"")+" onclick=\"delFTipo('"+f.id+"')\"><i class='ti ti-trash'></i></button></div>";
+  }).join("");
+}
+function escolherFTipo(id){
+  var ctx=(document.getElementById("md-ftipo")||{}).dataset.ctx;
+  if(ctx==="edt"){var s=document.getElementById("etft");if(s){s.innerHTML=ftOpts(id);}}
+  else{lancFT=id;lancInfo();}
+  fecharFTipo();
+}
+function ftOpts(sel){return "<option value=''>Selecione...</option>"+fTipos().map(function(f){return "<option value='"+f.id+"'"+(f.id===sel?" selected":"")+">"+esc(f.nome)+(f.desconta!==false?"":" (nao desconta)")+"</option>";}).join("");}
+function setFTDesc(id,on){fTiposMat();DB.motivos=DB.motivos.map(function(m){return m.id===id?Object.assign({},m,{desconta:!!on}):m;});dbSave();renderFTipos();lancInfo();}
+function addFTipo(){
+  var nm=gv("ftnovo").trim();if(!nm){alert("Informe o nome do tipo de falta.");return;}
+  fTiposMat();
+  if(DB.motivos.some(function(m){return m.tipo==="ftipo"&&m.nome.toLowerCase()===nm.toLowerCase();})){alert("Esse tipo ja existe.");return;}
+  DB.motivos.push({id:uid(),tipo:"ftipo",nome:nm,desconta:!!document.getElementById("ftdesc").checked});
+  dbSave();document.getElementById("ftnovo").value="";renderFTipos();
+}
+function delFTipo(id){
+  if(DB.oc.some(function(o){return o.ftipo===id;})){alert("Este tipo esta em uso em lancamentos.");return;}
+  if(!confirm("Excluir este tipo de falta?"))return;
+  fTiposMat();DB.motivos=DB.motivos.filter(function(m){return m.id!==id;});if(lancFT===id)lancFT="";dbSave();renderFTipos();lancInfo();
 }
 function setTipo(t){
   lancT=t;
@@ -3215,9 +3653,9 @@ function setTipo(t){
     if(ti.k===t){btn.style.borderColor=ti.co;btn.style.background=ti.co+"18";btn.style.color=ti.co;}
     else{btn.style.borderColor="#dfe5ee";btn.style.background="#fff";btn.style.color="#777";}
   });
-  var ti=TIPOS.find(function(x){return x.k===t;}),info=document.getElementById("linfo");
-  if(info&&ti){info.style.background=ti.co+"18";info.style.color=ti.co;info.innerHTML="<i class='ti "+ti.ic+"'></i> Desconto: -"+getPct(t,gv("ldata")||hoje())+"% do premio";}
+  lancInfo();
   var ms=document.getElementById("lmotivo");if(ms)ms.innerHTML=motOpts(t,"");
+  if(t==="falta")abrirFTipo("novo");
 }
 // Cadastro rapido de motivo direto no lancamento
 function togMotRap(sel){
@@ -3241,7 +3679,9 @@ function savLanc(){
   if(!eid||!data){alert("Selecione colaborador e data.");return;}
   var emp=DB.emp.find(function(e){return e.id===eid;});
   if(emp&&emp.dem&&gmk(data)>gmk(emp.dem)){alert("Colaborador demitido em "+fmtD(emp.dem)+". Nao e possivel lancar para "+fmtM(gmk(data))+".");return;}
-  DB.oc.push({id:uid(),eid:eid,tipo:lancT,data:data,obs:obs,motivo_id:motivo_id});
+  if(lancT==="falta"&&!lancFT){abrirFTipo("novo");return;}
+  var novoOc={id:uid(),eid:eid,tipo:lancT,data:data,obs:obs,motivo_id:motivo_id};if(lancT==="falta")novoOc.ftipo=lancFT;
+  DB.oc.push(novoOc);
   dbSave();rLanc();
 }
 function delLanc(id){if(!confirm("Remover lancamento?"))return;DB.oc=DB.oc.filter(function(o){return o.id!==id;});dbSave();aposEditarLanc();}
@@ -3262,6 +3702,7 @@ function edtLanc(id){
     +"<div class='fr'><label class='lbl'>Tipo de ocorrencia</label>"
     +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"+tBtns+"</div>"
     +"<input type='hidden' id='ettipo' value='"+o.tipo+"'/></div>"
+    +"<div class='fr' id='etftrow' style='"+(o.tipo==="falta"?"":"display:none")+"'><label class='lbl' style='display:flex;justify-content:space-between;align-items:center'><span>Tipo de falta</span><button type='button' class='lnk-add' onclick=\"abrirFTipo('edt')\"><i class='ti ti-settings'></i>Tipos e parametros</button></label><select id='etft'>"+ftOpts(o.ftipo||"")+"</select></div>"
     +"<div class='fr2'><div class='fr'><label class='lbl'>Data</label><input type='date' id='etdata' value='"+o.data+"'/></div>"
     +"<div class='fr'><label class='lbl' style='display:flex;justify-content:space-between;align-items:center'><span>Motivo <span class='opt'>(opcional)</span></span><button type='button' class='lnk-add' onclick=\"togMotRap('etmotivo')\"><i class='ti ti-plus'></i>Novo motivo</button></label><select id='etmotivo'>"+motOpts(o.tipo,o.motivo_id||"")+"</select><div id='etmotivo-novo' class='mot-rap'><input type='text' id='etmotivo-nm' placeholder='Nome do novo motivo' onkeydown=\"if(event.key==='Enter')addMotRap('etmotivo')\"/><button type='button' class='btnp' onclick=\"addMotRap('etmotivo')\">Salvar</button></div></div>"+"</div>"
     +"<div class='fr'><label class='lbl'>Observacao</label><input type='text' id='etobs' value='"+esc(o.obs||"")+"' placeholder='Motivo...'/></div>"
@@ -3273,6 +3714,7 @@ function edtLanc(id){
 }
 function setEdtT(t){
   document.getElementById("ettipo").value=t;
+  var fr=document.getElementById("etftrow");if(fr)fr.style.display=t==="falta"?"":"none";
   var em=document.getElementById("etmotivo");if(em)em.innerHTML=motOpts(t,"");
   TIPOS.forEach(function(ti){
     var btn=document.getElementById("eb"+ti.k);if(!btn)return;
@@ -3287,7 +3729,9 @@ function savEdtLanc(id){
   var emp=DB.emp.find(function(e){return e.id===o.eid;});
   if(emp&&emp.dem&&gmk(data)>gmk(emp.dem)){alert(emp.nome+" foi demitido em "+fmtD(emp.dem)+". Data invalida.");return;}
   var etmot=document.getElementById("etmotivo")&&document.getElementById("etmotivo").value||"";
-  DB.oc=DB.oc.map(function(x){return x.id===id?Object.assign({},x,{tipo:tipo,data:data,obs:obs,motivo_id:etmot}):x;});
+  var etft=tipo==="falta"?gv("etft"):"";
+  if(tipo==="falta"&&!etft){alert("Selecione o tipo de falta.");return;}
+  DB.oc=DB.oc.map(function(x){if(x.id!==id)return x;var n=Object.assign({},x,{tipo:tipo,data:data,obs:obs,motivo_id:etmot});if(etft)n.ftipo=etft;else delete n.ftipo;return n;});
   dbSave();closeModal();aposEditarLanc();
 }
 function closeModal(){var m=document.getElementById("emod");if(m)m.remove();}
@@ -4248,7 +4692,7 @@ function abrirMonGrupo(gid,mes){
     +"<button class='mdl-x' onclick='fecharMonGrupo()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
     +"<div class='mdl-bd' style='padding-top:.6rem'>"
     +(lista.length?"<div class='etab-wrap' style='max-height:62vh'><table class='etab'><thead><tr>"
-      +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>EMPRESA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
+      +"<th style='cursor:default'>FUNCIONÁRIO</th><th style='cursor:default'>CATEGORIA</th><th class='c' style='cursor:default'>FUNÇÃO</th>"
       +(gid==="_all"?"<th class='c' style='cursor:default'>GRUPO</th>":"")
       +"<th class='c' style='cursor:default'>VÍNCULO</th><th class='c' style='cursor:default'>ADMISSÃO</th><th class='c' style='cursor:default'>FALTAS</th><th class='c' style='cursor:default'>ATRASOS</th><th class='c' style='cursor:default'>5S</th><th class='c' style='cursor:default'>CUSTO MENSAL</th>"
       +(permTela("employees")==="editar"?"<th class='c' style='cursor:default'></th>":"")+"</tr></thead><tbody>"+rows+"</tbody></table></div>"
@@ -4418,6 +4862,577 @@ function mkPdfKit(titulo,periodo,orient,papel){
   return K;
 }
 
+// ═══ RELATORIO POR CENTRO DE CUSTO SENIOR (PDF e Excel, paisagem ou retrato) ═══
+function abrirCCRel(fmt){
+  fecharCCRel();
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-ccrel";div.style.zIndex="9500";
+  function radio(nm,v,lb,on){return "<label class='pdf-opt'><input type='radio' name='"+nm+"' value='"+v+"'"+(on?" checked":"")+"/>"+lb+"</label>";}
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:520px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti "+(fmt==="pdf"?"ti-file-type-pdf":"ti-file-spreadsheet")+"'></i>Relatorio por centro de custo - "+(fmt==="pdf"?"PDF":"Excel")+"</div>"
+    +"<button class='mdl-x' onclick='fecharCCRel()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'><input type='hidden' id='ccrel-fmt' value='"+fmt+"'/>"
+    +"<div class='fr'><label class='lbl'>Centro de custo</label><select id='ccrel-cc'><option value=''>Todos os centros de custo</option>"
+    +ccOrd().map(function(c){return "<option value='"+c.id+"'>"+esc(ccNome(c))+"</option>";}).join("")
+    +"<option value='_sem'>Sem centro de custo</option></select></div>"
+    +"<div class='fr'><label class='lbl'>Colaboradores</label><div class='pdf-opts'>"
+    +radio("ccrel-sit","ativos","Ativos",true)+radio("ccrel-sit","todos","Todos (inclui inativos)")+"</div></div>"
+    +"<div class='fr'><label class='lbl'>Orientacao</label><div class='pdf-opts'>"
+    +radio("ccrel-ori","landscape","Paisagem",true)+radio("ccrel-ori","portrait","Retrato")+"</div>"
+    +"<div class='hint'>Paisagem traz o detalhamento completo (salario, 1/3, 13º, INSS, FGTS, beneficios). Retrato traz a versao resumida.</div></div>"
+    +"<div class='fr'><label style='display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer'><input type='checkbox' id='ccrel-sem' checked style='width:auto'/> Incluir colaboradores sem centro de custo (quando Todos)</label></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='fecharCCRel()'>Cancelar</button>"
+    +"<button class='btnp btn-ic' onclick='gerarCCRel()'><i class='ti ti-download'></i>Gerar "+(fmt==="pdf"?"PDF":"Excel")+"</button></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharCCRel();});
+}
+function fecharCCRel(){var m=document.getElementById("md-ccrel");if(m)m.remove();}
+// Monta os dados do relatorio: secoes por centro de custo, linhas e totais
+function ccRelDados(ccSel,sit,comSem){
+  var ids={};DB.cc.forEach(function(c){ids[c.id]=1;});
+  var secs=[];
+  var alvo=ccSel==="_sem"?[]:ccSel?ccOrd().filter(function(c){return c.id===ccSel;}):ccOrd();
+  function linha(e){
+    var v=function(k){var x=empCampoVal(e,k);return x===null?0:x;};
+    var sal=v("sal"),te=+(v("terco")/12).toFixed(2),d13=+(v("dec13")/12).toFixed(2),inss=v("inss"),fgts=v("fgts"),cu=v("custo"); // 1/3 e 13º como provisao mensal (igual ao custo empresa)
+    var out=+(cu-sal-te-d13-inss-fgts).toFixed(2);if(Math.abs(out)<0.015)out=0; // residuo de arredondamento
+    return {nome:e.nome,empresa:e.empresa||"",func:e.func||"",grupo:empTxt(e,"grupo"),sit:empSitTxt(e),adm:e.adm?fmtD(e.adm):"",
+      sal:sal,terco:te,dec13:d13,inss:inss,fgts:fgts,enc:inss+fgts,outros:out,custo:cu};
+  }
+  function filtra(fn){return DB.emp.filter(function(e){return (sit==="todos"||isAtivo(e))&&fn(e);})
+    .sort(function(a,b){return (a.func||"").localeCompare(b.func||"")||a.nome.localeCompare(b.nome);}).map(linha);}
+  alvo.forEach(function(c){secs.push({cod:c.cod,desc:c.desc,resp:c.resp||"",rows:filtra(function(e){return e.ccid===c.id;})});});
+  if(ccSel==="_sem"||(!ccSel&&comSem)){
+    var r=filtra(function(e){return !(e.ccid&&ids[e.ccid]);});
+    if(r.length||ccSel==="_sem")secs.push({cod:"—",desc:"Sem centro de custo",resp:"",rows:r,sem:true});
+  }
+  var NUM=["sal","terco","dec13","inss","fgts","enc","outros","custo"];
+  secs.forEach(function(sc){sc.tot={};NUM.forEach(function(k){sc.tot[k]=+sc.rows.reduce(function(a,r){return a+r[k];},0).toFixed(2);});});
+  var tot={n:0};NUM.forEach(function(k){tot[k]=+secs.reduce(function(a,sc){return a+sc.tot[k];},0).toFixed(2);});
+  tot.n=secs.reduce(function(a,sc){return a+sc.rows.length;},0);
+  return {secs:secs,tot:tot};
+}
+function ccRelCols(ori){
+  if(ori==="portrait")return [
+    {k:"nome",h:"FUNCIONÁRIO",p:2.6},{k:"func",h:"FUNÇÃO",p:1.6},{k:"grupo",h:"GRUPO",p:1.4},{k:"sit",h:"SITUAÇÃO",p:.9,al:"c"},
+    {k:"sal",h:"SALÁRIO",p:1.15,al:"r",m:1},{k:"enc",h:"ENCARGOS (INSS+FGTS)",p:1.25,al:"r",m:1},{k:"custo",h:"CUSTO EMPRESA MENSAL",p:1.55,al:"r",m:1}];
+  return [
+    {k:"nome",h:"FUNCIONÁRIO",p:2.1},{k:"empresa",h:"CATEGORIA",p:1},{k:"func",h:"FUNÇÃO",p:1.35},{k:"grupo",h:"GRUPO",p:1.1},{k:"sit",h:"SITUAÇÃO",p:1,al:"c"},{k:"adm",h:"ADMISSÃO",p:1,al:"c"},
+    {k:"sal",h:"SALÁRIO",p:1.05,al:"r",m:1},{k:"terco",h:"1/3 FÉRIAS (PROV. MÊS)",p:1,al:"r",m:1},{k:"dec13",h:"13º (PROV. MÊS)",p:1,al:"r",m:1},
+    {k:"inss",h:"INSS",p:.95,al:"r",m:1},{k:"fgts",h:"FGTS",p:.95,al:"r",m:1},{k:"outros",h:"BENEFÍCIOS / OUTROS",p:1.05,al:"r",m:1},{k:"custo",h:"CUSTO EMPRESA MENSAL",p:1.4,al:"r",m:1}];
+}
+function ccRelOpts(){
+  return {fmt:gv("ccrel-fmt")||"pdf",cc:gv("ccrel-cc"),sit:_radio("ccrel-sit")||"ativos",ori:_radio("ccrel-ori")||"landscape",
+    sem:!!(document.getElementById("ccrel-sem")&&document.getElementById("ccrel-sem").checked)};
+}
+function gerarCCRel(){
+  var o=ccRelOpts(),D=ccRelDados(o.cc,o.sit,o.sem);
+  if(!D.tot.n){alert("Nenhum colaborador para o relatorio com essa selecao.");return;}
+  if(o.fmt==="pdf")gerarCCRelPDF(o,D);else gerarCCRelXLSX(o,D);
+}
+function ccRelPeriodo(o,D){
+  var ccLb=o.cc==="_sem"?"Sem centro de custo":o.cc?ccNome(DB.cc.find(function(c){return c.id===o.cc;})):"Todos os centros de custo";
+  return ccLb+"  |  "+(o.sit==="todos"?"Todos os colaboradores":"Ativos")+"  |  "+D.tot.n+" colaborador"+(D.tot.n!==1?"es":"");
+}
+function gerarCCRelPDF(o,D){
+  if(!(window.jspdf&&window.jspdf.jsPDF)){alert("As bibliotecas ainda estao carregando. Aguarde alguns segundos e tente novamente.");return;}
+  var K=mkPdfKit("Colaboradores por Centro de Custo",ccRelPeriodo(o,D),o.ori,"a4"),doc=K.doc,C=K.C,cw=K.cw;
+  var cols=ccRelCols(o.ori),pt=cols.reduce(function(a,c){return a+c.p;},0);
+  var tcols=cols.map(function(c){return {k:c.k,h:c.h,w:cw*c.p/pt,al:c.al,b:c.k==="nome"||c.k==="custo"};});
+  var fs=o.ori==="portrait"?7:7.2;
+  function fmtRow(r){var x={};cols.forEach(function(c){x[c.k]=c.m?fmtBRL(r[c.k]):r[c.k];});return x;}
+  var y=K.header();
+  // KPIs
+  var nk=4,gap=4,kw=(cw-gap*(nk-1))/nk,kh=19;
+  K.kpi(K.mg,y,kw,kh,"Centros de custo",D.secs.length,"no relatório",C.b);
+  K.kpi(K.mg+(kw+gap),y,kw,kh,"Colaboradores",D.tot.n,o.sit==="todos"?"ativos e inativos":"ativos",C.bl);
+  K.kpi(K.mg+2*(kw+gap),y,kw,kh,"Folha (salários)",fmtBRL(D.tot.sal),"soma dos salários",C.grn);
+  K.kpi(K.mg+3*(kw+gap),y,kw,kh,"Custo empresa mensal",fmtBRL(D.tot.custo),"salário + encargos + benefícios",C.org);
+  y+=kh+9;
+  D.secs.forEach(function(sc){
+    if(y+24>K.H-14){doc.addPage();y=K.header();}
+    var tit=(sc.sem?"":sc.cod+" - ")+sc.desc;
+    K.section(tit,y,sc.sem?C.gld:C.b);
+    K.font(7.5);K.txt(C.mut);
+    doc.text((sc.resp?"Responsável: "+sc.resp+"   ·   ":"")+sc.rows.length+" colaborador"+(sc.rows.length!==1?"es":"")+"   ·   Custo mensal: "+fmtBRL(sc.tot.custo),K.W-K.mg,y,{align:"right"});
+    y+=3;
+    var rows=sc.rows.map(fmtRow);
+    if(!rows.length)rows=[{nome:"Nenhum colaborador neste centro de custo"}];
+    var tr={_total:true};cols.forEach(function(c){tr[c.k]=c.m?fmtBRL(sc.tot[c.k]):"";});tr.nome="TOTAL DO CENTRO DE CUSTO";
+    rows.push(tr);
+    y=K.table(y,tcols,rows,{fs:fs,titulo:tit,cor:sc.sem?C.gld:C.b})+8;
+  });
+  // Resumo
+  if(D.secs.length>1){
+    if(y+30>K.H-14){doc.addPage();y=K.header();}
+    K.section("Resumo por centro de custo",y,C.b);y+=3;
+    var rc=[{k:"cod",h:"CÓDIGO",p:.8,al:"c"},{k:"desc",h:"CENTRO DE CUSTO",p:2.6},{k:"n",h:"COLAB.",p:.7,al:"c"},{k:"sal",h:"SALÁRIOS",p:1.3,al:"r"},
+      {k:"enc",h:"ENCARGOS",p:1.2,al:"r"},{k:"custo",h:"CUSTO EMPRESA MENSAL",p:1.4,al:"r"},{k:"pct",h:"% DO TOTAL",p:.8,al:"r"}];
+    var rp=rc.reduce(function(a,c){return a+c.p;},0);
+    var rcols=rc.map(function(c){return {k:c.k,h:c.h,w:cw*c.p/rp,al:c.al,b:c.k==="custo"};});
+    var rr=D.secs.map(function(sc){return {cod:sc.cod,desc:sc.desc,n:sc.rows.length,sal:fmtBRL(sc.tot.sal),enc:fmtBRL(sc.tot.enc),custo:fmtBRL(sc.tot.custo),
+      pct:(D.tot.custo?sc.tot.custo/D.tot.custo*100:0).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"};});
+    rr.push({_total:true,_grand:true,cod:"",desc:"TOTAL GERAL",n:D.tot.n,sal:fmtBRL(D.tot.sal),enc:fmtBRL(D.tot.enc),custo:fmtBRL(D.tot.custo),pct:"100,0%"});
+    K.table(y,rcols,rr,{fs:fs,titulo:"Resumo por centro de custo"});
+  }
+  K.finalizar("centro-de-custo-"+(o.ori==="portrait"?"retrato":"paisagem")+"-"+hoje()+".pdf");
+  fecharCCRel();
+}
+// Excel (.xlsx) com ExcelJS, carregado sob demanda
+function loadExcelJS(){
+  if(window.ExcelJS)return Promise.resolve();
+  if(window._exjsP)return window._exjsP;
+  window._exjsP=new Promise(function(ok,fail){
+    var sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+    sc.onload=function(){ok();};sc.onerror=function(){window._exjsP=null;fail(new Error("Nao foi possivel carregar a biblioteca do Excel. Verifique a internet."));};
+    document.head.appendChild(sc);
+  });
+  return window._exjsP;
+}
+function gerarCCRelXLSX(o,D){
+  showSync("Gerando Excel...",false);
+  loadExcelJS().then(function(){
+    var FMT='_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    var AZ="FF00348F",AZC="FFE6EDF8",TOT="FFD8E4F4",BRD={style:"thin",color:{argb:"FFDFE5EE"}};
+    var wb=new ExcelJS.Workbook();wb.creator="C@P Consultoria";wb.created=new Date();
+    var cols=ccRelCols(o.ori),nc=cols.length;
+    function setup(ws,rep){
+      ws.pageSetup={paperSize:9,orientation:o.ori,fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,
+        margins:{left:.4,right:.4,top:.5,bottom:.5,header:.25,footer:.25}};
+      if(rep)ws.pageSetup.printTitlesRow=rep;
+      ws.headerFooter={oddFooter:"&L&8Timbó Papéis Especiais&C&8Colaboradores por Centro de Custo&R&8Página &P de &N"};
+    }
+    function titulo(ws,n,t){
+      ws.mergeCells(1,1,1,n);var c=ws.getCell(1,1);c.value=t;c.font={bold:true,size:14,color:{argb:"FFFFFFFF"}};
+      c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0A1F4A"}};c.alignment={vertical:"middle"};ws.getRow(1).height=26;
+      ws.mergeCells(2,1,2,n);var d=ws.getCell(2,1);d.value=ccRelPeriodo(o,D)+"  |  Gerado em "+new Date().toLocaleString("pt-BR");
+      d.font={size:9,color:{argb:"FF666666"}};
+    }
+    function cab(ws,r,hs){
+      var row=ws.getRow(r);hs.forEach(function(h,i){var c=row.getCell(i+1);c.value=h.h;c.font={bold:true,color:{argb:"FFFFFFFF"},size:9};
+        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:AZ}};c.alignment={horizontal:"center",vertical:"middle",wrapText:true};c.border={top:BRD,bottom:BRD,left:BRD,right:BRD};});
+      row.height=30;
+    }
+    function cel(c,v,col,bold,bg){
+      c.value=v;c.border={top:BRD,bottom:BRD,left:BRD,right:BRD};c.font={size:9,bold:!!bold,color:{argb:bold?AZ:"FF333333"}};
+      if(col&&col.m)c.numFmt=FMT;
+      c.alignment={horizontal:col&&col.al==="c"?"center":col&&col.al==="r"?"right":"left",vertical:"middle"};
+      if(bg)c.fill={type:"pattern",pattern:"solid",fgColor:{argb:bg}};
+    }
+    // Aba por centro de custo (todas as secoes em uma aba, com subtotal)
+    var ws=wb.addWorksheet("Por centro de custo",{views:[{state:"frozen",ySplit:3}]});
+    setup(ws,"3:3");titulo(ws,nc,"Colaboradores por Centro de Custo");cab(ws,3,cols);
+    ws.columns=cols.map(function(c){return {width:Math.round(c.p*(o.ori==="portrait"?12:10)+4)};});
+    var r=4;
+    D.secs.forEach(function(sc){
+      ws.mergeCells(r,1,r,nc);var h=ws.getCell(r,1);
+      h.value=(sc.sem?"":sc.cod+" - ")+sc.desc+(sc.resp?"   ·   Responsável: "+sc.resp:"")+"   ·   "+sc.rows.length+" colaborador"+(sc.rows.length!==1?"es":"");
+      h.font={bold:true,size:10,color:{argb:AZ}};h.fill={type:"pattern",pattern:"solid",fgColor:{argb:AZC}};r++;
+      var ini=r;
+      sc.rows.forEach(function(x){var row=ws.getRow(r);cols.forEach(function(c,i){cel(row.getCell(i+1),x[c.k],c,c.k==="custo");});r++;});
+      var tr=ws.getRow(r);
+      cols.forEach(function(c,i){var cc=tr.getCell(i+1);
+        var v=i===0?"TOTAL DO CENTRO DE CUSTO":c.m?(sc.rows.length?{formula:"SUM("+ws.getColumn(i+1).letter+ini+":"+ws.getColumn(i+1).letter+(r-1)+")",result:sc.tot[c.k]}:0):"";
+        cel(cc,v,c,true,TOT);});
+      r+=2;
+    });
+    // Aba resumo
+    var rc=[{k:"cod",h:"CÓDIGO",al:"c",w:12},{k:"desc",h:"CENTRO DE CUSTO",w:34},{k:"resp",h:"RESPONSÁVEL",w:22},{k:"n",h:"COLABORADORES",al:"c",w:15},
+      {k:"sal",h:"SALÁRIOS",m:1,w:17},{k:"enc",h:"ENCARGOS (INSS+FGTS)",m:1,w:19},{k:"outros",h:"1/3, 13º E BENEFÍCIOS",m:1,w:19},{k:"custo",h:"CUSTO EMPRESA MENSAL",m:1,w:20},{k:"pct",h:"% DO TOTAL",al:"r",w:12}];
+    var wr=wb.addWorksheet("Resumo",{views:[{state:"frozen",ySplit:3}]});
+    setup(wr,"3:3");titulo(wr,rc.length,"Resumo por Centro de Custo");cab(wr,3,rc);
+    wr.columns=rc.map(function(c){return {width:c.w};});
+    var rr=4,ln=4+D.secs.length;
+    D.secs.forEach(function(sc){
+      var row=wr.getRow(rr),v={cod:sc.cod,desc:sc.desc,resp:sc.resp,n:sc.rows.length,sal:sc.tot.sal,enc:sc.tot.enc,outros:+(sc.tot.custo-sc.tot.sal-sc.tot.enc).toFixed(2),custo:+sc.tot.custo.toFixed(2)};
+      rc.forEach(function(c,i){var cc=row.getCell(i+1);
+        if(c.k==="pct"){cel(cc,{formula:"IF($H$"+ln+"=0,0,H"+rr+"/$H$"+ln+")",result:D.tot.custo?sc.tot.custo/D.tot.custo:0},c);cc.numFmt="0.0%";}
+        else cel(cc,v[c.k],c,c.k==="custo");});
+      rr++;
+    });
+    var tg=wr.getRow(rr);
+    rc.forEach(function(c,i){var L=wr.getColumn(i+1).letter,cc=tg.getCell(i+1);
+      if(i===1)cel(cc,"TOTAL GERAL",c,true,TOT);
+      else if(c.m||c.k==="n")cel(cc,{formula:"SUM("+L+"4:"+L+(rr-1)+")"},c,true,TOT);
+      else if(c.k==="pct"){cel(cc,1,c,true,TOT);cc.numFmt="0.0%";}
+      else cel(cc,"",c,true,TOT);});
+    return wb.xlsx.writeBuffer();
+  }).then(function(buf){
+    var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="centro-de-custo-"+(o.ori==="portrait"?"retrato":"paisagem")+"-"+hoje()+".xlsx";
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+    showSync("Excel gerado",true);setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2000);
+    fecharCCRel();
+  }).catch(function(e){showSync("Erro ao gerar Excel: "+e.message,false,true);});
+}
+
+
+// ═══════════════════════════════════════
+// ANALISE POR CATEGORIA - PRODUCAO PER CAPITA (dia a dia do mes)
+// Contagens vem do sistema (Cadastro, Lancamentos, Afastamentos, Inatividade) e podem ser editadas.
+// DB.percap: {id:"cfg",cats:[{nome,tipo,sub,ord}],dias:{"AAAA-MM-DD":{fer,trab}}}  +  {id:"m-AAAA-MM",prod:{d:v},ov:{linha:{d:v}},meta,dias}
+// ═══════════════════════════════════════
+var pcMesV=null;
+var PC_TIPO={clt:"CLT (registrado)",pj:"Terceirizado PJ (soma no total)",fora:"Nao soma no total"};
+var DSEM=["dom","seg","ter","qua","qui","sex","sáb"];
+function pcMes(){return pcMesV||curMes();}
+function pcGet(id){return (DB.percap||[]).find(function(x){return x.id===id;})||null;}
+function pcDoc(id,base){if(!DB.percap)DB.percap=[];var d=pcGet(id);if(!d){d=Object.assign({id:id},base||{});DB.percap.push(d);}return d;}
+function pcCfg(){return pcGet("cfg")||{id:"cfg",cats:[],dias:{}};}
+function pcCatNome(e){return (e.empresa||"").trim()||"(Sem categoria)";}
+function pcCats(){
+  var cfg=pcCfg(),lst=(cfg.cats||[]).map(function(c){return Object.assign({},c);}),tem={};
+  lst.forEach(function(c){tem[c.nome]=1;});
+  var mx=lst.reduce(function(a,c){return Math.max(a,c.ord||0);},0);
+  var novos={};DB.emp.forEach(function(e){var n=pcCatNome(e);if(!tem[n])novos[n]=1;});
+  Object.keys(novos).sort().forEach(function(n){lst.push({nome:n,tipo:/TERCEIR|\bPJ\b/i.test(n)?"pj":"clt",sub:"",ord:++mx,auto:true});});
+  return lst.sort(function(a,b){return (a.ord||0)-(b.ord||0)||a.nome.localeCompare(b.nome);});
+}
+function pcDiaInfo(ds){
+  var dt=new Date(ds+"T12:00:00"),dw=dt.getDay(),fim=dw===0||dw===6,o=(pcCfg().dias||{})[ds]||{};
+  var fer=o.fer||"",trab=typeof o.trab==="boolean"?o.trab:!(fim||fer);
+  return {ds:ds,d:dt.getDate(),dw:dw,fim:fim,fer:fer,trab:trab};
+}
+function pcRegEm(e,ds){return (!e.adm||e.adm<=ds)&&(!e.dem||e.dem>=ds);}
+// Calcula a tabela do mes
+function pcCalc(m){
+  var nd=+fimMesStr(m).slice(8),days=[];for(var i=1;i<=nd;i++)days.push(pcDiaInfo(m+"-"+String(i).padStart(2,"0")));
+  var md=pcGet("m-"+m)||{},ov=md.ov||{},prod=md.prod||{};
+  var cats=pcCats(),tipoCat={};cats.forEach(function(c){tipoCat[c.nome]=c.tipo;});
+  function ovv(k,d,sys){var o=ov[k];return o&&typeof o[d]==="number"?o[d]:sys;}
+  function linha(key,label,kind,sysArr,edit,extra){
+    var vals=sysArr.map(function(v,i){return edit?ovv(key,days[i].d,v):v;});
+    var ed=sysArr.map(function(v,i){return edit&&ov[key]&&typeof ov[key][days[i].d]==="number";});
+    return Object.assign({key:key,label:label,kind:kind,vals:vals,sys:sysArr,ed:ed,edit:edit},extra||{});
+  }
+  var rows=[],catRows=[];
+  // categorias (com subtotal quando varias seguidas tem o mesmo grupo)
+  cats.forEach(function(c,ci){
+    var sys=days.map(function(dy){return DB.emp.filter(function(e){return pcCatNome(e)===c.nome&&pcRegEm(e,dy.ds);}).length;});
+    var r=linha("cat:"+c.nome,c.nome,"cat",sys,true,{tipo:c.tipo,sub:c.sub||""});rows.push(r);catRows.push(r);
+    var nx=cats[ci+1];
+    if(c.sub&&(!nx||nx.sub!==c.sub)){
+      var mem=catRows.filter(function(x){return x.sub===c.sub;});
+      rows.push({key:"sub:"+c.sub,label:c.sub+" - Total",kind:"sub",vals:days.map(function(dy,i){return mem.reduce(function(a,x){return a+x.vals[i];},0);}),bold:true});
+    }
+  });
+  var inat=linha("inat","Inativos","inat",days.map(function(dy){return DB.emp.filter(function(e){return pcRegEm(e,dy.ds)&&tipoCat[pcCatNome(e)]!=="fora"&&inatEm(e,dy.ds);}).length;}),true);
+  rows.push(inat);
+  var clt=days.map(function(dy,i){return catRows.filter(function(x){return x.tipo==="clt";}).reduce(function(a,x){return a+x.vals[i];},0);});
+  var cpj=days.map(function(dy,i){return clt[i]+catRows.filter(function(x){return x.tipo==="pj";}).reduce(function(a,x){return a+x.vals[i];},0);});
+  var semI=cpj.map(function(v,i){return v-inat.vals[i];});
+  rows.push({key:"tclt",label:"TOTAL REGISTRADOS CLT",kind:"tot",vals:clt,bold:true});
+  rows.push({key:"tpj",label:"TOTAL REGISTRADOS + TERCEIRIZADOS PJ",kind:"tot",vals:cpj,bold:true});
+  rows.push({key:"tsi",label:"TOTAL REGISTRADOS + TERCEIRIZADOS PJ - INATIVOS",kind:"tot",vals:semI,bold:true,big:true});
+  // ausencias: faltas lancadas no dia + afastados no dia
+  var ausDet=[];
+  var ausSys=days.map(function(dy){
+    var f=DB.oc.filter(function(o){if(o.tipo!=="falta"||o.data!==dy.ds)return false;var e=DB.emp.find(function(x){return x.id===o.eid;});return e&&tipoCat[pcCatNome(e)]!=="fora";}).length;
+    var a=DB.emp.filter(function(e){return pcRegEm(e,dy.ds)&&tipoCat[pcCatNome(e)]!=="fora"&&!inatEm(e,dy.ds)&&afastadoEm(e,dy.ds);}).length;
+    ausDet.push({f:f,a:a});return f+a;
+  });
+  var aus=linha("aus","AUSENCIAS/FERIAS NO DIA","aus",ausSys,true,{bold:true,det:ausDet});rows.push(aus);
+  var nPc=semI.map(function(v,i){return v-aus.vals[i];});
+  rows.push({key:"npc",label:"N° PARA PRODUCAO PER CAPITA",kind:"tot",vals:nPc,bold:true});
+  var pv=days.map(function(dy){var v=prod[dy.d];return typeof v==="number"?v:null;});
+  rows.push({key:"prod",label:"PRODUCAO DO DIA",sub2:"Entrada na Expedicao (manual)",kind:"prod",vals:pv,edit:true,bold:true,money:true});
+  var pc=pv.map(function(v,i){return v!==null&&v>0&&nPc[i]>0?v/nPc[i]:null;});
+  rows.push({key:"pc",label:"PRODUCAO PER CAPITA",kind:"pc",vals:pc,bold:true,money:true});
+  var acc=0,n=0,avg=pc.map(function(v){if(v!==null){acc+=v;n++;}return n?acc/n:null;});
+  rows.push({key:"avg",label:"PRODUCAO PER CAPITA MEDIA NO MES",kind:"pc",vals:avg,bold:true,money:true});
+  var diasT=typeof md.dias==="number"&&md.dias>0?md.dias:days.filter(function(x){return x.trab;}).length;
+  var meta=typeof md.meta==="number"?md.meta:null,metaDia=meta!==null&&diasT>0?meta/diasT:null;
+  rows.push({key:"mdia",label:"META DIA PER CAPITA NO MES",sub2:fmtDias(diasT)+" dias trabalhados",kind:"meta",vals:days.map(function(){return metaDia;}),bold:true,money:true});
+  rows.push({key:"mtot",label:"TOTAL PER CAPITA (META DO MES)",kind:"meta",vals:days.map(function(){return meta;}),money:true,red:true});
+  // coluna do mes
+  var trabIx=days.map(function(x,i){return x.trab?i:-1;}).filter(function(i){return i>=0;});
+  rows.forEach(function(r){
+    if(r.key==="prod"){r.tot=pv.reduce(function(a,v){return a+(v||0);},0);return;}
+    if(r.key==="pc"||r.key==="avg"){r.tot=n?acc/n:null;return;}
+    if(r.kind==="meta"){r.tot=r.vals[0];return;}
+    var ix=trabIx.length?trabIx:days.map(function(x,i){return i;});
+    r.tot=ix.reduce(function(a,i){return a+(r.vals[i]||0);},0)/ix.length;
+  });
+  return {m:m,days:days,rows:rows,meta:meta,diasT:diasT,diasAuto:days.filter(function(x){return x.trab;}).length,metaDia:metaDia,md:md};
+}
+function fmtDias(v){return (+v).toLocaleString("pt-BR",{maximumFractionDigits:1});}
+function pcFmt(r,v,tela){
+  if(v===null||v===undefined)return "";
+  if(r.money)return (+v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return String(Math.round(v));
+}
+function pcFmtTot(r,v){if(v===null||v===undefined)return "";if(r.money)return (+v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});return (+v).toLocaleString("pt-BR",{maximumFractionDigits:1});}
+function rPercap(){
+  var m=pcMes(),C=pcCalc(m),ro=!!ACESSO&&permTela("percap")!=="editar";
+  var a0=+curMes().slice(0,4),ys={};ys[a0-1]=1;ys[a0]=1;ys[a0+1]=1;ys[+m.slice(0,4)]=1;
+  var head="<tr><th class='pc-lb'>CATEGORIA</th>"+C.days.map(function(dy){
+      var cl=dy.fer?"fer":dy.fim?"fds":"";if(dy.trab&&(dy.fim||dy.fer))cl+=" trab";
+      return "<th class='pc-d "+cl+"' onclick=\"pcDiaModal('"+dy.ds+"')\" title='"+esc((dy.fer?"Feriado: "+dy.fer+" · ":"")+(dy.trab?"Dia trabalhado":"Nao trabalha")+" · clique para alterar")+"'><div>"+dy.d+"</div><small>"+DSEM[dy.dw]+"</small></th>";}).join("")
+    +"<th class='pc-tot'>MES</th></tr>";
+  var body=C.rows.map(function(r){
+    var cls="pc-r k-"+r.kind+(r.bold?" b":"")+(r.big?" big":"")+(r.red?" red":"");
+    return "<tr class='"+cls+"'><td class='pc-lb'>"+esc(r.label)+(r.sub2?"<small>"+esc(r.sub2)+"</small>":"")+(r.tipo==="fora"?" <span class='pc-tag'>nao soma</span>":r.tipo==="pj"?" <span class='pc-tag pj'>PJ</span>":"")+"</td>"
+      +C.days.map(function(dy,i){
+        var cl=dy.fer?"fer":dy.fim?"fds":"",v=r.vals[i];
+        if(r.edit&&!ro){
+          var ed=r.key==="prod"?v!==null:r.ed[i];
+          var tip=r.key==="prod"?"Producao do dia (manual)":r.ed[i]?"Valor editado. Sistema: "+pcFmt(r,r.sys[i])+" (apague para voltar)":(r.key==="aus"?r.det[i].f+" falta(s) lancada(s) + "+r.det[i].a+" afastado(s)":"Valor do sistema · digite para alterar");
+          return "<td class='"+cl+(ed&&r.key!=="prod"?" ed":"")+"'><input class='pc-in' value='"+pcFmt(r,v)+"' title='"+esc(tip)+"' data-k='"+esc(r.key)+"' data-d='"+dy.d+"' onfocus='this.select()' onchange='pcSet(this)' onkeydown='pcKey(event,this)'/></td>";
+        }
+        return "<td class='"+cl+(r.ed&&r.ed[i]?" ed":"")+"'"+(r.key==="aus"?" title='"+r.det[i].f+" falta(s) + "+r.det[i].a+" afastado(s)'":"")+">"+pcFmt(r,v)+"</td>";
+      }).join("")+"<td class='pc-tot'>"+pcFmtTot(r,r.tot)+"</td></tr>";
+  }).join("");
+  document.getElementById("p-percap").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Analise da Producao Per Capita</h1>"
+    +"<div class='sub'>Por categoria, dia a dia &middot; contagens vindas do Cadastro, Lancamentos, Afastamentos e Inatividade (editaveis)</div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
+    +"<div class='mes-fil'><i class='ti ti-calendar'></i><select id='pc-mes' onchange='pcSetMes()'>"+MOS.map(function(x,i){var v=String(i+1).padStart(2,"0");return "<option value='"+v+"'"+(v===m.slice(5)?" selected":"")+">"+x+"</option>";}).join("")+"</select>"
+    +"<select id='pc-ano' onchange='pcSetMes()'>"+Object.keys(ys).sort().map(function(y){return "<option"+(y===m.slice(0,4)?" selected":"")+">"+y+"</option>";}).join("")+"</select></div>"
+    +"<button class='btng btn-ic' onclick='pcCatsModal()'><i class='ti ti-list-details'></i>Categorias</button>"
+    +"<button class='btng btn-ic' onclick='pcFerModal()'><i class='ti ti-calendar-event'></i>Feriados e dias</button>"
+    +"<button class='btng btn-ic' onclick=\"pcRelModal('pdf')\"><i class='ti ti-file-type-pdf'></i>PDF</button>"
+    +"<button class='btng btn-ic' onclick=\"pcRelModal('xlsx')\"><i class='ti ti-file-spreadsheet'></i>Excel</button></div></div>"
+    +"<div class='card' style='padding:.75rem .85rem'>"
+    +"<div class='pc-bar'>"
+    +"<label>Meta per capita do mes (R$)<input type='text' inputmode='decimal' id='pc-meta' value='"+(C.meta!==null?fmtNum(C.meta):"")+"' placeholder='0,00' onchange='pcSetMeta()' "+(ro?"disabled":"")+"/></label>"
+    +"<label>Dias trabalhados<input type='text' inputmode='decimal' id='pc-dias' value='"+(typeof C.md.dias==="number"?fmtDias(C.md.dias):"")+"' placeholder='"+C.diasAuto+" (auto)' onchange='pcSetMeta()' "+(ro?"disabled":"")+"/></label>"
+    +"<div class='pc-kpi'><span>Meta dia per capita</span><b>"+(C.metaDia!==null?fmtBRL(C.metaDia):"—")+"</b></div>"
+    +"<div class='pc-kpi'><span>Media per capita no mes</span><b style='color:"+(C.rows.find(function(r){return r.key==="avg";}).tot!==null&&C.metaDia!==null&&C.rows.find(function(r){return r.key==="avg";}).tot>=C.metaDia?"#1a7a4a":"#c0392b")+"'>"+(function(){var t=C.rows.find(function(r){return r.key==="avg";}).tot;return t!==null?fmtBRL(t):"—";})()+"</b></div>"
+    +"<div class='pc-leg'><span class='lg fds'></span>Sabado/domingo<span class='lg fer'></span>Feriado<span class='lg trab'></span>Fim de semana/feriado trabalhado<span class='lg ed'></span>Valor editado</div></div>"
+    +"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap pc-wrap'><table class='pc-tab'><thead>"+head+"</thead><tbody>"+body+"</tbody></table></div>"
+    +"<div class='hint' style='margin-top:.6rem'>Categoria = campo Categoria do Cadastro (colaboradores com vinculo no dia, inclusive inativos). Inativos = inatividade vigente no dia. Ausencias = faltas lancadas no dia + afastados. "
+    +"N° para producao = Total - Inativos - Ausencias. Producao per capita = Producao do dia &divide; N°. Meta dia = Meta do mes &divide; dias trabalhados. Clique no dia do cabecalho para marcar feriado ou dia trabalhado. Valor editado: apague para voltar ao valor do sistema.</div></div>";
+  setTimeout(xsSync,0);
+}
+function pcSetMes(){pcMesV=gv("pc-ano")+"-"+gv("pc-mes");rPercap();}
+function pcKey(ev,el){
+  var dx=ev.key==="Enter"||ev.key==="ArrowDown"?"d":ev.key==="ArrowUp"?"u":ev.key==="ArrowRight"&&el.selectionStart===el.value.length?"r":ev.key==="ArrowLeft"&&el.selectionStart===0?"l":"";if(!dx)return;
+  var all=Array.prototype.slice.call(document.querySelectorAll(".pc-in")),k=el.dataset.k,d=+el.dataset.d,nx=null;
+  if(dx==="r"||dx==="l")nx=all.find(function(x){return x.dataset.k===k&&+x.dataset.d===d+(dx==="r"?1:-1);});
+  else{var ks=[];all.forEach(function(x){if(ks.indexOf(x.dataset.k)<0)ks.push(x.dataset.k);});var j=ks.indexOf(k)+(dx==="d"?1:-1);if(ks[j])nx=all.find(function(x){return x.dataset.k===ks[j]&&+x.dataset.d===d;});}
+  if(nx){ev.preventDefault();el.dispatchEvent(new Event("change"));setTimeout(function(){var n2=document.querySelector(".pc-in[data-k='"+nx.dataset.k.replace(/'/g,"\\'")+"'][data-d='"+nx.dataset.d+"']");if(n2){n2.focus();}},30);}
+}
+function pcSet(el){
+  var m=pcMes(),k=el.dataset.k,d=el.dataset.d,t=el.value.trim(),v=t===""?null:parseBRL(t);
+  if(v!==null&&(isNaN(v)||v<0)){alert("Informe um valor valido.");rPercap();return;}
+  var md=pcDoc("m-"+m,{prod:{},ov:{}});
+  if(k==="prod"){md.prod=Object.assign({},md.prod||{});if(v===null)delete md.prod[d];else md.prod[d]=+v.toFixed(2);}
+  else{md.ov=Object.assign({},md.ov||{});var o=Object.assign({},md.ov[k]||{});if(v===null)delete o[d];else o[d]=Math.round(v);
+    if(Object.keys(o).length)md.ov[k]=o;else delete md.ov[k];}
+  dbSave();pcRerender();
+}
+function pcRerender(){var w=document.querySelector("#p-percap .xs-wrap"),sl=w?w.scrollLeft:0,st=w?w.scrollTop:0;rPercap();var w2=document.querySelector("#p-percap .xs-wrap");if(w2){w2.scrollLeft=sl;w2.scrollTop=st;}}
+function pcSetMeta(){
+  var md=pcDoc("m-"+pcMes(),{prod:{},ov:{}}),mt=gv("pc-meta").trim(),di=gv("pc-dias").trim();
+  var vm=mt===""?null:parseBRL(mt),vd=di===""?null:parseBRL(di);
+  if((vm!==null&&(isNaN(vm)||vm<0))||(vd!==null&&(isNaN(vd)||vd<=0))){alert("Informe um valor valido.");return;}
+  if(vm===null)delete md.meta;else md.meta=+vm.toFixed(2);
+  if(vd===null)delete md.dias;else md.dias=vd;
+  dbSave();pcRerender();
+}
+// Dia: feriado e se trabalha
+function pcDiaModal(ds){
+  if(ACESSO&&permTela("percap")!=="editar")return;
+  pcFechar("md-pcdia");
+  var di=pcDiaInfo(ds),dt=new Date(ds+"T12:00:00");
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcdia";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' style='width:400px'><div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-calendar-event'></i>"+fmtD(ds)+" &middot; "+["Domingo","Segunda","Terca","Quarta","Quinta","Sexta","Sabado"][dt.getDay()]+"</div>"
+    +"<button class='mdl-x' onclick=\"pcFechar('md-pcdia')\"><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<div class='fr'><label class='lbl'>Feriado <span class='opt'>(deixe em branco se nao for)</span></label><input type='text' id='pcd-fer' value='"+esc(di.fer)+"' placeholder='Ex: Nossa Senhora Aparecida'/></div>"
+    +"<div class='fr'><label class='lbl'>Vai trabalhar neste dia?</label><div class='seg seg-full'>"
+    +"<button type='button' id='pcd-s' class='seg-b"+(di.trab?" on":"")+"' onclick=\"pcDiaTrab(true)\"><i class='ti ti-briefcase'></i>Sim, trabalha</button>"
+    +"<button type='button' id='pcd-n' class='seg-b"+(!di.trab?" on":"")+"' onclick=\"pcDiaTrab(false)\"><i class='ti ti-beach'></i>Nao trabalha</button></div><input type='hidden' id='pcd-t' value='"+(di.trab?1:0)+"'/></div>"
+    +"<div class='hint'>Dias nao trabalhados ficam fora da contagem de dias trabalhados (meta dia) e das medias da coluna MES.</div>"
+    +"<div class='mdl-ft'><button class='btng' onclick=\"pcDiaReset('"+ds+"')\">Padrao</button><button class='btnp' onclick=\"pcDiaSalvar('"+ds+"')\">Salvar</button></div></div></div>";
+  document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcdia");});
+}
+function pcDiaTrab(on){document.getElementById("pcd-t").value=on?1:0;document.getElementById("pcd-s").classList.toggle("on",on);document.getElementById("pcd-n").classList.toggle("on",!on);}
+function pcSetDia(ds,o){var cfg=pcDoc("cfg",{cats:[],dias:{}});cfg.dias=Object.assign({},cfg.dias||{});if(o)cfg.dias[ds]=o;else delete cfg.dias[ds];}
+function pcDiaSalvar(ds){
+  var fer=gv("pcd-fer").trim(),trab=gv("pcd-t")==="1",dw=new Date(ds+"T12:00:00").getDay(),pad=!((dw===0||dw===6)||fer);
+  pcSetDia(ds,fer||trab!==pad?{fer:fer,trab:trab}:null);dbSave();pcFechar("md-pcdia");pcRerender();
+}
+function pcDiaReset(ds){pcSetDia(ds,null);dbSave();pcFechar("md-pcdia");pcRerender();}
+function pcFechar(id){var m=document.getElementById(id);if(m)m.remove();}
+// Feriados do ano
+function pascoa(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da,12);}
+function feriadosNac(y){
+  var p=pascoa(y);function off(n){var d=new Date(p);d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  return [[y+"-01-01","Confraternizacao Universal"],[off(-47),"Carnaval"],[off(-2),"Sexta-feira Santa"],[y+"-04-21","Tiradentes"],[y+"-05-01","Dia do Trabalho"],[off(60),"Corpus Christi"],
+    [y+"-09-07","Independencia do Brasil"],[y+"-10-12","Nossa Senhora Aparecida"],[y+"-11-02","Finados"],[y+"-11-15","Proclamacao da Republica"],[y+"-11-20","Consciencia Negra"],[y+"-12-25","Natal"]];
+}
+function pcFerModal(){
+  pcFechar("md-pcfer");
+  var y=pcMes().slice(0,4),ro=!!ACESSO&&permTela("percap")!=="editar";
+  var dias=pcCfg().dias||{},l=Object.keys(dias).filter(function(d){return d.slice(0,4)===y;}).sort();
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcfer";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' style='width:560px'><div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-calendar-event'></i>Feriados e dias especiais - "+y+"</div>"
+    +"<button class='mdl-x' onclick=\"pcFechar('md-pcfer')\"><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +(l.length?"<div class='etab-wrap' style='max-height:300px'><table class='etab'><thead><tr><th style='cursor:default'>DATA</th><th style='cursor:default'>FERIADO</th><th class='c' style='cursor:default'>TRABALHA?</th><th class='c' style='cursor:default'></th></tr></thead><tbody>"
+      +l.map(function(d){var o=dias[d];return "<tr><td>"+fmtD(d)+" <small style='color:#999'>"+["dom","seg","ter","qua","qui","sex","sab"][new Date(d+"T12:00:00").getDay()]+"</small></td><td>"+esc(o.fer||"(fim de semana trabalhado)")+"</td>"
+        +"<td class='c'><input type='checkbox' "+(o.trab?"checked":"")+" "+(ro?"disabled":"")+" style='width:auto' onchange=\"pcFerTrab('"+d+"',this.checked)\"/></td>"
+        +"<td class='act'>"+(ro?"":"<button class='ibdel' onclick=\"pcFerDel('"+d+"')\"><i class='ti ti-trash'></i></button>")+"</td></tr>";}).join("")+"</tbody></table></div>"
+      :"<div class='empty' style='padding:1.2rem'><i class='ti ti-calendar'></i>Nenhum feriado cadastrado em "+y+".</div>")
+    +(ro?"":"<div style='border-top:1px dashed #e2e7ee;margin-top:.8rem;padding-top:.7rem'><div class='lbl'>Adicionar feriado</div>"
+      +"<div style='display:flex;gap:6px;flex-wrap:wrap;align-items:center'><input type='date' id='pcf-d' style='width:auto'/><input type='text' id='pcf-n' placeholder='Nome do feriado' style='flex:1;min-width:160px'/>"
+      +"<label style='display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap'><input type='checkbox' id='pcf-t' style='width:auto'/>Vai trabalhar</label>"
+      +"<button class='btnp' onclick='pcFerAdd()'>Adicionar</button></div>"
+      +"<button class='btng btn-ic' style='margin-top:.6rem' onclick=\"pcFerNac('"+y+"')\"><i class='ti ti-flag'></i>Incluir feriados nacionais de "+y+"</button>"
+      +"<div class='hint'>Os feriados nacionais entram como \"nao trabalha\". Marque \"Trabalha?\" nos que a empresa vai trabalhar. Feriados municipais podem ser adicionados acima.</div></div>")
+    +"</div></div>";
+  document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcfer");});
+}
+function pcFerTrab(d,on){var o=Object.assign({},(pcCfg().dias||{})[d]||{});o.trab=on;pcSetDia(d,o);dbSave();pcRerender();}
+function pcFerDel(d){pcSetDia(d,null);dbSave();pcFerModal();pcRerender();}
+function pcFerAdd(){var d=gv("pcf-d"),n=gv("pcf-n").trim();if(!d||!n){alert("Informe a data e o nome do feriado.");return;}
+  pcSetDia(d,{fer:n,trab:!!document.getElementById("pcf-t").checked});dbSave();pcFerModal();pcRerender();}
+function pcFerNac(y){var dias=pcCfg().dias||{},n=0;feriadosNac(+y).forEach(function(f){if(!dias[f[0]]){pcSetDia(f[0],{fer:f[1],trab:false});n++;}});dbSave();pcFerModal();pcRerender();
+  showSync(n+" feriado"+(n!==1?"s":"")+" nacionais incluido"+(n!==1?"s":""),true);setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2000);}
+// Categorias: tipo (soma em qual total), grupo de subtotal e ordem
+function pcCatsModal(){
+  pcFechar("md-pccat");
+  var cats=pcCats(),ro=!!ACESSO&&permTela("percap")!=="editar",subs={};cats.forEach(function(c){if(c.sub)subs[c.sub]=1;});
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pccat";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' style='width:760px'><div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-list-details'></i>Categorias da analise</div>"
+    +"<button class='mdl-x' onclick=\"pcFechar('md-pccat')\"><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<datalist id='pcc-subs'>"+Object.keys(subs).map(function(x){return "<option value='"+esc(x)+"'>";}).join("")+"</datalist>"
+    +"<div class='etab-wrap' style='max-height:380px'><table class='etab'><thead><tr><th class='c' style='cursor:default;width:70px'>ORDEM</th><th style='cursor:default'>CATEGORIA</th><th style='cursor:default'>ENTRA EM</th><th style='cursor:default'>GRUPO DE SUBTOTAL</th><th class='c' style='cursor:default'>COLAB.</th><th style='cursor:default'></th></tr></thead><tbody>"
+    +cats.map(function(c,i){var n=DB.emp.filter(function(e){return pcCatNome(e)===c.nome&&isAtivo(e);}).length;
+      return "<tr data-nome='"+esc(c.nome)+"'><td class='act'><button class='ibedt' "+(i===0||ro?"disabled style='opacity:.25'":"")+" onclick='pcCatMov("+i+",-1)'><i class='ti ti-arrow-up'></i></button><button class='ibedt' "+(i===cats.length-1||ro?"disabled style='opacity:.25'":"")+" onclick='pcCatMov("+i+",1)'><i class='ti ti-arrow-down'></i></button></td>"
+        +"<td class='nm'>"+esc(c.nome)+"</td>"
+        +"<td><select class='pcc-t' "+(ro?"disabled":"")+">"+Object.keys(PC_TIPO).map(function(k){return "<option value='"+k+"'"+(c.tipo===k?" selected":"")+">"+PC_TIPO[k]+"</option>";}).join("")+"</select></td>"
+        +"<td><input type='text' class='pcc-s' list='pcc-subs' value='"+esc(c.sub||"")+"' placeholder='Ex: Industriais Diretos' "+(ro?"disabled":"")+"/></td>"
+        +"<td class='c'>"+n+"</td><td class='act'>"+(!ro&&!n?"<button class='ibdel' title='Remover categoria' onclick='pcCatDel("+i+")'><i class='ti ti-trash'></i></button>":"")+"</td></tr>";}).join("")
+    +"</tbody></table></div>"
+    +(ro?"":"<div style='display:flex;gap:6px;margin-top:.7rem;flex-wrap:wrap'><input type='text' id='pcc-novo' placeholder='Nova categoria manual (ex: Terceirizados LF Gestao)' style='flex:1;min-width:220px'/><button class='btng btn-ic' onclick='pcCatAdd()'><i class='ti ti-plus'></i>Adicionar</button></div>")
+    +"<div class='hint'>As categorias vem do campo Categoria do Cadastro. Categorias seguidas com o mesmo <b>grupo de subtotal</b> ganham uma linha \"Grupo - Total\" (ex: Industriais Diretos 1° T, 2° T, 3° T). Categoria manual (sem colaboradores) serve para lancar valores a mao na tabela.</div>"
+    +(ro?"":"<div class='mdl-ft'><button class='btng' onclick=\"pcFechar('md-pccat')\">Cancelar</button><button class='btnp' onclick='pcCatSalvar()'>Salvar</button></div>")
+    +"</div></div>";
+  document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pccat");});
+}
+function pcCatLer(){return Array.prototype.slice.call(document.querySelectorAll("#md-pccat tbody tr")).map(function(tr,i){
+  return {nome:tr.dataset.nome,tipo:tr.querySelector(".pcc-t").value,sub:tr.querySelector(".pcc-s").value.trim(),ord:i+1};});}
+function pcCatGravar(l){var cfg=pcDoc("cfg",{cats:[],dias:{}});cfg.cats=l;}
+function pcCatMov(i,d){var l=pcCatLer(),j=i+d;if(j<0||j>=l.length)return;var x=l[i];l[i]=l[j];l[j]=x;l.forEach(function(c,k){c.ord=k+1;});pcCatGravar(l);pcCatsModal();}
+function pcCatDel(i){var l=pcCatLer();l.splice(i,1);l.forEach(function(c,k){c.ord=k+1;});pcCatGravar(l);dbSave();pcCatsModal();pcRerender();}
+function pcCatAdd(){var n=gv("pcc-novo").trim();if(!n)return;var l=pcCatLer();if(l.some(function(c){return c.nome.toLowerCase()===n.toLowerCase();})){alert("Categoria ja existe.");return;}
+  l.push({nome:n,tipo:"pj",sub:"",ord:l.length+1});pcCatGravar(l);pcCatsModal();}
+function pcCatSalvar(){pcCatGravar(pcCatLer());dbSave();pcFechar("md-pccat");pcRerender();}
+// Relatorios PDF / Excel
+function pcRelModal(fmt){
+  pcFechar("md-pcrel");
+  function radio(nm,v,lb,on){return "<label class='pdf-opt'><input type='radio' name='"+nm+"' value='"+v+"'"+(on?" checked":"")+"/>"+lb+"</label>";}
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcrel";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' style='width:440px'><div class='mdl-hd'><div class='mdl-tt'><i class='ti "+(fmt==="pdf"?"ti-file-type-pdf":"ti-file-spreadsheet")+"'></i>Analise per capita - "+(fmt==="pdf"?"PDF":"Excel")+"</div>"
+    +"<button class='mdl-x' onclick=\"pcFechar('md-pcrel')\"><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<div class='fr'><label class='lbl'>Mes</label><input type='text' value='"+fmtM(pcMes())+"' readonly style='background:#f1f4f8;font-weight:700'/></div>"
+    +"<div class='fr'><label class='lbl'>Orientacao</label><div class='pdf-opts'>"+radio("pcr-ori","landscape","Paisagem",true)+radio("pcr-ori","portrait","Retrato")+"</div>"
+    +"<div class='hint'>"+(fmt==="pdf"?"Paisagem: o mes inteiro em uma tabela. Retrato: a tabela e dividida em duas partes (dias 1-16 e 17 em diante).":"Define a orientacao de impressao da planilha (ajustada a largura da pagina).")+"</div></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick=\"pcFechar('md-pcrel')\">Cancelar</button><button class='btnp btn-ic' onclick=\"pcGerar('"+fmt+"')\"><i class='ti ti-download'></i>Gerar</button></div></div></div>";
+  document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcrel");});
+}
+function pcGerar(fmt){var ori=_radio("pcr-ori")||"landscape",C=pcCalc(pcMes());if(fmt==="pdf")pcPDF(C,ori);else pcXLSX(C,ori);}
+function pcPDF(C,ori){
+  if(!(window.jspdf&&window.jspdf.jsPDF)){alert("As bibliotecas ainda estao carregando. Aguarde alguns segundos e tente novamente.");return;}
+  var K=mkPdfKit("Analise da Producao Per Capita",fmtM(C.m)+"  |  "+fmtDias(C.diasT)+" dias trabalhados  |  Meta do mes "+(C.meta!==null?fmtBRL(C.meta):"nao definida"),ori,"a4"),doc=K.doc,Cc=K.C;
+  var y=K.header();
+  var blocos=ori==="portrait"?[[0,Math.min(16,C.days.length)],[16,C.days.length]]:[[0,C.days.length]];
+  var lbW=ori==="portrait"?50:52;
+  blocos.forEach(function(bk,bi){
+    var ds=C.days.slice(bk[0],bk[1]),ultimo=bi===blocos.length-1,totW=ultimo?16:0;
+    var nRows=C.rows.length,hh=7,dw=(K.cw-lbW-totW)/ds.length;
+    var disp=ori==="portrait"?(K.H-K.BANDH-8-24)/2-hh-8:K.H-y-14-hh-10;
+    var rh=Math.max(4,Math.min(ori==="portrait"?5.4:6.6,disp/nRows)),need=hh+nRows*rh+4;
+    if(y+need>K.H-12){doc.addPage();y=K.header();}
+    if(blocos.length>1){K.section("Dias "+ds[0].d+" a "+ds[ds.length-1].d,y,Cc.b);y+=3;}
+    var x0=K.mg;
+    // cabecalho
+    K.fill(Cc.b);doc.rect(x0,y,lbW,hh,"F");K.font(6.5,true);K.txt([255,255,255]);doc.text("CATEGORIA",x0+2,y+4.4);
+    ds.forEach(function(dy,i){var x=x0+lbW+i*dw,c=dy.fer?[192,57,43]:dy.fim?[91,107,132]:Cc.b;if(dy.trab&&(dy.fim||dy.fer))c=[26,122,74];
+      K.fill(c);doc.rect(x,y,dw,hh,"F");doc.setDrawColor(255,255,255);doc.setLineWidth(.15);doc.line(x,y,x,y+hh);
+      K.font(6.3,true);K.txt([255,255,255]);doc.text(String(dy.d),x+dw/2,y+3.1,{align:"center"});K.font(4.6);doc.text(DSEM[dy.dw],x+dw/2,y+5.9,{align:"center"});});
+    if(ultimo){K.fill(Cc.ink);doc.rect(x0+lbW+ds.length*dw,y,totW,hh,"F");K.font(6.3,true);K.txt([255,255,255]);doc.text("MÊS",x0+lbW+ds.length*dw+totW/2,y+4.4,{align:"center"});}
+    y+=hh;
+    C.rows.forEach(function(r,ri){
+      var bg=r.kind==="tot"||r.kind==="sub"?[232,239,249]:r.kind==="prod"?[255,248,225]:r.kind==="pc"?[231,246,238]:r.kind==="meta"?[245,240,250]:ri%2?[248,250,252]:null;
+      if(bg){K.fill(bg);doc.rect(x0,y,lbW+ds.length*dw+totW,rh,"F");}
+      ds.forEach(function(dy,i){if(!bg&&(dy.fim||dy.fer)){K.fill(dy.fer?[253,236,236]:[238,241,246]);doc.rect(x0+lbW+i*dw,y,dw,rh,"F");}});
+      var lfs=r.big?6.4:5.8;K.font(lfs,!!r.bold);K.txt(r.red?Cc.red:r.bold?Cc.ink:Cc.txt);
+      var lb=r.label;while(lfs>4.4&&doc.getTextWidth(lb)>lbW-3){lfs-=.2;K.font(lfs,!!r.bold);}while(lb.length>4&&doc.getTextWidth(lb)>lbW-3)lb=lb.slice(0,-1);doc.text(lb,x0+1.6,y+rh/2+1.2);
+      ds.forEach(function(dy,i){
+        var ix=bk[0]+i,v=r.vals[ix],t=r.key==="prod"&&v!==null?Math.round(v).toLocaleString("pt-BR"):pcFmt(r,v);if(!t)return;
+        var fs=r.big?6.4:5.6;K.font(fs,!!r.bold);while(fs>3.4&&doc.getTextWidth(t)>dw-.8){fs-=.2;K.font(fs,!!r.bold);}
+        K.txt(r.ed&&r.ed[ix]?Cc.bl:(typeof v==="number"&&v<0)?Cc.red:r.red?Cc.red:Cc.txt);
+        doc.text(t,x0+lbW+i*dw+dw/2,y+rh/2+1.1,{align:"center"});
+      });
+      if(ultimo){var tt=pcFmtTot(r,r.tot),fs2=5.4;K.font(fs2,true);while(fs2>3.6&&doc.getTextWidth(tt)>totW-1){fs2-=.2;K.font(fs2,true);}K.txt(Cc.b);doc.text(tt,x0+lbW+ds.length*dw+totW-1,y+rh/2+1.1,{align:"right"});}
+      doc.setDrawColor(Cc.line[0],Cc.line[1],Cc.line[2]);doc.setLineWidth(.12);doc.line(x0,y+rh,x0+lbW+ds.length*dw+totW,y+rh);
+      y+=rh;
+    });
+    y+=6;
+  });
+  if(y+10<K.H-12){K.font(6.2);K.txt(Cc.mut);
+    doc.text(doc.splitTextToSize("N° para producao = Total registrados + terceirizados PJ - Inativos - Ausencias. Producao per capita = Producao do dia / N°. Meta dia = Meta do mes / dias trabalhados. Azul = valor editado. Colunas: cinza = sabado/domingo, vermelho = feriado, verde = fim de semana/feriado trabalhado.",K.cw),K.mg,y);}
+  K.finalizar("analise-per-capita-"+C.m+"-"+(ori==="portrait"?"retrato":"paisagem")+".pdf");
+  pcFechar("md-pcrel");
+}
+function pcXLSX(C,ori){
+  showSync("Gerando Excel...",false);
+  loadExcelJS().then(function(){
+    var wb=new ExcelJS.Workbook();wb.creator="C@P Consultoria";
+    var ws=wb.addWorksheet("Per capita "+C.m,{views:[{state:"frozen",xSplit:1,ySplit:4}]});
+    var nd=C.days.length,lastC=nd+2,BRD={style:"thin",color:{argb:"FFDFE5EE"}};
+    ws.pageSetup={paperSize:9,orientation:ori,fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}};
+    ws.headerFooter={oddFooter:"&L&8Timbó Papéis Especiais&C&8Analise da Producao Per Capita - "+fmtM(C.m)+"&R&8Página &P de &N"};
+    ws.mergeCells(1,1,1,lastC);var t=ws.getCell(1,1);t.value="ANÁLISE DA PRODUÇÃO PER CAPITA - "+fmtM(C.m).toUpperCase();t.font={bold:true,size:14,color:{argb:"FFFFFFFF"}};
+    t.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0A1F4A"}};t.alignment={horizontal:"center",vertical:"middle"};ws.getRow(1).height=24;
+    ws.mergeCells(2,1,2,lastC);ws.getCell(2,1).value=fmtDias(C.diasT)+" dias trabalhados  |  Meta do mes: "+(C.meta!==null?fmtBRL(C.meta):"nao definida")+"  |  Gerado em "+new Date().toLocaleString("pt-BR");ws.getCell(2,1).font={size:9,color:{argb:"FF666666"}};
+    ws.getColumn(1).width=46;for(var c=2;c<=nd+1;c++)ws.getColumn(c).width=9.5;ws.getColumn(lastC).width=12;
+    var h=ws.getRow(3),h2=ws.getRow(4);
+    function hdr(cell,v,argb){cell.value=v;cell.font={bold:true,color:{argb:"FFFFFFFF"},size:9};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:argb}};cell.alignment={horizontal:"center",vertical:"middle"};cell.border={left:BRD,right:BRD,top:BRD,bottom:BRD};}
+    hdr(h.getCell(1),"CATEGORIA","FF00348F");hdr(h2.getCell(1),"","FF00348F");
+    C.days.forEach(function(dy,i){var cor=dy.fer?"FFC0392B":dy.fim?"FF5B6B84":"FF00348F";if(dy.trab&&(dy.fim||dy.fer))cor="FF1A7A4A";hdr(h.getCell(i+2),dy.d,cor);hdr(h2.getCell(i+2),DSEM[dy.dw]+(dy.fer?" (fer.)":""),cor);});
+    hdr(h.getCell(lastC),"MÊS","FF0A1F4A");hdr(h2.getCell(lastC),"","FF0A1F4A");
+    var rowN={},r0=5,colL=function(i){return ws.getColumn(i).letter;};
+    C.rows.forEach(function(r,ri){rowN[r.key]=r0+ri;});
+    var catKeys=C.rows.filter(function(r){return r.kind==="cat";});
+    C.rows.forEach(function(r,ri){
+      var rn=r0+ri,row=ws.getRow(rn);
+      var lc=row.getCell(1);lc.value=r.label+(r.sub2?" - "+r.sub2:"");lc.font={bold:!!r.bold,size:r.big?10:9,color:{argb:r.red?"FFC0392B":"FF1F2D3D"}};lc.border={left:BRD,right:BRD,top:BRD,bottom:BRD};
+      var bg=r.kind==="tot"||r.kind==="sub"?"FFE8EFF9":r.kind==="prod"?"FFFFF8E1":r.kind==="pc"?"FFE7F6EE":r.kind==="meta"?"FFF5F0FA":null;
+      if(bg)lc.fill={type:"pattern",pattern:"solid",fgColor:{argb:bg}};
+      C.days.forEach(function(dy,i){
+        var L=colL(i+2),cell=row.getCell(i+2),v=r.vals[i],f=null;
+        function R(k){return L+rowN[k];}
+        if(r.kind==="sub"){var mem=catKeys.filter(function(x){return x.sub===r.key.slice(4);});f=mem.map(function(x){return R(x.key);}).join("+")||"0";}
+        else if(r.key==="tclt"){var a=catKeys.filter(function(x){return x.tipo==="clt";});f=a.length?a.map(function(x){return R(x.key);}).join("+"):"0";}
+        else if(r.key==="tpj"){var b=catKeys.filter(function(x){return x.tipo==="pj";});f=R("tclt")+(b.length?"+"+b.map(function(x){return R(x.key);}).join("+"):"");}
+        else if(r.key==="tsi")f=R("tpj")+"-"+R("inat");
+        else if(r.key==="npc")f=R("tsi")+"-"+R("aus");
+        else if(r.key==="pc")f="IF(AND(N("+R("prod")+")>0,"+R("npc")+">0),"+R("prod")+"/"+R("npc")+",\"\")";
+        else if(r.key==="avg")f="IFERROR(AVERAGE($B$"+rowN.pc+":"+L+rowN.pc+"),\"\")";
+        if(f)cell.value={formula:f,result:v===null?"":v};else cell.value=v===null?null:v;
+        cell.numFmt=r.money?"#,##0.00":"0";
+        cell.alignment={horizontal:"center"};cell.border={left:BRD,right:BRD,top:BRD,bottom:BRD};
+        cell.font={size:r.big?10:9,bold:!!r.bold,color:{argb:r.ed&&r.ed[i]?"FF1E5BC6":r.red?"FFC0392B":"FF333333"}};
+        var cb=bg||(dy.fer?"FFFDECEC":dy.fim?"FFEEF1F6":null);if(cb)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:cb}};
+      });
+      var tc=row.getCell(lastC),Lb="B",Le=colL(nd+1);
+      var tf=r.key==="prod"?"SUM("+Lb+rn+":"+Le+rn+")":r.kind==="meta"?Lb+rn:r.kind==="pc"?"IFERROR(AVERAGE("+Lb+rowN.pc+":"+Le+rowN.pc+"),\"\")":"AVERAGE("+Lb+rn+":"+Le+rn+")";
+      tc.value={formula:tf,result:r.tot===null?"":r.tot};tc.numFmt=r.money?"#,##0.00":"0.0";tc.font={bold:true,size:9,color:{argb:"FF00348F"}};tc.alignment={horizontal:"right"};tc.border={left:BRD,right:BRD,top:BRD,bottom:BRD};tc.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE6EDF8"}};
+      if(r.big)row.height=18;
+    });
+    var nr=r0+C.rows.length+1;ws.mergeCells(nr,1,nr,lastC);
+    ws.getCell(nr,1).value="Totais, N° para producao, per capita e media sao formulas. A coluna MES traz a media do mes (soma na producao). Azul = valor editado na tela.";ws.getCell(nr,1).font={size:8,italic:true,color:{argb:"FF888888"}};
+    return wb.xlsx.writeBuffer();
+  }).then(function(buf){
+    var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="analise-per-capita-"+C.m+"-"+(ori==="portrait"?"retrato":"paisagem")+".xlsx";
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+    showSync("Excel gerado",true);setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2000);pcFechar("md-pcrel");
+  }).catch(function(e){showSync("Erro ao gerar Excel: "+e.message,false,true);});
+}
+
 // ═══ PDF: COLABORADORES POR CENTRO DE CUSTO ═══
 // ═══ RELATORIO PDF - CADASTRO DE COLABORADOR ═══
 function abrirEmpPDF(){
@@ -4433,7 +5448,7 @@ function abrirEmpPDF(){
     +"<option value='tela'>Como esta na tela (aba, busca, filtros e ordenacao)</option>"
     +"<option value='ativos'>Ativos</option><option value='inativos'>Inativos / demitidos</option><option value='todos'>Todos</option></select></div>"
     +"<div class='fr'><label class='lbl'>Agrupar por</label><div class='pdf-opts'>"
-    +radio("pdfgrp","cc","Centro de custo",true)+radio("pdfgrp","empresa","Empresa")+radio("pdfgrp","func","Funcao")+radio("pdfgrp","nenhum","Sem agrupamento")+"</div></div>"
+    +radio("pdfgrp","cc","Centro de custo",true)+radio("pdfgrp","empresa","Categoria")+radio("pdfgrp","func","Funcao")+radio("pdfgrp","nenhum","Sem agrupamento")+"</div></div>"
     +"<div class='fr'><label class='lbl'>Colunas</label><div class='pdf-opts'>"
     +radio("pdfcols","tela","Colunas visiveis na tela ("+vis0+")",true)+radio("pdfcols","todas","Todas as colunas ("+EMP_COLS.length+")")+"</div></div>"
     +"<div class='fr'><label class='lbl'>Papel</label><div class='pdf-opts'>"
@@ -4461,11 +5476,11 @@ function gerarEmpPDF(){
   if(grp!=="nenhum")cols0=cols0.filter(function(c){return c.k!==grp;}); // a coluna do agrupamento vira o titulo da secao
   var papel=pap==="auto"?(cols0.length>11?"a3":"a4"):pap;
   var sitLb={tela:"Conforme a tela",ativos:"Ativos",inativos:"Inativos / demitidos",todos:"Todos"}[sit];
-  var grpLb={cc:"centro de custo",empresa:"empresa",func:"função",nenhum:""}[grp];
+  var grpLb={cc:"centro de custo",empresa:"categoria",func:"função",nenhum:""}[grp];
   var K=mkPdfKit("Cadastro de Colaboradores",sitLb+(grpLb?"  |  Agrupado por "+grpLb:"")+"  |  "+lista.length+" colaborador"+(lista.length!==1?"es":""),"landscape",papel),doc=K.doc,C=K.C,cw=K.cw;
   // larguras proporcionais ao conteudo de cada coluna
   var PESO={inss:1.05,fgts:1.05,adic:1.15,pgto:.9,empresa:1.05,nome:2.3,func:1.3,cc:1.45,vinc:.55,sit:.88,adm:.98,tempo:.85,aniv:.98,horario:1.08,sal:1.15,terco:1.12,dec13:1.15,cesta:1.05,assid:1.05,pmetas:1.05,bonus:1.05,refeit:1.05,custo:1.25};
-  var PL={inss:"INSS",fgts:"FGTS",adic:"ADICIONAL SALÁRIO",pgto:"TIPO PAGTO",empresa:"EMPRESA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
+  var PL={inss:"INSS",fgts:"FGTS",adic:"ADICIONAL SALÁRIO",pgto:"TIPO PAGTO",empresa:"CATEGORIA",nome:"FUNCIONÁRIO",func:"FUNÇÃO",cc:"CENTRO DE CUSTO",vinc:"VÍNC.",sit:"SITUAÇÃO",adm:"ADMIS.",tempo:"TEMPO EMPRESA",aniv:"ANIVERS.",horario:"HORÁRIO",
     sal:"SALÁRIO",terco:"1/3 FÉRIAS",dec13:"13º SALÁRIO",cesta:"CESTA BÁSICA",assid:"ASSIDUID.",pmetas:"PRÊMIO METAS",bonus:"BÔNUS ANUAL",refeit:"REFEITÓRIO",custo:"CUSTO MENSAL"};
   var pesos=cols0.map(function(c){return PESO[c.k]||1;}),somaP=pesos.reduce(function(a,b){return a+b;},0)+0.35;
   var unit=cw/somaP;
@@ -4696,7 +5711,7 @@ function relMes(m,se){
     var pf=0,pa=0,ps=0;
     DB.oc.forEach(function(x){
       if(x.eid!==e.id||gmk(x.data)!==m)return;
-      var p=getPct(x.tipo,x.data);
+      var p=ocPct(x);
       if(x.tipo==="falta")pf+=p;else if(x.tipo==="atraso")pa+=p;else if(x.tipo==="5s")ps+=p;
     });
     var raw=pf+pa+ps,k=raw>0?d.desc/raw:0; // desconto limitado a 100%: rateia proporcionalmente
