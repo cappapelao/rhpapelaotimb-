@@ -2941,7 +2941,7 @@ function rFolha(){
       :"<button class='fl-st' onclick=\"fecharMes('"+d.m+"')\" title='Congelar os valores deste mes'><i class='ti ti-lock-open'></i>Fechar</button>";
     return "<tr class='"+(d.m===curMes()?"fl-cur":"")+"'><td class='nm'>"+mm+"</td>"+cells
       +"<td class='r fl-c'>"+(f?v(d.folha):"")+"</td><td class='r fl-c'>"+(f?v(d.terc):"")+"</td><td class='r fl-c fl-g'>"+(f?v(d.geral):"")+"</td>"
-      +"<td class='in fl-c'><input type='text' inputmode='decimal' class='etab-sal' data-col='rec' value='"+(d.rec===null?"":fmtBRL(d.rec))+"' placeholder='R$ 0,00' onfocus='brlFocus(this)' onblur='brlBlur(this)' onchange=\"setReceita('"+d.m+"',this.value)\" onkeydown='salKey(event,this)'/></td>"
+      +"<td class='in fl-c'><input type='number' min='0' step='0.01' class='etab-sal' data-col='rec' value='"+(d.rec===null?"":d.rec)+"' placeholder='0,00' onchange=\"setReceita('"+d.m+"',this.value)\" onkeydown='salKey(event,this)'/></td>"
       +"<td class='r fl-c fl-p'>"+(f&&d.rec?pct(d.geral,d.rec):"")+"</td><td class='c'>"+st+"</td></tr>";
   }).join("");
   var totG=gp.concat(gt).map(function(g){return "<td class='r'>"+fmtBRL(soma(function(d){return d.f.g[g.id]||0;}))+"</td>";}).join("");
@@ -2980,7 +2980,7 @@ function flSyncScroll(){
 window.addEventListener("resize",function(){if(pg==="folha")flSyncScroll();});
 function pct2(x){return (x||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";}
 function setReceita(m,val){
-  var t=(val||"").toString().trim(),v=t===""?null:parseBRL(t);
+  var t=(val||"").toString().trim(),v=t===""?null:parseFloat(t.replace(",","."));
   if(v!==null&&(isNaN(v)||v<0)){alert("Informe um valor valido.");return;}
   if(!DB.receita)DB.receita=[];
   DB.receita=DB.receita.filter(function(r){return r.id!==m;});
