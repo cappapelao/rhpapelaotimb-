@@ -355,6 +355,14 @@ input:focus-visible,select:focus-visible{outline:none}
 .pdf-opt{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:8px;padding:.4rem .7rem;font-size:12.5px;cursor:pointer;background:#fff}
 .pdf-opt:has(input:checked){border-color:var(--blue);background:#eef4fc;color:var(--deep);font-weight:700}
 .pdf-opt input{width:auto;margin:0}
+.pc-ednm{cursor:pointer;color:#9aa3ad;margin-right:4px;font-size:12px}.pc-ednm:hover{color:var(--blue)}
+.pdf-chk{border:1.5px solid var(--line);border-radius:8px;max-height:150px;overflow:auto;padding:.3rem .45rem;display:grid;grid-template-columns:1fr 1fr;gap:1px 10px;background:#fff}
+.pdf-chk label{display:flex;align-items:center;gap:6px;font-size:12px;padding:.18rem .2rem;cursor:pointer;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-chk label:hover{background:#f2f6fb}
+.pdf-chk input{width:auto;margin:0;flex-shrink:0}
+.pdf-chk-hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pdf-chk-hd .lk{font-size:11.5px;color:var(--blue);cursor:pointer;font-weight:600;margin-left:10px}
+.pdf-chk-hd small{color:#8a94a0;font-size:11px}
 .dir-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
 .dir-chip{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:.45rem .75rem;font-size:12.5px;font-weight:600;color:#444}
 .dir-chip:hover{border-color:var(--blue)}
@@ -5265,7 +5273,7 @@ function rPercap(){
     +"<th class='pc-tot'>MES</th></tr>";
   var body=C.rows.map(function(r){
     var cls="pc-r k-"+r.kind+(r.bold?" b":"")+(r.big?" big":"")+(r.red?" red":"");
-    return "<tr class='"+cls+"'><td class='pc-lb'>"+esc(r.label)+(r.sub2?"<small>"+esc(r.sub2)+"</small>":"")+(r.tipo==="fora"?" <span class='pc-tag'>nao soma</span>":r.tipo==="pj"?" <span class='pc-tag pj'>PJ</span>":"")+"</td>"
+    return "<tr class='"+cls+"'><td class='pc-lb'>"+(r.kind==="cat"&&!ro&&r.label!=="(Sem categoria)"?"<span class='pc-ednm' title='Editar nome' onclick='pcCatsModal()'><i class='ti ti-pencil'></i></span>":"")+esc(r.label)+(r.sub2?"<small>"+esc(r.sub2)+"</small>":"")+(r.tipo==="fora"?" <span class='pc-tag'>nao soma</span>":r.tipo==="pj"?" <span class='pc-tag pj'>PJ</span>":"")+"</td>"
       +C.days.map(function(dy,i){
         var cl=dy.fer?"fer":dy.fim?"fds":"",v=r.vals[i];
         if(r.edit&&!ro){
@@ -5393,25 +5401,32 @@ function pcCatsModal(){
     +"<div class='etab-wrap' style='max-height:380px'><table class='etab'><thead><tr><th class='c' style='cursor:default;width:70px'>ORDEM</th><th style='cursor:default'>CATEGORIA</th><th style='cursor:default'>ENTRA EM</th><th style='cursor:default'>GRUPO DE SUBTOTAL</th><th class='c' style='cursor:default'>COLAB.</th><th style='cursor:default'></th></tr></thead><tbody>"
     +cats.map(function(c,i){var n=DB.emp.filter(function(e){return pcCatNome(e)===c.nome&&isAtivo(e);}).length;
       return "<tr data-nome='"+esc(c.nome)+"'><td class='act'><button class='ibedt' "+(i===0||ro?"disabled style='opacity:.25'":"")+" onclick='pcCatMov("+i+",-1)'><i class='ti ti-arrow-up'></i></button><button class='ibedt' "+(i===cats.length-1||ro?"disabled style='opacity:.25'":"")+" onclick='pcCatMov("+i+",1)'><i class='ti ti-arrow-down'></i></button></td>"
-        +"<td class='nm'>"+esc(c.nome)+"</td>"
+        +"<td class='nm'>"+(ro||c.nome==="(Sem categoria)"?esc(c.nome):"<input type='text' class='pcc-n' value='"+esc(c.nome)+"' title='Clique para editar o nome' style='font-weight:700;min-width:210px'/>")+"</td>"
         +"<td><select class='pcc-t' "+(ro?"disabled":"")+">"+Object.keys(PC_TIPO).map(function(k){return "<option value='"+k+"'"+(c.tipo===k?" selected":"")+">"+PC_TIPO[k]+"</option>";}).join("")+"</select></td>"
         +"<td><input type='text' class='pcc-s' list='pcc-subs' value='"+esc(c.sub||"")+"' placeholder='Ex: Industriais Diretos' "+(ro?"disabled":"")+"/></td>"
         +"<td class='c'>"+n+"</td><td class='act'>"+(!ro&&!n?"<button class='ibdel' title='Remover categoria' onclick='pcCatDel("+i+")'><i class='ti ti-trash'></i></button>":"")+"</td></tr>";}).join("")
     +"</tbody></table></div>"
     +(ro?"":"<div style='display:flex;gap:6px;margin-top:.7rem;flex-wrap:wrap'><input type='text' id='pcc-novo' placeholder='Nova categoria manual (ex: Terceirizados LF Gestao)' style='flex:1;min-width:220px'/><button class='btng btn-ic' onclick='pcCatAdd()'><i class='ti ti-plus'></i>Adicionar</button></div>")
-    +"<div class='hint'>As categorias vem do campo Categoria do Cadastro. Categorias seguidas com o mesmo <b>grupo de subtotal</b> ganham uma linha \"Grupo - Total\" (ex: Industriais Diretos 1° T, 2° T, 3° T). Categoria manual (sem colaboradores) serve para lancar valores a mao na tabela.</div>"
+    +"<div class='hint'>Clique no nome para editar: ao salvar, os colaboradores da categoria e os valores ja editados na tabela sao atualizados. As categorias vem do campo Categoria do Cadastro. Categorias seguidas com o mesmo <b>grupo de subtotal</b> ganham uma linha \"Grupo - Total\" (ex: Industriais Diretos 1° T, 2° T, 3° T). Categoria manual (sem colaboradores) serve para lancar valores a mao na tabela.</div>"
     +(ro?"":"<div class='mdl-ft'><button class='btng' onclick=\"pcFechar('md-pccat')\">Cancelar</button><button class='btnp' onclick='pcCatSalvar()'>Salvar</button></div>")
     +"</div></div>";
   document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pccat");});
 }
 function pcCatLer(){return Array.prototype.slice.call(document.querySelectorAll("#md-pccat tbody tr")).map(function(tr,i){
-  return {nome:tr.dataset.nome,tipo:tr.querySelector(".pcc-t").value,sub:tr.querySelector(".pcc-s").value.trim(),ord:i+1};});}
-function pcCatGravar(l){var cfg=pcDoc("cfg",{cats:[],dias:{}});cfg.cats=l;}
-function pcCatMov(i,d){var l=pcCatLer(),j=i+d;if(j<0||j>=l.length)return;var x=l[i];l[i]=l[j];l[j]=x;l.forEach(function(c,k){c.ord=k+1;});pcCatGravar(l);pcCatsModal();}
-function pcCatDel(i){var l=pcCatLer();l.splice(i,1);l.forEach(function(c,k){c.ord=k+1;});pcCatGravar(l);dbSave();pcCatsModal();pcRerender();}
-function pcCatAdd(){var n=gv("pcc-novo").trim();if(!n)return;var l=pcCatLer();if(l.some(function(c){return c.nome.toLowerCase()===n.toLowerCase();})){alert("Categoria ja existe.");return;}
+  var ni=tr.querySelector(".pcc-n"),nm=ni?ni.value.trim():tr.dataset.nome;
+  return {nome:nm||tr.dataset.nome,old:tr.dataset.nome,tipo:tr.querySelector(".pcc-t").value,sub:tr.querySelector(".pcc-s").value.trim(),ord:i+1};});}
+// valida nomes repetidos; retorna false se houver conflito
+function pcCatValida(l){var vist={};for(var i=0;i<l.length;i++){var k=l[i].nome.toLowerCase();if(vist[k]){alert("Ja existe uma categoria com o nome "+l[i].nome+".");return false;}vist[k]=1;}return true;}
+// grava a lista; categorias renomeadas atualizam o cadastro dos colaboradores e os valores editados na tabela
+function pcCatGravar(l){
+  l.forEach(function(c){if(c.old&&c.old!==c.nome&&c.old!=="(Sem categoria)")catRenomearRefs(c.old,c.nome);delete c.old;});
+  var cfg=pcDoc("cfg",{cats:[],dias:{}});cfg.cats=l.filter(function(c){return c.nome!=="(Sem categoria)";});
+}
+function pcCatMov(i,d){var l=pcCatLer();if(!pcCatValida(l))return;var j=i+d;if(j<0||j>=l.length)return;var x=l[i];l[i]=l[j];l[j]=x;l.forEach(function(c,k){c.ord=k+1;});pcCatGravar(l);pcCatsModal();}
+function pcCatDel(i){var l=pcCatLer();if(!pcCatValida(l))return;l.splice(i,1);l.forEach(function(c,k){c.ord=k+1;});pcCatGravar(l);dbSave();pcCatsModal();pcRerender();}
+function pcCatAdd(){var n=gv("pcc-novo").trim();if(!n)return;var l=pcCatLer();if(!pcCatValida(l))return;if(l.some(function(c){return c.nome.toLowerCase()===n.toLowerCase();})){alert("Categoria ja existe.");return;}
   l.push({nome:n,tipo:"pj",sub:"",ord:l.length+1});pcCatGravar(l);pcCatsModal();}
-function pcCatSalvar(){pcCatGravar(pcCatLer());dbSave();pcFechar("md-pccat");pcRerender();}
+function pcCatSalvar(){var l=pcCatLer();if(!pcCatValida(l))return;pcCatGravar(l);dbSave();pcFechar("md-pccat");pcRerender();}
 // Relatorios PDF / Excel
 function pcRelModal(fmt){
   pcFechar("md-pcrel");
@@ -5534,16 +5549,23 @@ function abrirEmpPDF(){
   var vis0=empColsVis().length;
   var div=document.createElement("div");div.className="mdl-bg open";div.id="md-emppdf";div.style.zIndex="9500";
   function radio(nm,v,lb,on){return "<label class='pdf-opt'><input type='radio' name='"+nm+"' value='"+v+"'"+(on?" checked":"")+"/>"+lb+"</label>";}
-  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:540px'>"
+  function chkList(id,lb,itens){
+    return "<div class='fr'><div class='pdf-chk-hd'><label class='lbl' style='margin:0'>"+lb+" <small id='"+id+"-n'>todos ("+itens.length+")</small></label>"
+      +"<span><span class='lk' onclick=\"pdfChkTodos('"+id+"',true)\">Marcar todos</span><span class='lk' onclick=\"pdfChkTodos('"+id+"',false)\">Desmarcar todos</span></span></div>"
+      +"<div class='pdf-chk' id='"+id+"' style='margin-top:4px'>"+itens.map(function(it){return "<label title='"+esc(it[1])+"'><input type='checkbox' value='"+esc(it[0])+"' checked onchange=\"pdfChkCont('"+id+"')\"/>"+esc(it[1])+"</label>";}).join("")+"</div></div>";
+  }
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:620px'>"
     +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-file-download'></i>Relatorio de colaboradores</div>"
     +"<button class='mdl-x' onclick='fecharEmpPDF()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
     +"<div class='mdl-bd'>"
     +"<div class='fr'><label class='lbl'>Colaboradores</label><select id='pdfsit'>"
     +"<option value='tela'>Como esta na tela (aba, busca, filtros e ordenacao)</option>"
     +"<option value='ativos'>Ativos</option><option value='inativos'>Inativos / demitidos</option><option value='todos'>Todos</option></select></div>"
-    +"<div class='fr'><label class='lbl'>C.C. Infomódulus</label><select id='pdfgcc'><option value=''>Todos os C.C. Infomódulus</option>"
-    +gruposOrd().map(function(g){return "<option value='"+g.id+"'>"+esc(g.nome)+" ("+(GTIPO[g.tipo]||GTIPO.proprio).lb+")</option>";}).join("")
-    +"<option value='_sem'>Sem C.C. Infomódulus</option></select></div>"
+    +"<div class='fr'><label class='lbl'>Vínculo</label><div class='pdf-opts'>"
+    +radio("pdfvinc","juntos","CLT e PJ juntos",true)+radio("pdfvinc","separado","Separar CLT e PJ")+radio("pdfvinc","clt","Somente CLT")+radio("pdfvinc","pj","Somente PJ (MEI)")+"</div>"
+    +"<div class='hint'>Separar CLT e PJ: o relatório sai em dois blocos (CLT e PJ), cada um com seus grupos e total, e o total geral no final.</div></div>"
+    +chkList("pdfccs","C.C. Senior",ccOrd().map(function(c){return [c.id,ccNome(c)];}).concat([["_sem","Sem C.C. Senior"]]))
+    +chkList("pdfgccs","C.C. Infomódulus",gruposOrd().map(function(g){return [g.id,g.nome+" ("+(GTIPO[g.tipo]||GTIPO.proprio).lb+")"];}).concat([["_sem","Sem C.C. Infomódulus"]]))
     +"<div class='fr'><label class='lbl'>Agrupar por</label><div class='pdf-opts'>"
     +radio("pdfgrp","cc","C.C. Senior",true)+radio("pdfgrp","grupo","C.C. Infomódulus")+radio("pdfgrp","empresa","Categoria")+radio("pdfgrp","func","Funcao")+radio("pdfgrp","nenhum","Sem agrupamento")+"</div></div>"
     +"<div class='fr'><label class='lbl'>Colunas</label><div class='pdf-opts'>"
@@ -5558,6 +5580,11 @@ function abrirEmpPDF(){
   document.body.appendChild(div);
   div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharEmpPDF();});
 }
+function pdfChkTodos(id,on){document.querySelectorAll("#"+id+" input").forEach(function(i){i.checked=on;});pdfChkCont(id);}
+function pdfChkCont(id){var t=document.querySelectorAll("#"+id+" input"),n=document.querySelectorAll("#"+id+" input:checked").length,el=document.getElementById(id+"-n");
+  if(el)el.textContent=n===t.length?"todos ("+t.length+")":n===0?"nenhum marcado (considera todos)":n+" de "+t.length+" selecionados";}
+// retorna null quando todos marcados (sem filtro); senao um mapa dos ids marcados
+function pdfChkSel(id){var t=document.querySelectorAll("#"+id+" input");if(!t.length)return null;var m={},n=0;t.forEach(function(i){if(i.checked){m[i.value]=1;n++;}});return n===t.length||n===0?null:m;}
 function fecharEmpPDF(){var m=document.getElementById("md-emppdf");if(m)m.remove();}
 function _radio(nm){var r=document.querySelector("input[name='"+nm+"']:checked");return r?r.value:"";}
 function gerarEmpPDF(){
@@ -5568,13 +5595,26 @@ function gerarEmpPDF(){
   if(sit==="tela")lista=empListaVisivel();
   else lista=DB.emp.filter(function(e){var a=isAtivo(e);return sit==="todos"||(sit==="ativos"?a&&vis(e):!a);})
     .sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||(a.func||"").localeCompare(b.func||"")||a.nome.localeCompare(b.nome);});
-  var gcc=gv("pdfgcc"),gccLb="";
-  if(gcc){
-    var gids={};(DB.grupos||[]).forEach(function(g){gids[g.id]=1;});
-    lista=lista.filter(function(e){return gcc==="_sem"?!(e.grupo&&gids[e.grupo]):e.grupo===gcc;});
-    var gg=(DB.grupos||[]).find(function(g){return g.id===gcc;});gccLb=gcc==="_sem"?"Sem C.C. Infomódulus":"C.C. Infomódulus: "+(gg?gg.nome:"");
+  var vincOpt=_radio("pdfvinc")||"juntos",filtLb=[];
+  var isPJ=function(e){return empVinc(e)==="MEI";};
+  if(vincOpt==="clt"){lista=lista.filter(function(e){return !isPJ(e);});filtLb.push("Somente CLT");}
+  if(vincOpt==="pj"){lista=lista.filter(isPJ);filtLb.push("Somente PJ (MEI)");}
+  var ccSel=pdfChkSel("pdfccs"),gSel=pdfChkSel("pdfgccs");
+  function nomesSel(sel,lst,semLb){var n=lst.filter(function(x){return sel[x[0]];}).map(function(x){return x[1];});if(sel._sem)n.push(semLb);return n;}
+  if(ccSel){
+    var cids={};(DB.cc||[]).forEach(function(c){cids[c.id]=1;});
+    lista=lista.filter(function(e){return e.ccid&&cids[e.ccid]?!!ccSel[e.ccid]:!!ccSel._sem;});
+    var nc=nomesSel(ccSel,ccOrd().map(function(c){return [c.id,c.cod];}),"sem C.C.");
+    filtLb.push("C.C. Senior: "+(nc.length>4?nc.length+" selecionados":nc.join(", ")||"nenhum"));
   }
-  if(!lista.length){alert("Nenhum colaborador para o relatorio com essa selecao.");return;}
+  if(gSel){
+    var gids={};(DB.grupos||[]).forEach(function(g){gids[g.id]=1;});
+    lista=lista.filter(function(e){return e.grupo&&gids[e.grupo]?!!gSel[e.grupo]:!!gSel._sem;});
+    var ng=nomesSel(gSel,gruposOrd().map(function(g){return [g.id,g.nome];}),"sem C.C.");
+    filtLb.push("C.C. Infomódulus: "+(ng.length>3?ng.length+" selecionados":ng.join(", ")||"nenhum"));
+  }
+  var gccLb=filtLb.join("  |  ");
+  if(!lista.length){alert("Nenhum colaborador para o relatorio com essa selecao."+(filtLb.length?"\n\nFiltros aplicados:\n- "+filtLb.join("\n- ")+"\n\nObs.: os filtros de C.C. Senior e C.C. Infomódulus sao combinados (o colaborador precisa estar nos dois)."+(sit==="tela"?" A opcao \"Como esta na tela\" tambem respeita a aba, busca e filtros da tela.":""):""));return;}
   var cols0=colOpt==="todas"?EMP_COLS.slice():empColsVis();
   if(grp!=="nenhum")cols0=cols0.filter(function(c){return c.k!==grp;}); // a coluna do agrupamento vira o titulo da secao
   var papel=pap==="auto"?(cols0.length>11?"a3":"a4"):pap;
@@ -5617,7 +5657,7 @@ function gerarEmpPDF(){
   var y=K.header();
   K.section("Indicadores",y);y+=3.5;
   var ks=[
-    ["Colaboradores",String(lista.length),nAt+" ativo"+(nAt!==1?"s":"")+" · "+(lista.length-nAt)+" inativo"+(lista.length-nAt!==1?"s":""),C.b],
+    ["Colaboradores",String(lista.length),lista.filter(function(e){return !isPJ(e);}).length+" CLT · "+lista.filter(isPJ).length+" PJ · "+nAt+" ativo"+(nAt!==1?"s":""),C.b],
     ["Folha salarial",fmtBRL(T.sal),comSal.length+" com salário cadastrado",C.bl],
     ["Salário médio",fmtBRL(comSal.length?T.sal/comSal.length:0),"média de quem tem salário",C.grn],
     ["Benefícios mensais",fmtBRL(benef),"adicional, hora extra, prêm. produção, cesta, assiduidade, metas, refeitório",C.pur],
@@ -5627,43 +5667,68 @@ function gerarEmpPDF(){
   var gap=3.2,kw=(cw-gap*5)/6,kh=21;
   ks.forEach(function(k,i){K.kpi(K.mg+i*(kw+gap),y,kw,kh,k[0],k[1],k[2],k[3]);});
   y+=kh+8;
-  // ── grupos ──
-  var grupos=[];
-  if(grp==="nenhum")grupos=[{lb:"Colaboradores",emps:lista}];
-  else{
+  // ── grupos (dentro de cada bloco de vinculo) ──
+  function agrupar(l){
+    if(grp==="nenhum")return [{lb:"Colaboradores",emps:l}];
     var mapa={},ordem=[];
-    lista.forEach(function(e){var k=grp==="cc"||grp==="grupo"?empTxt(e,grp):(e[grp]||"");if(!(k in mapa)){mapa[k]=[];ordem.push(k);}mapa[k].push(e);});
+    l.forEach(function(e){var k=grp==="cc"||grp==="grupo"?empTxt(e,grp):(e[grp]||"");if(!(k in mapa)){mapa[k]=[];ordem.push(k);}mapa[k].push(e);});
     ordem.sort(function(a,b){if(!a)return 1;if(!b)return -1;return a.localeCompare(b,undefined,{numeric:true});});
-    grupos=ordem.map(function(k){return {lb:k||("Sem "+grpLb),emps:mapa[k]};});
+    return ordem.map(function(k){return {lb:k||("Sem "+grpLb),emps:mapa[k]};});
   }
-  grupos.forEach(function(g){
-    if(y+rh*4>K.H-14){doc.addPage();y=K.header();}
-    var tit=g.lb+"  ("+g.emps.length+" colaborador"+(g.emps.length!==1?"es":"")+")";
-    K.section(tit,y,C.bl);y+=3;
-    var rows=g.emps.map(linha);
-    if(moneyCols.length&&grupos.length>1)rows.push(linhaTot("Subtotal",somar(g.emps)));
-    y=K.table(y,cols,rows,{rh:rh,fs:fs,titulo:tit,cor:C.bl})+7;
+  var sep=vincOpt==="separado";
+  var blocos=sep?[{lb:"COLABORADORES CLT",cur:"CLT",emps:lista.filter(function(e){return !isPJ(e);}),cor:[31,95,168]},{lb:"PRESTADORES PJ (MEI)",cur:"PJ",emps:lista.filter(isPJ),cor:C.pur}].filter(function(x){return x.emps.length;})
+    :[{lb:"",emps:lista,cor:C.bl}];
+  blocos.forEach(function(bl){bl.grupos=agrupar(bl.emps);});
+  blocos.forEach(function(bl,bi){
+    if(sep){
+      if(bi>0||y+rh*6>K.H-14){doc.addPage();y=K.header();}
+      K.fill(bl.cor);doc.roundedRect(K.mg,y-4.5,cw,8.5,1.5,1.5,"F");
+      K.font(11,true);K.txt([255,255,255]);doc.text(bl.lb,K.mg+4,y+1.2);
+      var tb=somar(bl.emps);K.font(8.5);
+      doc.text(bl.emps.length+" colaborador"+(bl.emps.length!==1?"es":"")+"  ·  custo mensal "+fmtBRL(tb.custo),K.W-K.mg-4,y+1.2,{align:"right"});
+      y+=10;
+    }
+    bl.grupos.forEach(function(g){
+      if(y+rh*4>K.H-14){doc.addPage();y=K.header();}
+      var tit=(sep?bl.cur+" · ":"")+g.lb+"  ("+g.emps.length+" colaborador"+(g.emps.length!==1?"es":"")+")";
+      K.section(tit,y,bl.cor);y+=3;
+      var rows=g.emps.map(linha);
+      if(moneyCols.length&&bl.grupos.length>1)rows.push(linhaTot("Subtotal",somar(g.emps)));
+      y=K.table(y,cols,rows,{rh:rh,fs:fs,titulo:tit,cor:bl.cor})+7;
+    });
+    if(sep&&moneyCols.length){
+      if(y+rh*2>K.H-14){doc.addPage();y=K.header();}
+      y=K.table(y,cols,[linhaTot("TOTAL "+bl.cur+" ("+bl.emps.length+")",somar(bl.emps))],{rh:rh+.4,fs:fs+.2,cor:bl.cor})+7;
+    }
   });
   if(moneyCols.length){
     if(y+rh*2>K.H-14){doc.addPage();y=K.header();}
     y=K.table(y,cols,[linhaTot("TOTAL GERAL ("+lista.length+")",T,true)],{rh:rh+.6,fs:fs+.3})+7;
   }
   // ── resumo por grupo ──
-  if(comRes&&grupos.length>1){
+  var nGr=blocos.reduce(function(a,bl){return a+bl.grupos.length;},0);
+  if(comRes&&(nGr>1||sep)){
     if(y+40>K.H-14){doc.addPage();y=K.header();}
-    K.section("Resumo por "+grpLb,y);y+=3;
-    var rc=[{h:grpLb.toUpperCase(),k:"g",w:cw*.30,b:true,cor:function(){return C.ink;}},{h:"COLABORADORES",k:"n",w:cw*.10,al:"c"},
+    var rLb=grp==="nenhum"?"vínculo":grpLb;
+    K.section("Resumo por "+(sep&&grp!=="nenhum"?"vínculo e "+grpLb:rLb),y);y+=3;
+    var rc=[{h:rLb.toUpperCase(),k:"g",w:cw*.30,b:true,cor:function(){return C.ink;}},{h:"COLABORADORES",k:"n",w:cw*.10,al:"c"},
       {h:"FOLHA SALARIAL",k:"sal",w:cw*.14,al:"r"},{h:"SALÁRIO MÉDIO",k:"med",w:cw*.12,al:"r"},{h:"BENEFÍCIOS",k:"ben",w:cw*.11,al:"r"},
       {h:"PROVISÕES",k:"prov",w:cw*.10,al:"r"},{h:"CUSTO MENSAL",k:"cu",w:cw*.13,al:"r",b:true,cor:function(){return C.b;}}];
-    var rr=grupos.map(function(g){var t=somar(g.emps),ns=g.emps.filter(function(e){return typeof e.sal==="number";}).length;
-      return {g:g.lb,n:g.emps.length,sal:fmtBRL(t.sal),med:fmtBRL(ns?t.sal/ns:0),ben:fmtBRL(t.adic+t.hextra+t.pprod+t.cesta+t.assid+t.pmetas+t.refeit),prov:fmtBRL((t.terco+t.dec13+t.bonus)/12),cu:fmtBRL(t.custo)};});
-    rr.push({_total:true,_grand:true,g:"TOTAL",n:lista.length,sal:fmtBRL(T.sal),med:fmtBRL(comSal.length?T.sal/comSal.length:0),ben:fmtBRL(benef),prov:fmtBRL(prov),cu:fmtBRL(T.custo)});
-    y=K.table(y,rc,rr,{rh:6,fs:7.6,titulo:"Resumo por "+grpLb})+6;
+    function resL(lb,emps,extra){var t=somar(emps),ns=emps.filter(function(e){return typeof e.sal==="number";}).length;
+      return Object.assign({g:lb,n:emps.length,sal:fmtBRL(t.sal),med:fmtBRL(ns?t.sal/ns:0),ben:fmtBRL(t.adic+t.hextra+t.pprod+t.cesta+t.assid+t.pmetas+t.refeit),prov:fmtBRL((t.terco+t.dec13+t.bonus)/12),cu:fmtBRL(t.custo)},extra||{});}
+    var rr=[];
+    blocos.forEach(function(bl){
+      if(sep&&grp!=="nenhum")rr.push({g:bl.lb,_bg:[238,242,248],_cor:bl.cor});
+      if(!sep||grp!=="nenhum")bl.grupos.forEach(function(g){rr.push(resL((sep?"   ":"")+g.lb,g.emps));});
+      if(sep)rr.push(resL(grp==="nenhum"?bl.lb:"Total "+bl.cur,bl.emps,grp==="nenhum"?{}:{_total:true}));
+    });
+    rr.push(resL("TOTAL",lista,{_total:true,_grand:true}));
+    y=K.table(y,rc,rr,{rh:6,fs:7.6,titulo:"Resumo"})+6;
   }
   if(y+8>K.H-12){doc.addPage();y=K.header();}
   K.font(7);K.txt(C.mut);
   doc.text("Valores das colunas em R$.  Assiduidade = Prêmio Cartão Benefício de "+fmtM(curMes())+" já com os descontos de faltas, atrasos e 5S.  Custo mensal = salário + benefícios mensais + 1/12 de 1/3 férias, 13º salário e bônus anual.",K.mg,y+2);
-  K.finalizar("cadastro-colaboradores-"+hoje()+".pdf");
+  K.finalizar("cadastro-colaboradores-"+(vincOpt==="separado"?"clt-pj-":vincOpt==="clt"?"clt-":vincOpt==="pj"?"pj-":"")+hoje()+".pdf");
   fecharEmpPDF();
 }
 
