@@ -581,6 +581,12 @@ html[data-tema=azul] .etab th,html[data-tema=azul] table thead tr{background:#00
 .pc-in:focus{background:#fff;box-shadow:inset 0 0 0 2px #1E5BC6;border-radius:2px}
 .pc-tag{font-size:9px;font-weight:800;background:#f1f4f8;color:#888;border-radius:4px;padding:1px 5px;margin-left:4px}
 .pc-tag.pj{background:#f1e7f8;color:#7b3fa0}
+.topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:-.6rem 0 .6rem}
+.topbar span{font-size:11px;color:#8a94a0}
+#btn-upd{background:#fff;border:1.5px solid var(--line);color:var(--deep);font-weight:700;padding:.4rem .8rem}
+#btn-upd:hover{border-color:var(--blue)}
+#btn-upd.on i{animation:spin .8s linear infinite}
+html[data-tema=azul] .topbar span{color:rgba(255,255,255,.75)}
 .pc-tab.pc-um{min-width:0;width:auto}.pc-tab.pc-um td{min-width:150px;width:150px;font-size:13px}.pc-tab.pc-um thead th.pc-d{min-width:150px;width:150px}.pc-tab.pc-um .pc-lb{min-width:330px;max-width:360px;width:330px}
 .pc-wrap:has(.pc-um){width:fit-content;max-width:100%}
 .pc-nav{background:none;border:none;color:#00348F!important;font-size:16px;padding:0 2px;cursor:pointer}.pc-nav:disabled{opacity:.3;cursor:default}
@@ -675,6 +681,7 @@ html[data-tema=azul] .etab th,html[data-tema=azul] table thead tr{background:#00
     </div>
   </div>
   <div id="main">
+    <div class="topbar"><span id="upd-info"></span><button class="btng btn-ic" id="btn-upd" onclick="atualizarSistema()" title="Recarregar os dados do servidor (lancamentos feitos em outros computadores)"><i class="ti ti-refresh"></i>Atualizar sistema</button></div>
     <div id="p-dashboard" class="page"></div>
     <div id="p-centros" class="page"></div>
     <div id="p-vincularcc" class="page"></div>
@@ -864,6 +871,37 @@ function entrarApp(){
     _sb.auth.signOut().catch(function(){});
     document.getElementById("loading-screen").style.display="none";
     document.getElementById("lgw").style.display="flex";
+  });
+}
+// Recarrega dados e permissoes do servidor e redesenha a tela atual
+var _updOcupado=false;
+function atualizarSistema(){
+  if(_updOcupado)return;
+  _updOcupado=true;
+  var b=document.getElementById("btn-upd");if(b){b.classList.add("on");b.disabled=true;}
+  showSync("Atualizando sistema...",false);
+  clearTimeout(SAVE_TIMER);
+  var salvar=window._dbLoaded?window._fbSave().catch(function(){}):Promise.resolve();
+  salvar.then(function(){return _sb.auth.getSession();}).then(function(r){
+    var u=r&&r.data&&r.data.session&&r.data.session.user;
+    if(!u)throw new Error("Sessao expirada. Entre novamente.");
+    return carregarAcesso(u);
+  }).then(function(ac){
+    if(!ac)throw new Error("Seu acesso foi removido. Fale com o administrador.");
+    ACESSO=ac;aplicarPermissoes();
+    return window._fbLoad();
+  }).then(function(){
+    var t=permTela(pg)==="nenhum"?primeiraTela():pg;
+    if(t)go(t);
+    var hr=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    var inf=document.getElementById("upd-info");if(inf)inf.textContent="Atualizado as "+hr;
+    showSync("Sistema atualizado "+hr,true);
+    setTimeout(function(){document.getElementById("sync-bar").style.display="none";},2500);
+  }).catch(function(e){
+    showSync("Erro ao atualizar: "+(e&&e.message||e),false,true);
+  }).then(function(){
+    _updOcupado=false;
+    if(b){b.classList.remove("on");b.disabled=false;}
   });
 }
 function doLogout(){
