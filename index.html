@@ -581,6 +581,10 @@ html[data-tema=azul] .etab th,html[data-tema=azul] table thead tr{background:#00
 .pc-in:focus{background:#fff;box-shadow:inset 0 0 0 2px #1E5BC6;border-radius:2px}
 .pc-tag{font-size:9px;font-weight:800;background:#f1f4f8;color:#888;border-radius:4px;padding:1px 5px;margin-left:4px}
 .pc-tag.pj{background:#f1e7f8;color:#7b3fa0}
+.pc-tab.pc-um{min-width:0;width:auto}.pc-tab.pc-um td{min-width:150px;width:150px;font-size:13px}.pc-tab.pc-um thead th.pc-d{min-width:150px;width:150px}.pc-tab.pc-um .pc-lb{min-width:330px;max-width:360px;width:330px}
+.pc-wrap:has(.pc-um){width:fit-content;max-width:100%}
+.pc-nav{background:none;border:none;color:#00348F!important;font-size:16px;padding:0 2px;cursor:pointer}.pc-nav:disabled{opacity:.3;cursor:default}
+.pc-nav i{color:#00348F!important}
 </style>
 </head>
 <body>
@@ -3657,7 +3661,7 @@ function rLanc(){
     }).join("");
   document.getElementById("p-lancamento").innerHTML=
     "<div class='pg-hd'><div><h1 class='h1'>Lançamento de Faltas e Atrasos</h1><div class='sub'>Faltas e atrasos dos colaboradores</div></div>"
-    +"<button class='btnp btn-ic' onclick='novoLanc()'><i class='ti ti-plus'></i>Novo lancamento</button></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap'>"+(permTela("lancamento")==="editar"?"<button class='btng btn-ic' onclick=\"abrirFTipo('param')\" title='Tipos de falta e se descontam do premio'><i class='ti ti-adjustments'></i>Parametros de descontos</button>":"")+"<button class='btnp btn-ic' onclick='novoLanc()'><i class='ti ti-plus'></i>Novo lancamento</button></div></div>"
     +"<div class='card'>"
     +"<div style='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.875rem'>"
     +"<div style='font-weight:700;font-size:15px;color:"+B+"'>Historico <span style='font-size:12px;color:#aaa;font-weight:500'>("+fil.length+")</span></div>"
@@ -3670,8 +3674,17 @@ function rLanc(){
       "<div class='fr'><label class='lbl'>Colaborador</label><select id='lemp'>"+empOpts+"</select></div>"
       +"<div class='fr'><label class='lbl'>Tipo de ocorrencia</label>"
       +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"+tBtns+"</div></div>"
-      +"<div id='lftbox' class='ft-box' style='display:none'></div>"
-      +"<div class='fr2'><div class='fr'><label class='lbl'>Data</label><input type='date' id='ldata' value='"+hoje()+"'/></div>"
+      +"<div class='fr' id='lftrow'><label class='lbl'>Tipo de falta</label><select id='lftsel' onchange='lancFT=this.value;lancInfo()'>"+ftOpts("")+"</select></div>"
+      +"<div class='fr' id='lmultrow'><label class='lbl'>Dias da falta</label><div class='seg seg-full'>"
+      +"<button type='button' id='lm1' class='seg-b on' onclick='setLancMulti(false)'><i class='ti ti-calendar'></i>Um dia</button>"
+      +"<button type='button' id='lm2' class='seg-b' onclick='setLancMulti(true)'><i class='ti ti-calendar-plus'></i>Varios dias</button></div></div>"
+      +"<div id='lmultarea' style='display:none;background:#f6f8fb;border:1px solid #e2e7ee;border-radius:10px;padding:.7rem .8rem;margin-bottom:.8rem'>"
+      +"<div style='display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap'><div style='flex:1;min-width:120px'><label class='lbl'>De</label><input type='date' id='lmde' value='"+hoje()+"'/></div>"
+      +"<div style='flex:1;min-width:120px'><label class='lbl'>Ate <span class='opt'>(opcional)</span></label><input type='date' id='lmate'/></div>"
+      +"<button type='button' class='btnp btn-ic' onclick='addLancDias()'><i class='ti ti-plus'></i>Adicionar</button></div>"
+      +"<label style='display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px;cursor:pointer'><input type='checkbox' id='lmuteis' checked style='width:auto'/>No periodo, somente dias trabalhados (ignora sabados, domingos e feriados)</label>"
+      +"<div id='lmchips' style='display:flex;flex-wrap:wrap;gap:4px;margin-top:8px'></div></div>"
+      +"<div class='fr2'><div class='fr' id='ldatawrap'><label class='lbl'>Data</label><input type='date' id='ldata' value='"+hoje()+"' onchange='lancInfo()'/></div>"
       +"<div class='fr'><label class='lbl' style='display:flex;justify-content:space-between;align-items:center'><span>Motivo <span class='opt'>(opcional)</span></span><button type='button' class='lnk-add' onclick=\"togMotRap('lmotivo')\"><i class='ti ti-plus'></i>Novo motivo</button></label><select id='lmotivo'>"+motOpts(lancT,"")+"</select><div id='lmotivo-novo' class='mot-rap'><input type='text' id='lmotivo-nm' placeholder='Nome do novo motivo' onkeydown=\"if(event.key==='Enter')addMotRap('lmotivo')\"/><button type='button' class='btnp' onclick=\"addMotRap('lmotivo')\">Salvar</button></div></div>"+"</div>"
       +"<div class='fr'><label class='lbl'>Observacao <span class='opt'>(opcional)</span></label><input type='text' id='lobs' placeholder='Detalhe adicional...'/></div>"
       +"<div id='linfo' style='background:"+ta.co+"18;border-radius:8px;padding:.6rem .75rem;font-size:12px;color:"+ta.co+";font-weight:700'>"
@@ -3683,28 +3696,67 @@ function novoLanc(){
   var e=document.getElementById("lemp");if(e)e.value="";
   var o=document.getElementById("lobs");if(o)o.value="";
   var d=document.getElementById("ldata");if(d)d.value=hoje();
-  lancFT="";openMd("md-lanc");lancInfo();
-  if(lancT==="falta")setTimeout(function(){abrirFTipo("novo");},60);
+  var md=document.getElementById("lmde");if(md)md.value=hoje();
+  var ma=document.getElementById("lmate");if(ma)ma.value="";
+  lancFT="";lancDias=[];
+  var s=document.getElementById("lftsel");if(s)s.innerHTML=ftOpts("");
+  setLancMulti(false);openMd("md-lanc");lancInfo();
 }
-// Caixa com o tipo de falta escolhido + texto do desconto
+// Tipo de falta (select) + texto do desconto
 function lancInfo(){
-  var bx=document.getElementById("lftbox"),info=document.getElementById("linfo"),ti=TIPOS.find(function(x){return x.k===lancT;});
-  if(bx){
-    if(lancT!=="falta"){bx.style.display="none";}
-    else{var f=ftInfo(lancFT);bx.style.display="";
-      bx.innerHTML=f?"<span><i class='ti ti-tag'></i> Tipo de falta: <b>"+esc(f.nome)+"</b> "+(f.desconta!==false?"<span class='bdg' style='background:#fbe9e7;color:#c0392b'>DESCONTA O PREMIO</span>":"<span class='bdg' style='background:#e7f6ee;color:#1a7a4a'>NAO DESCONTA</span>")+"</span><button type='button' class='lnk-add' onclick=\"abrirFTipo('novo')\">Trocar</button>"
-        :"<span style='color:#b45309'><i class='ti ti-alert-triangle'></i> Escolha o tipo de falta</span><button type='button' class='lnk-add' onclick=\"abrirFTipo('novo')\">Escolher</button>";}
-  }
-  if(info&&ti){var semD=lancT==="falta"&&lancFT&&!ftDesconta(lancFT);
+  var info=document.getElementById("linfo"),ti=TIPOS.find(function(x){return x.k===lancT;}),fa=lancT==="falta";
+  var r1=document.getElementById("lftrow");if(r1)r1.style.display=fa?"":"none";
+  var r2=document.getElementById("lmultrow");if(r2)r2.style.display=fa?"":"none";
+  if(info&&ti){
+    var semD=fa&&lancFT&&!ftDesconta(lancFT),p=getPct(lancT,gv("ldata")||hoje()),n=fa&&lancMulti?lancDias.length:1;
     info.style.background=(semD?"#1a7a4a":ti.co)+"18";info.style.color=semD?"#1a7a4a":ti.co;
-    info.innerHTML="<i class='ti "+ti.ic+"'></i> "+(semD?"Nao desconta o premio":"Desconto: -"+getPct(lancT,gv("ldata")||hoje())+"% do premio");}
+    var tx=semD?"Nao desconta o premio":"Desconto: -"+p+"% do premio"+(fa&&lancMulti?" por dia":"");
+    if(fa&&lancMulti)tx+=" &middot; "+n+" dia"+(n!==1?"s":"")+" selecionado"+(n!==1?"s":"")+(!semD&&n>1?" (total -"+Math.min(100,p*n)+"%)":"");
+    info.innerHTML="<i class='ti "+ti.ic+"'></i> "+tx;
+  }
+}
+// Varios dias de falta no mesmo lancamento
+var lancMulti=false,lancDias=[];
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function setLancMulti(on){
+  lancMulti=!!on;
+  var b1=document.getElementById("lm1"),b2=document.getElementById("lm2");
+  if(b1)b1.classList.toggle("on",!lancMulti);if(b2)b2.classList.toggle("on",lancMulti);
+  var ar=document.getElementById("lmultarea");if(ar)ar.style.display=lancMulti?"":"none";
+  var dw=document.getElementById("ldatawrap");if(dw)dw.style.display=lancMulti?"none":"";
+  if(lancMulti&&!lancDias.length){var d=gv("ldata");if(d)lancDias=[d];}
+  renderLancDias();lancInfo();
+}
+function addLancDias(){
+  var de=gv("lmde"),ate=gv("lmate")||de;
+  if(!de){alert("Informe a data inicial.");return;}
+  if(ate<de){alert("A data final nao pode ser anterior a inicial.");return;}
+  var so=document.getElementById("lmuteis").checked,d=new Date(de+"T12:00:00"),fim=new Date(ate+"T12:00:00"),n=0;
+  if((fim-d)/864e5>366){alert("Periodo muito longo (maximo 1 ano).");return;}
+  while(d<=fim){
+    var ds=ymd(d);
+    if(!(so&&de!==ate&&!pcDiaInfo(ds).trab)&&lancDias.indexOf(ds)<0){lancDias.push(ds);n++;}
+    d.setDate(d.getDate()+1);
+  }
+  lancDias.sort();
+  if(!n)alert("Nenhum dia novo adicionado (ja estavam na lista ou nao sao dias trabalhados).");
+  var ma=document.getElementById("lmate");if(ma)ma.value="";
+  renderLancDias();lancInfo();
+}
+function remLancDia(ds){lancDias=lancDias.filter(function(x){return x!==ds;});renderLancDias();lancInfo();}
+function renderLancDias(){
+  var el=document.getElementById("lmchips");if(!el)return;
+  el.innerHTML=lancDias.length?lancDias.map(function(ds){
+    return "<span class='chip'>"+fmtD(ds)+" "+DSEM[new Date(ds+"T12:00:00").getDay()]
+      +"<button type='button' onclick=\"remLancDia('"+ds+"')\" aria-label='Remover'><i class='ti ti-x'></i></button></span>";
+  }).join(""):"<span style='color:#999;font-size:12px'>Nenhum dia selecionado. Informe a data (ou o periodo) e clique em Adicionar.</span>";
 }
 // Janela: tipo de falta (Suspensao, Justificada, Injustificada... + cadastrar mais)
 function abrirFTipo(ctx){
   fecharFTipo();
   var div=document.createElement("div");div.className="mdl-bg open";div.id="md-ftipo";div.style.zIndex="9700";div.dataset.ctx=ctx;
   div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:440px'>"
-    +"<div class='mdl-hd'><div class='mdl-tt' style='color:#c0392b'><i class='ti ti-calendar-x'></i>Tipo de falta</div>"
+    +"<div class='mdl-hd'><div class='mdl-tt' style='color:#c0392b'>"+(ctx==="param"?"<i class='ti ti-adjustments'></i>Parametros de descontos":"<i class='ti ti-calendar-x'></i>Tipo de falta")+"</div>"
     +"<button class='mdl-x' onclick='fecharFTipo()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
     +"<div class='mdl-bd'><div id='ftlist'></div>"
     +"<div style='border-top:1px dashed #e2e7ee;margin-top:.6rem;padding-top:.6rem'>"
@@ -3720,15 +3772,24 @@ function abrirFTipo(ctx){
 }
 function fecharFTipo(){var m=document.getElementById("md-ftipo");if(m)m.remove();}
 function renderFTipos(){
-  var el=document.getElementById("ftlist");if(!el)return;
-  var ctx=(document.getElementById("md-ftipo")||{}).dataset.ctx,sel=ctx==="edt"?gv("etft"):lancFT;
-  el.innerHTML=fTipos().map(function(f){
-    var on=f.id===sel,usos=DB.oc.filter(function(o){return o.ftipo===f.id;}).length;
-    return "<div class='ft-row"+(on?" on":"")+"'>"
-      +"<button class='ft-pick' onclick=\"escolherFTipo('"+f.id+"')\"><i class='ti "+(on?"ti-circle-check-filled":"ti-circle")+"'></i>"+esc(f.nome)+"</button>"
-      +"<label class='ft-chk' title='Parametro: esta falta desconta o premio?'><input type='checkbox' "+(f.desconta!==false?"checked":"")+" onchange=\"setFTDesc('"+f.id+"',this.checked)\" style='width:auto'/>Desconta</label>"
-      +"<button class='ibdel' title='"+(usos?"Em uso em "+usos+" lancamento(s)":"Excluir tipo")+"' "+(usos?"disabled style='opacity:.3'":"")+" onclick=\"delFTipo('"+f.id+"')\"><i class='ti ti-trash'></i></button></div>";
-  }).join("");
+  var el=document.getElementById("ftlist");
+  if(el){
+    var ctx=(document.getElementById("md-ftipo")||{}).dataset.ctx,param=ctx==="param",sel=ctx==="edt"?gv("etft"):lancFT;
+    el.innerHTML=fTipos().map(function(f){
+      var on=!param&&f.id===sel,usos=DB.oc.filter(function(o){return o.ftipo===f.id;}).length;
+      return "<div class='ft-row"+(on?" on":"")+"'>"
+        +(param?"<span class='ft-pick' style='cursor:default'><i class='ti ti-tag'></i>"+esc(f.nome)+"</span>"
+          :"<button class='ft-pick' onclick=\"escolherFTipo('"+f.id+"')\"><i class='ti "+(on?"ti-circle-check-filled":"ti-circle")+"'></i>"+esc(f.nome)+"</button>")
+        +"<label class='ft-chk' title='Parametro: esta falta desconta o premio?'><input type='checkbox' "+(f.desconta!==false?"checked":"")+" onchange=\"setFTDesc('"+f.id+"',this.checked)\" style='width:auto'/>Desconta</label>"
+        +"<button class='ibdel' title='"+(usos?"Em uso em "+usos+" lancamento(s)":"Excluir tipo")+"' "+(usos?"disabled style='opacity:.3'":"")+" onclick=\"delFTipo('"+f.id+"')\"><i class='ti ti-trash'></i></button></div>";
+    }).join("");
+  }
+  lancFtRefresh();
+}
+// Atualiza os selects de tipo de falta abertos (novo lancamento e edicao)
+function lancFtRefresh(){
+  var s=document.getElementById("lftsel");if(s)s.innerHTML=ftOpts(lancFT);
+  var e=document.getElementById("etft");if(e){var v=e.value;e.innerHTML=ftOpts(v);}
 }
 function escolherFTipo(id){
   var ctx=(document.getElementById("md-ftipo")||{}).dataset.ctx;
@@ -3757,9 +3818,9 @@ function setTipo(t){
     if(ti.k===t){btn.style.borderColor=ti.co;btn.style.background=ti.co+"18";btn.style.color=ti.co;}
     else{btn.style.borderColor="#dfe5ee";btn.style.background="#fff";btn.style.color="#777";}
   });
+  if(t!=="falta"&&lancMulti)setLancMulti(false);
   lancInfo();
   var ms=document.getElementById("lmotivo");if(ms)ms.innerHTML=motOpts(t,"");
-  if(t==="falta")abrirFTipo("novo");
 }
 // Cadastro rapido de motivo direto no lancamento
 function togMotRap(sel){
@@ -3779,13 +3840,25 @@ function addMotRap(sel){
   document.getElementById(sel+"-novo").classList.remove("on");
 }
 function savLanc(){
-  var eid=gv("lemp"),data=gv("ldata"),obs=gv("lobs"),motivo_id=gv("lmotivo");
-  if(!eid||!data){alert("Selecione colaborador e data.");return;}
+  var eid=gv("lemp"),obs=gv("lobs"),motivo_id=gv("lmotivo");
+  var multi=lancT==="falta"&&lancMulti;
+  var datas=multi?lancDias.slice():[gv("ldata")].filter(Boolean);
+  if(!eid||!datas.length){alert(multi?"Selecione o colaborador e ao menos um dia.":"Selecione colaborador e data.");return;}
   var emp=DB.emp.find(function(e){return e.id===eid;});
-  if(emp&&emp.dem&&gmk(data)>gmk(emp.dem)){alert("Colaborador demitido em "+fmtD(emp.dem)+". Nao e possivel lancar para "+fmtM(gmk(data))+".");return;}
-  if(lancT==="falta"&&!lancFT){abrirFTipo("novo");return;}
-  var novoOc={id:uid(),eid:eid,tipo:lancT,data:data,obs:obs,motivo_id:motivo_id};if(lancT==="falta")novoOc.ftipo=lancFT;
-  DB.oc.push(novoOc);
+  if(emp&&emp.dem){var fora=datas.filter(function(d){return gmk(d)>gmk(emp.dem);});
+    if(fora.length){alert("Colaborador demitido em "+fmtD(emp.dem)+". Nao e possivel lancar em "+fora.map(function(d){return fmtD(d);}).join(", ")+".");return;}}
+  if(lancT==="falta"&&!lancFT){alert("Selecione o tipo de falta.");var s=document.getElementById("lftsel");if(s)s.focus();return;}
+  if(multi){
+    var ja={};DB.oc.forEach(function(o){if(o.eid===eid&&o.tipo==="falta")ja[o.data]=1;});
+    var dup=datas.filter(function(d){return ja[d];});
+    datas=datas.filter(function(d){return !ja[d];});
+    if(!datas.length){alert("Todos os dias selecionados ja tem falta lancada para este colaborador.");return;}
+    if(dup.length&&!confirm("Ja existe falta lancada em: "+dup.map(function(d){return fmtD(d);}).join(", ")+".\nEsses dias serao ignorados. Lancar os outros "+datas.length+" dia(s)?"))return;
+  }
+  datas.forEach(function(d){
+    var n={id:uid(),eid:eid,tipo:lancT,data:d,obs:obs,motivo_id:motivo_id};if(lancT==="falta")n.ftipo=lancFT;
+    DB.oc.push(n);
+  });
   dbSave();rLanc();
 }
 function delLanc(id){if(!confirm("Remover lancamento?"))return;DB.oc=DB.oc.filter(function(o){return o.id!==id;});dbSave();aposEditarLanc();}
@@ -5264,17 +5337,23 @@ function pcFmt(r,v,tela){
   return String(Math.round(v));
 }
 function pcFmtTot(r,v){if(v===null||v===undefined)return "";if(r.money)return (+v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});return (+v).toLocaleString("pt-BR",{maximumFractionDigits:1});}
+var pcModo="dia",pcDiaV=null;
+function pcDiaSel(m,nd){var d=pcDiaV||(m===curMes()?+hoje().slice(8):1);return Math.max(1,Math.min(d,nd));}
+function pcSetModo(md){pcModo=md;rPercap();}
+function pcSelDia(d){pcDiaV=+d;rPercap();}
+function pcNavDia(s){var m=pcMes(),nd=+fimMesStr(m).slice(8);pcDiaV=Math.max(1,Math.min(nd,pcDiaSel(m,nd)+s));rPercap();}
 function rPercap(){
   var m=pcMes(),C=pcCalc(m),ro=!!ACESSO&&permTela("percap")!=="editar";
+  var nd=C.days.length,uDia=pcModo==="dia",dSel=pcDiaSel(m,nd),vis=function(i){return !uDia||i===dSel-1;};
   var a0=+curMes().slice(0,4),ys={};ys[a0-1]=1;ys[a0]=1;ys[a0+1]=1;ys[+m.slice(0,4)]=1;
-  var head="<tr><th class='pc-lb'>CATEGORIA</th>"+C.days.map(function(dy){
+  var head="<tr><th class='pc-lb'>CATEGORIA</th>"+C.days.map(function(dy,i){if(!vis(i))return "";
       var cl=dy.fer?"fer":dy.fim?"fds":"";if(dy.trab&&(dy.fim||dy.fer))cl+=" trab";
       return "<th class='pc-d "+cl+"' onclick=\"pcDiaModal('"+dy.ds+"')\" title='"+esc((dy.fer?"Feriado: "+dy.fer+" · ":"")+(dy.trab?"Dia trabalhado":"Nao trabalha")+" · clique para alterar")+"'><div>"+dy.d+"</div><small>"+DSEM[dy.dw]+"</small></th>";}).join("")
-    +"<th class='pc-tot'>MES</th></tr>";
+    +(uDia?"":"<th class='pc-tot'>MES</th>")+"</tr>";
   var body=C.rows.map(function(r){
     var cls="pc-r k-"+r.kind+(r.bold?" b":"")+(r.big?" big":"")+(r.red?" red":"");
     return "<tr class='"+cls+"'><td class='pc-lb'>"+(r.kind==="cat"&&!ro&&r.label!=="(Sem categoria)"?"<span class='pc-ednm' title='Editar nome' onclick='pcCatsModal()'><i class='ti ti-pencil'></i></span>":"")+esc(r.label)+(r.sub2?"<small>"+esc(r.sub2)+"</small>":"")+(r.tipo==="fora"?" <span class='pc-tag'>nao soma</span>":r.tipo==="pj"?" <span class='pc-tag pj'>PJ</span>":"")+"</td>"
-      +C.days.map(function(dy,i){
+      +C.days.map(function(dy,i){if(!vis(i))return "";
         var cl=dy.fer?"fer":dy.fim?"fds":"",v=r.vals[i];
         if(r.edit&&!ro){
           var ed=r.key==="prod"?v!==null:r.ed[i];
@@ -5282,7 +5361,7 @@ function rPercap(){
           return "<td class='"+cl+(ed&&r.key!=="prod"?" ed":"")+"'><input class='pc-in' value='"+pcFmt(r,v)+"' title='"+esc(tip)+"' data-k='"+esc(r.key)+"' data-d='"+dy.d+"' onfocus='this.select()' onchange='pcSet(this)' onkeydown='pcKey(event,this)'/></td>";
         }
         return "<td class='"+cl+(r.ed&&r.ed[i]?" ed":"")+"'"+(r.key==="aus"?" title='"+r.det[i].f+" falta(s) + "+r.det[i].a+" afastado(s)'":"")+">"+pcFmt(r,v)+"</td>";
-      }).join("")+"<td class='pc-tot'>"+pcFmtTot(r,r.tot)+"</td></tr>";
+      }).join("")+(uDia?"":"<td class='pc-tot'>"+pcFmtTot(r,r.tot)+"</td>")+"</tr>";
   }).join("");
   document.getElementById("p-percap").innerHTML=
     "<div class='pg-hd'><div><h1 class='h1'>Analise da Producao Per Capita</h1>"
@@ -5290,7 +5369,7 @@ function rPercap(){
     +"<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
     +"<div class='mes-fil'><i class='ti ti-calendar'></i><select id='pc-mes' onchange='pcSetMes()'>"+MOS.map(function(x,i){var v=String(i+1).padStart(2,"0");return "<option value='"+v+"'"+(v===m.slice(5)?" selected":"")+">"+x+"</option>";}).join("")+"</select>"
     +"<select id='pc-ano' onchange='pcSetMes()'>"+Object.keys(ys).sort().map(function(y){return "<option"+(y===m.slice(0,4)?" selected":"")+">"+y+"</option>";}).join("")+"</select></div>"
-    +"<button class='btng btn-ic' onclick='pcCatsModal()'><i class='ti ti-list-details'></i>Categorias</button>"
+    +"<div class='seg'><button class='seg-b"+(uDia?" on":"")+"' onclick=\"pcSetModo('dia')\" title='Mostrar somente um dia'><i class='ti ti-calendar-event'></i>Um dia</button><button class='seg-b"+(uDia?"":" on")+"' onclick=\"pcSetModo('mes')\" title='Mostrar todos os dias e a coluna do mes'><i class='ti ti-calendar-month'></i>Mes inteiro</button></div>"+(uDia?"<div class='mes-fil'><button class='pc-nav' title='Dia anterior' onclick='pcNavDia(-1)'"+(dSel<=1?" disabled":"")+"><i class='ti ti-chevron-left'></i></button><select id='pc-dia' onchange='pcSelDia(this.value)'>"+C.days.map(function(dy){return "<option value='"+dy.d+"'"+(dy.d===dSel?" selected":"")+">Dia "+String(dy.d).padStart(2,"0")+" - "+DSEM[dy.dw]+(dy.fer?" (feriado)":"")+"</option>";}).join("")+"</select><button class='pc-nav' title='Proximo dia' onclick='pcNavDia(1)'"+(dSel>=nd?" disabled":"")+"><i class='ti ti-chevron-right'></i></button></div>":"")+"<button class='btng btn-ic' onclick='pcCatsModal()'><i class='ti ti-list-details'></i>Categorias</button>"
     +"<button class='btng btn-ic' onclick='pcFerModal()'><i class='ti ti-calendar-event'></i>Feriados e dias</button>"
     +"<button class='btng btn-ic' onclick=\"pcRelModal('pdf')\"><i class='ti ti-file-type-pdf'></i>PDF</button>"
     +"<button class='btng btn-ic' onclick=\"pcRelModal('xlsx')\"><i class='ti ti-file-spreadsheet'></i>Excel</button></div></div>"
@@ -5300,13 +5379,13 @@ function rPercap(){
     +"<label>Dias trabalhados<input type='text' inputmode='decimal' id='pc-dias' value='"+(typeof C.md.dias==="number"?fmtDias(C.md.dias):"")+"' placeholder='"+C.diasAuto+" (auto)' onchange='pcSetMeta()' "+(ro?"disabled":"")+"/></label>"
     +"<div class='pc-kpi'><span>Meta dia per capita</span><b>"+(C.metaDia!==null?fmtBRL(C.metaDia):"—")+"</b></div>"
     +"<div class='pc-kpi'><span>Media per capita no mes</span><b style='color:"+(C.rows.find(function(r){return r.key==="avg";}).tot!==null&&C.metaDia!==null&&C.rows.find(function(r){return r.key==="avg";}).tot>=C.metaDia?"#1a7a4a":"#c0392b")+"'>"+(function(){var t=C.rows.find(function(r){return r.key==="avg";}).tot;return t!==null?fmtBRL(t):"—";})()+"</b></div>"
-    +"<div class='pc-leg'><span class='lg fds'></span>Sabado/domingo<span class='lg fer'></span>Feriado<span class='lg trab'></span>Fim de semana/feriado trabalhado<span class='lg ed'></span>Valor editado</div></div>"
-    +"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap pc-wrap'><table class='pc-tab'><thead>"+head+"</thead><tbody>"+body+"</tbody></table></div>"
+    +(uDia?"<div class='pc-kpi'><span>Per capita do dia "+String(dSel).padStart(2,"0")+"</span><b>"+(function(){var r=C.rows.find(function(x){return x.key==="pc";}),v=r.vals[dSel-1];return v!==null?fmtBRL(v):"—";})()+"</b></div>":"")+"<div class='pc-leg'><span class='lg fds'></span>Sabado/domingo<span class='lg fer'></span>Feriado<span class='lg trab'></span>Fim de semana/feriado trabalhado<span class='lg ed'></span>Valor editado</div></div>"
+    +"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap pc-wrap'><table class='pc-tab"+(uDia?" pc-um":"")+"'><thead>"+head+"</thead><tbody>"+body+"</tbody></table></div>"
     +"<div class='hint' style='margin-top:.6rem'>Categoria = campo Categoria do Cadastro (colaboradores com vinculo no dia, inclusive inativos). Inativos = inatividade vigente no dia. Ausencias = faltas lancadas no dia + afastados. "
     +"N° para producao = Total - Inativos - Ausencias. Producao per capita = Producao do dia &divide; N°. Meta dia = Meta do mes &divide; dias trabalhados. Clique no dia do cabecalho para marcar feriado ou dia trabalhado. Valor editado: apague para voltar ao valor do sistema.</div></div>";
   setTimeout(xsSync,0);
 }
-function pcSetMes(){pcMesV=gv("pc-ano")+"-"+gv("pc-mes");rPercap();}
+function pcSetMes(){pcMesV=gv("pc-ano")+"-"+gv("pc-mes");pcDiaV=null;rPercap();}
 function pcKey(ev,el){
   var dx=ev.key==="Enter"||ev.key==="ArrowDown"?"d":ev.key==="ArrowUp"?"u":ev.key==="ArrowRight"&&el.selectionStart===el.value.length?"r":ev.key==="ArrowLeft"&&el.selectionStart===0?"l":"";if(!dx)return;
   var all=Array.prototype.slice.call(document.querySelectorAll(".pc-in")),k=el.dataset.k,d=+el.dataset.d,nx=null;
@@ -5443,38 +5522,39 @@ function pcRelModal(fmt){
 function pcGerar(fmt){var ori=_radio("pcr-ori")||"landscape",C=pcCalc(pcMes());if(fmt==="pdf")pcPDF(C,ori);else pcXLSX(C,ori);}
 function pcPDF(C,ori){
   if(!(window.jspdf&&window.jspdf.jsPDF)){alert("As bibliotecas ainda estao carregando. Aguarde alguns segundos e tente novamente.");return;}
-  var K=mkPdfKit("Analise da Producao Per Capita",fmtM(C.m)+"  |  "+fmtDias(C.diasT)+" dias trabalhados  |  Meta do mes "+(C.meta!==null?fmtBRL(C.meta):"nao definida"),ori,"a4"),doc=K.doc,Cc=K.C;
+  var umDia=pcModo==="dia",dSel=pcDiaSel(C.m,C.days.length);
+  var K=mkPdfKit("Analise da Producao Per Capita",(umDia?"Dia "+fmtD(C.days[dSel-1].ds)+" ("+DSEM[C.days[dSel-1].dw]+")":fmtM(C.m))+"  |  "+fmtDias(C.diasT)+" dias trabalhados  |  Meta do mes "+(C.meta!==null?fmtBRL(C.meta):"nao definida"),ori,"a4"),doc=K.doc,Cc=K.C;
   var y=K.header();
-  var blocos=ori==="portrait"?[[0,Math.min(16,C.days.length)],[16,C.days.length]]:[[0,C.days.length]];
-  var lbW=ori==="portrait"?50:52;
+  var blocos=umDia?[[dSel-1,dSel]]:ori==="portrait"?[[0,Math.min(16,C.days.length)],[16,C.days.length]]:[[0,C.days.length]];
+  var lbW=umDia?100:ori==="portrait"?50:52;
   blocos.forEach(function(bk,bi){
-    var ds=C.days.slice(bk[0],bk[1]),ultimo=bi===blocos.length-1,totW=ultimo?16:0;
-    var nRows=C.rows.length,hh=7,dw=(K.cw-lbW-totW)/ds.length;
+    var ds=C.days.slice(bk[0],bk[1]),ultimo=bi===blocos.length-1,totW=ultimo&&!umDia?16:0;
+    var nRows=C.rows.length,hh=7,dw=umDia?42:(K.cw-lbW-totW)/ds.length;
     var disp=ori==="portrait"?(K.H-K.BANDH-8-24)/2-hh-8:K.H-y-14-hh-10;
     var rh=Math.max(4,Math.min(ori==="portrait"?5.4:6.6,disp/nRows)),need=hh+nRows*rh+4;
     if(y+need>K.H-12){doc.addPage();y=K.header();}
     if(blocos.length>1){K.section("Dias "+ds[0].d+" a "+ds[ds.length-1].d,y,Cc.b);y+=3;}
-    var x0=K.mg;
+    var x0=umDia?K.mg+(K.cw-lbW-dw)/2:K.mg;
     // cabecalho
     K.fill(Cc.b);doc.rect(x0,y,lbW,hh,"F");K.font(6.5,true);K.txt([255,255,255]);doc.text("CATEGORIA",x0+2,y+4.4);
     ds.forEach(function(dy,i){var x=x0+lbW+i*dw,c=dy.fer?[192,57,43]:dy.fim?[91,107,132]:Cc.b;if(dy.trab&&(dy.fim||dy.fer))c=[26,122,74];
       K.fill(c);doc.rect(x,y,dw,hh,"F");doc.setDrawColor(255,255,255);doc.setLineWidth(.15);doc.line(x,y,x,y+hh);
       K.font(6.3,true);K.txt([255,255,255]);doc.text(String(dy.d),x+dw/2,y+3.1,{align:"center"});K.font(4.6);doc.text(DSEM[dy.dw],x+dw/2,y+5.9,{align:"center"});});
-    if(ultimo){K.fill(Cc.ink);doc.rect(x0+lbW+ds.length*dw,y,totW,hh,"F");K.font(6.3,true);K.txt([255,255,255]);doc.text("MÊS",x0+lbW+ds.length*dw+totW/2,y+4.4,{align:"center"});}
+    if(totW){K.fill(Cc.ink);doc.rect(x0+lbW+ds.length*dw,y,totW,hh,"F");K.font(6.3,true);K.txt([255,255,255]);doc.text("MÊS",x0+lbW+ds.length*dw+totW/2,y+4.4,{align:"center"});}
     y+=hh;
     C.rows.forEach(function(r,ri){
       var bg=r.kind==="tot"||r.kind==="sub"?[232,239,249]:r.kind==="prod"?[255,248,225]:r.kind==="pc"?[231,246,238]:r.kind==="meta"?[245,240,250]:ri%2?[248,250,252]:null;
       if(bg){K.fill(bg);doc.rect(x0,y,lbW+ds.length*dw+totW,rh,"F");}
       ds.forEach(function(dy,i){if(!bg&&(dy.fim||dy.fer)){K.fill(dy.fer?[253,236,236]:[238,241,246]);doc.rect(x0+lbW+i*dw,y,dw,rh,"F");}});
-      var lfs=r.big?6.4:5.8;K.font(lfs,!!r.bold);K.txt(r.red?Cc.red:r.bold?Cc.ink:Cc.txt);
+      var lfs=umDia?(r.big?9:8):(r.big?6.4:5.8);K.font(lfs,!!r.bold);K.txt(r.red?Cc.red:r.bold?Cc.ink:Cc.txt);
       var lb=r.label;while(lfs>4.4&&doc.getTextWidth(lb)>lbW-3){lfs-=.2;K.font(lfs,!!r.bold);}while(lb.length>4&&doc.getTextWidth(lb)>lbW-3)lb=lb.slice(0,-1);doc.text(lb,x0+1.6,y+rh/2+1.2);
       ds.forEach(function(dy,i){
         var ix=bk[0]+i,v=r.vals[ix],t=r.key==="prod"&&v!==null?Math.round(v).toLocaleString("pt-BR"):pcFmt(r,v);if(!t)return;
-        var fs=r.big?6.4:5.6;K.font(fs,!!r.bold);while(fs>3.4&&doc.getTextWidth(t)>dw-.8){fs-=.2;K.font(fs,!!r.bold);}
+        var fs=umDia?(r.big?10:9):(r.big?6.4:5.6);K.font(fs,!!r.bold);while(fs>3.4&&doc.getTextWidth(t)>dw-.8){fs-=.2;K.font(fs,!!r.bold);}
         K.txt(r.ed&&r.ed[ix]?Cc.bl:(typeof v==="number"&&v<0)?Cc.red:r.red?Cc.red:Cc.txt);
         doc.text(t,x0+lbW+i*dw+dw/2,y+rh/2+1.1,{align:"center"});
       });
-      if(ultimo){var tt=pcFmtTot(r,r.tot),fs2=5.4;K.font(fs2,true);while(fs2>3.6&&doc.getTextWidth(tt)>totW-1){fs2-=.2;K.font(fs2,true);}K.txt(Cc.b);doc.text(tt,x0+lbW+ds.length*dw+totW-1,y+rh/2+1.1,{align:"right"});}
+      if(totW){var tt=pcFmtTot(r,r.tot),fs2=5.4;K.font(fs2,true);while(fs2>3.6&&doc.getTextWidth(tt)>totW-1){fs2-=.2;K.font(fs2,true);}K.txt(Cc.b);doc.text(tt,x0+lbW+ds.length*dw+totW-1,y+rh/2+1.1,{align:"right"});}
       doc.setDrawColor(Cc.line[0],Cc.line[1],Cc.line[2]);doc.setLineWidth(.12);doc.line(x0,y+rh,x0+lbW+ds.length*dw+totW,y+rh);
       y+=rh;
     });
