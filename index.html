@@ -837,6 +837,29 @@ html[data-tema=azul] .topbar span{color:rgba(255,255,255,.75)}
 .pcq-n.in .nm{color:#c0392b}
 .pcq-n.ld .nm{font-weight:800}
 .pcq-vz{font-size:11px;color:#c5ccd6;text-align:center;padding:.6rem}
+/* ===== Cadastro: edicao na tabela, lancamentos com vigencia, cesta em massa ===== */
+.etab-txt{text-align:left!important;font-weight:600;min-width:120px}
+.etab-txt.nm{min-width:210px;font-weight:700;color:#1d2735}
+select.etab-txt{cursor:pointer;padding-right:1.2rem!important}
+.sal-cel{display:flex;align-items:center}
+.sal-cel input{flex:1;min-width:80px}
+.sal-lk{border:none;background:transparent;color:#b3bcc7;cursor:pointer;padding:0 5px;font-size:14px;display:flex;align-items:center;gap:2px;flex-shrink:0}
+.sal-lk:hover{color:var(--blue)}
+.sal-lk.on{color:#1E5BC6;font-weight:800;font-size:11px}
+.sal-lk.on i{font-size:13px}
+.sal-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#6b7580;margin-bottom:.7rem}
+.sal-m{font-weight:800;color:var(--deep);background:#e6edf8;border-radius:6px;padding:3px 9px;display:inline-flex;align-items:center;gap:4px}
+.sal-t input{padding:.35rem .5rem!important;font-size:12.5px!important}
+.sal-t td{vertical-align:top}
+.sal-bt{margin-top:6px;padding:.4rem .75rem;font-size:12px}
+.sal-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.sal-chips span{font-size:11.5px;font-weight:700;color:#1f5fa8;background:#eef4fc;border-radius:6px;padding:2px 8px}
+.cb-bar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:#f6f8fb;border:1px solid #e3e9f1;border-radius:10px;padding:.65rem .75rem;margin-bottom:.7rem}
+.cb-op{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#4a5566;padding-bottom:.45rem}
+.cb-op input{width:auto;margin:0}
+.cb-tb{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.5rem}
+.cb-tb .bal-srch input{width:240px!important;padding-top:.35rem!important;padding-bottom:.35rem!important;font-size:12.5px}
+.cb-tb .lk{font-size:12px;color:var(--blue);cursor:pointer;font-weight:700}
 /* ===== Balanceamento de produção ===== */
 .bal-tb{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(10,31,74,.07);padding:.55rem .65rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:1rem}
 .bal-tb .sp{flex:1}
@@ -2414,6 +2437,7 @@ function rEmp(){
     +"<select id='emp-ano' onchange='setEmpMes()' title='Ano dos valores'>"+(function(){var a0=+curMes().slice(0,4),ys={};ys[a0-1]=1;ys[a0]=1;ys[a0+1]=1;ys[+empMesSel().slice(0,4)]=1;
       DB.emp.forEach(function(e){if(e.mv)Object.keys(e.mv).forEach(function(m){ys[+m.slice(0,4)]=1;});});
       return Object.keys(ys).sort().map(function(y){return "<option value='"+y+"'"+(y===empMesSel().slice(0,4)?" selected":"")+">"+y+"</option>";}).join("");})()+"</select></div>"
+    +(empRO()?"":"<button class='btng btn-ic' onclick='abrirCestaMassa()' title='Lancar a cesta basica do mes selecionado para varios colaboradores'><i class='ti ti-basket'></i>Cesta básica em massa</button>")
     +(empRO()?"":"<button class='btng btn-ic' onclick='abrirPProd()' title='Lancar o % do premio de producao do mes selecionado'><i class='ti ti-percentage'></i>% Prêmio produção</button>")
     +"<button class='btng btn-ic' onclick='abrirDossie()' title='Dossie completo do colaborador em PDF'><i class='ti ti-id-badge-2'></i>Dossiê</button>"
     +"<button class='btng btn-ic' onclick='abrirCopiaMes()' title='Copiar os valores de outro mes para o mes selecionado'><i class='ti ti-copy'></i>Copiar de outro mes</button>"
@@ -2446,7 +2470,7 @@ function rEmp(){
       +"<div class='fr' id='emeihrow' style='display:none'><label class='lbl'>Horas por mes</label><input type='number' id='emeihoras' min='1' step='1' placeholder='220' oninput='updSalCalc()'/></div>"
       +"</div></div>"
       +"<div class='mes-info' id='emodmes' style='margin-bottom:.6rem'></div>"
-      +"<div class='fr'><label class='lbl'><span id='esallb'>Salario (R$)</span> <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00' oninput='updSalCalc()'/><div class='hint' id='esalhint' style='display:none'></div></div>"
+      +"<div class='fr'><label class='lbl'><span id='esallb'>Salario (R$)</span> <span class='opt'>(opcional)</span></label><input type='number' id='esal' min='0' step='0.01' placeholder='Ex: 2500,00' oninput='updSalCalc()'/><div class='hint' id='esalhint' style='display:none'></div><div id='esallanc'></div></div>"
       +"<div id='ecltcalc'><div class='fr2'>"
       +"<div class='fr'><label class='lbl'>1/3 Ferias <span class='opt'>(automatico)</span></label><input type='text' id='eterco' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div>"
       +"<div class='fr'><label class='lbl'>13o Salario <span class='opt'>(automatico)</span></label><input type='text' id='e13' readonly tabindex='-1' style='background:#f1f4f8;font-weight:700;color:#1a7a4a'/></div></div>"
@@ -2692,13 +2716,20 @@ function rEmpList(){
   var aviso=nf?"<div class='etab-fil'><i class='ti ti-filter'></i> "+nf+" filtro"+(nf>1?"s":"")+" de coluna ativo"+(nf>1?"s":"")+" &middot; "+list.length+" linha"+(list.length!==1?"s":"")+" <button onclick='limparEmpFiltros()'>Limpar filtros</button></div>":"";
   if(list.length===0)return aviso+"<div class='empty'><i class='ti ti-users'></i>Nenhum colaborador "+(empFiltro==="inativos"?"inativo ":empFiltro==="ativos"?"ativo ":empFiltro==="afastados"?"afastado ":"")+"encontrado.</div>";
   var tot={};MONEY_K.forEach(function(x){tot[x]=0;});
+  var catLst="<datalist id='emp-cat-lst'>"+empresasCad().map(function(x){return "<option value='"+esc(x)+"'>";}).join("")+"</datalist>";
   function cell(e,c){
     var cls=(c.c?"c":"");
+    var ro=empRO();
     if(c.k==="nome"){
       var st=empSitTxt(e);
+      if(!ro)return "<td class='in'><input type='text' class='etab-sal etab-txt nm' value='"+esc(e.nome)+"' data-col='nome' onchange=\"setTxtInline('"+e.id+"','nome',this)\" onkeydown='salKey(event,this)'/>"+(st==="DEMITIDO"?"<span class='bdg bdg-dem' style='margin:0 6px 4px;display:inline-block'>DEMITIDO "+fmtD(e.dem)+"</span>":"")+"</td>";
       return "<td class='nm'>"+esc(e.nome)+(st==="DEMITIDO"?" <span class='bdg bdg-dem'>DEMITIDO "+fmtD(e.dem)+"</span>":"")+"</td>";
     }
-    var ro=empRO();
+    if(!ro&&(c.k==="empresa"||c.k==="func"||c.k==="horario"))
+      return "<td class='in'><input type='text' class='etab-sal etab-txt' value='"+esc(e[c.k]||"")+"' placeholder='—' data-col='"+c.k+"'"+(c.k==="empresa"?" list='emp-cat-lst'":"")+" onchange=\"setTxtInline('"+e.id+"','"+c.k+"',this)\" onkeydown='salKey(event,this)'"+(c.k==="horario"?" style='text-align:center!important;min-width:100px'":c.k==="empresa"?" style='min-width:175px'":c.k==="func"?" style='min-width:160px'":"")+"/></td>";
+    if(!ro&&c.k==="vinc")return "<td class='in'><select class='etab-sal etab-txt' data-col='vinc' style='min-width:80px;text-align:center!important;color:"+(isMEI(e)?"#7b3fa0":"#1f5fa8")+";font-weight:800' onchange=\"setTxtInline('"+e.id+"','vinc',this)\"><option value='CLT'"+(isMEI(e)?"":" selected")+">CLT</option><option value='MEI'"+(isMEI(e)?" selected":"")+">MEI</option></select></td>";
+    if(!ro&&c.k==="grupo")return "<td class='in'><select class='etab-sal etab-txt' data-col='grupo' style='min-width:150px' onchange=\"setTxtInline('"+e.id+"','grupo',this)\"><option value=''>—</option>"
+      +gruposOrd().map(function(g){return "<option value='"+g.id+"'"+(g.id===e.grupo?" selected":"")+">"+esc(g.nome)+"</option>";}).join("")+"</select></td>";
     if(ro&&(c.k==="cc"||c.t==="dt"))return "<td class='c'>"+esc(empTxt(e,c.k))+"</td>";
     if(c.t==="enc"){var ev=empCampoVal(e,c.k),man=encManual(e,c.k);
       if(ro)return "<td class='r'>"+(ev===null?"":fmtBRL(ev))+"</td>";
@@ -2717,6 +2748,10 @@ function rEmpList(){
     if(c.k==="sit"){var s=empSitTxt(e),cl={ATIVO:"bdg-ok",AFASTADO:"",DEMITIDO:"bdg-dem",INATIVO:"bdg-off"}[s];
       return "<td class='c'"+(s==="INATIVO"&&e.motinat?" title='"+esc(motInatNome(e.motinat)+" · desde "+fmtD(e.inat)+(e.inatFim?" ate "+fmtD(e.inatFim):" (sem data de retorno)"))+"'":"")+"><span class='bdg "+cl+"'"+(s==="AFASTADO"?" style='background:#fdecd2;color:#8a5a00'":"")+">"+s+"</span></td>";}
     if(c.t==="dt")return "<td class='in'><input type='date' class='etab-sal etab-dt' value='"+(e[c.k]||"")+"' data-col='"+c.k+"' onchange=\"setDataInline('"+e.id+"','"+c.k+"',this)\" onkeydown='salKey(event,this)'/></td>";
+    if(c.k==="sal"){var sl=salLista(e,e._mes||empMesSel()),vs=typeof e.sal==="number"?e.sal:"";
+      if(sl.length)return "<td class='in'><div class='sal-cel'><input type='text' class='etab-sal' readonly value='"+fmtBRL(vs===""?0:vs)+"' style='cursor:pointer;color:#1E5BC6' title='"+esc(sl.map(function(x){return fmtBRL(x.v)+" - "+fmtD(x.data)+(x.obs?" - "+x.obs:"");}).join("\n")+"\nClique para editar os lancamentos")+"' onclick=\"salLanc('"+e.id+"')\"/><button class='sal-lk on' title='Lancamentos com vigencia' onclick=\"salLanc('"+e.id+"')\"><i class='ti ti-calendar-dollar'></i>"+sl.length+"</button></div></td>";
+      return "<td class='in'><div class='sal-cel'><input type='text' inputmode='decimal' class='etab-sal' value='"+(vs===""?"":fmtBRL(vs))+"' placeholder='R$ 0,00' onfocus='brlFocus(this)' onblur='brlBlur(this)'"+(isMEI(e)&&e.meiTipo==="hora"?" title='Valor por hora x "+(+e.meiHoras||220)+"h no mes = "+fmtBRL(salMensal(e))+"'":"")+" data-col='sal' onchange=\"setValInline('"+e.id+"','sal',this.value)\" onkeydown='salKey(event,this)'/>"
+        +"<button class='sal-lk' title='Adicionar com vigencia / mais de um valor (ex: quinzenas)' onclick=\"salLanc('"+e.id+"')\"><i class='ti ti-calendar-plus'></i></button></div></td>";}
     if(c.t==="in"){var v=typeof e[c.k]==="number"?e[c.k]:"";
       return "<td class='in'><input type='text' inputmode='decimal' class='etab-sal' value='"+(v===""?"":fmtBRL(v))+"' placeholder='R$ 0,00' onfocus='brlFocus(this)' onblur='brlBlur(this)'"+(c.k==="sal"&&isMEI(e)&&e.meiTipo==="hora"?" title='Valor por hora x "+(+e.meiHoras||220)+"h no mes = "+fmtBRL(salMensal(e))+"'":"")+" data-col='"+c.k+"' onchange=\"setValInline('"+e.id+"','"+c.k+"',this.value)\" onkeydown='salKey(event,this)'/></td>";}
     if(c.k==="assid"){if(e._semMes)return "<td class='r'></td>";var ai=assidInfo(e,e._mes);
@@ -2749,7 +2784,7 @@ function rEmpList(){
   var foot="<tr>"+(nTxt?"<td colspan='"+nTxt+"'>TOTAL (ativos)</td>":"")+cols.slice(nTxt).map(function(c){
     return MONEY_K.indexOf(c.k)>=0?"<td class='r'"+(empRO()?"":" id='ettot-"+c.k+"'")+">"+fmtBRL(tot[c.k])+"</td>":"<td></td>";}).join("")+"<td></td>"+"</tr>";
   setTimeout(xsSync,0);
-  return aviso+"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap'><table class='etab' style='min-width:"+Math.max(700,cols.length*112+90)+"px'><thead><tr>"+head
+  return catLst+aviso+"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap'><table class='etab' style='min-width:"+Math.max(700,cols.length*112+90)+"px'><thead><tr>"+head
     +"<th class='c' style='cursor:default'>AÇÕES</th></tr></thead><tbody>"+rows+"</tbody><tfoot>"+foot+"</tfoot></table></div>";
 }
 // Menu do cabecalho (estilo Excel): classificar, filtrar valores, ocultar coluna
@@ -3755,6 +3790,7 @@ function savEmp(){
   ["inss","fgts"].forEach(function(k){if(encManual(obj,k)&&Math.abs(obj[k+"Man"]-encAuto(obj,k))<0.005)delete obj[k+"Man"];});
   // valores do formulario = mes selecionado no filtro do Cadastro
   var mmv=empMesSel(),dmv=mvPick(obj);obj.mv=Object.assign({},old&&old.mv||{});
+  var oldL=old&&old.mv&&old.mv[mmv]&&old.mv[mmv].salL;if(oldL&&oldL.length&&typeof dmv.sal==="number"&&Math.abs(dmv.sal-salSoma(oldL))<0.01)dmv.salL=oldL;
   if(Object.keys(dmv).length)obj.mv[mmv]=dmv;else delete obj.mv[mmv];
   mvSync(obj);
   obj.custo=calcCusto(obj);
@@ -3805,12 +3841,14 @@ function edtEmp(id){
   setEmpVinc(empVinc(e));
   var area=document.getElementById("edemarea");
   area.innerHTML=empExtraArea(e);
+  salFormInfo(id);
   openMd("md-emp");
 }
 function canEmp(){
   ["eid","enome","efunc","eadm","eaniv","esal","eempresa","ehorario","eadic","ehextra","epprodPct","ecesta","eassid","epmetas","ebonus","erefeit","emeihoras","einss","efgts"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   updSalCalc();
   var cc=document.getElementById("ecc");if(cc)cc.value="";
+  setTimeout(function(){salFormInfo("");},0);
   var t=document.getElementById("eftt");if(t)t.textContent="Novo colaborador";
   var btn=document.getElementById("esav");if(btn)btn.textContent="Cadastrar";
   var area=document.getElementById("edemarea");if(area)area.innerHTML="";
@@ -8917,6 +8955,142 @@ function pcqDesfazer(){
   DB.emp=DB.emp.map(function(x){return x.id===u.id?Object.assign({},x,{empresa:u.ant}):x;});dbSave();pcRerender();
 }
 function pcqAuto(){var cfg=pcDoc("cfg",{cats:[],dias:{}});delete cfg.qLay;dbSave();pcRerender();}
+// ═══ Edicao de texto direto na tabela do Cadastro ═══
+function setTxtInline(id,k,el){
+  var v=(el.value||"").trim(),e=DB.emp.find(function(x){return x.id===id;});if(!e)return;
+  if((k==="nome"||k==="func")&&!v){alert(k==="nome"?"O nome nao pode ficar vazio.":"A funcao nao pode ficar vazia.");el.value=e[k]||"";return;}
+  if(k==="horario")v=v.toUpperCase();
+  DB.emp=DB.emp.map(function(x){
+    if(x.id!==id)return x;
+    var n=Object.assign({},x);
+    if(k==="vinc")pceAplicaVinc(n,v==="MEI"?"MEI":"CLT");
+    else if(k==="grupo"){if(v)n.grupo=v;else delete n.grupo;}
+    else n[k]=v;
+    return n;
+  });
+  dbSave();
+  if(k==="vinc"||k==="grupo")filtEmp();
+}
+// ═══ Lancamentos do salario / valor mensal com vigencia (ex: 1a e 2a quinzena) ═══
+function salSoma(l){return +((l||[]).reduce(function(a,x){return a+(+x.v||0);},0)).toFixed(2);}
+function salLista(e,m){var d=e&&e.mv&&e.mv[m];return d&&Array.isArray(d.salL)?d.salL:[];}
+var salEst=null;
+function salLanc(id,m){
+  var e=DB.emp.find(function(x){return x.id===id;});if(!e)return;
+  m=m||empMesSel();
+  var l=salLista(e,m).map(function(x){return Object.assign({},x);});
+  if(!l.length){var ev=empView(e,m);if(typeof ev.sal==="number"&&ev.sal>0)l.push({v:ev.sal,data:m+"-"+(isMEI(e)?"15":"01"),obs:"Valor do mês"});}
+  salEst={id:id,m:m,l:l};salRender();
+}
+function salRender(){
+  var E=salEst;if(!E)return;var e=DB.emp.find(function(x){return x.id===E.id;});
+  var mei=isMEI(e),lb=mei?(e.meiTipo==="hora"?"Valor por hora":"Valor mensal"):"Salário";
+  var m0=E.m,fim=fimMesStr(m0);
+  var rows=E.l.map(function(x,i){
+    var fora=x.data&&x.data.slice(0,7)!==m0;
+    return "<tr><td><input type='date' value='"+esc(x.data||"")+"' onchange='salSet("+i+",\"data\",this.value)'/>"+(fora?"<div class='hint' style='color:#b8820a;margin:2px 0 0'>vai para "+fmtM(x.data.slice(0,7))+"</div>":"")+"</td>"
+      +"<td><input type='text' inputmode='decimal' value='"+(x.v!==""&&x.v!=null?fmtNum(x.v):"")+"' placeholder='0,00' onfocus='this.select()' onchange='salSet("+i+",\"v\",this.value)' style='text-align:right;font-weight:700'/></td>"
+      +"<td><input type='text' value='"+esc(x.obs||"")+"' placeholder='Ex: 1ª quinzena' onchange='salSet("+i+",\"obs\",this.value)'/></td>"
+      +"<td class='act'><button class='ibdel' title='Remover' onclick='salDel("+i+")'><i class='ti ti-trash'></i></button></td></tr>";
+  }).join("");
+  balModal("<i class='ti ti-calendar-dollar'></i>"+lb+" com vigência &middot; "+esc(e.nome),
+    "<div class='sal-top'><span class='sal-m'><i class='ti ti-calendar'></i>"+fmtM(m0)+"</span><span>Cada lançamento entra no mês da sua data. O "+lb.toLowerCase()+" do mês é a soma dos lançamentos.</span></div>"
+    +"<div class='etab-wrap' style='max-height:46vh'><table class='etab sal-t'><thead><tr><th style='cursor:default;width:150px'>VIGÊNCIA (DATA)</th><th style='cursor:default;width:140px' class='c'>VALOR (R$)</th><th style='cursor:default'>OBSERVAÇÃO</th><th style='cursor:default;width:40px'></th></tr></thead><tbody>"
+    +(rows||"<tr><td colspan='4' style='text-align:center;color:#9aa3ad;padding:1rem'>Nenhum lançamento. Clique em Adicionar lançamento.</td></tr>")+"</tbody>"
+    +"<tfoot><tr><td>TOTAL DE "+fmtM(m0).toUpperCase()+"</td><td class='r'>"+fmtBRL(salSoma(E.l.filter(function(x){return !x.data||x.data.slice(0,7)===m0;})))+"</td><td colspan='2'></td></tr></tfoot></table></div>"
+    +"<div style='display:flex;gap:6px;margin-top:.6rem;flex-wrap:wrap'><button class='btng btn-ic' onclick='salAdd()'><i class='ti ti-plus'></i>Adicionar lançamento</button>"
+    +"<button class='btng btn-ic' onclick='salQuinz()' title='Cria 1ª quinzena (dia 15) e 2ª quinzena (último dia)'><i class='ti ti-calendar-week'></i>Duas quinzenas</button></div>"
+    +"<div class='hint'>Ex.: 150,00 &middot; 15/10/2026 &middot; 1ª quinzena e 180,00 &middot; "+fmtD(fim)+" &middot; 2ª quinzena = "+fmtBRL(330)+" no mês. Sem lançamentos, vale o valor digitado direto.</div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='balFechar();salEst=null'>Cancelar</button><button class='btnp btn-ic' onclick='salSalvar()'><i class='ti ti-device-floppy'></i>Salvar</button></div>",620);
+}
+function salSet(i,k,v){var x=salEst&&salEst.l[i];if(!x)return;
+  if(k==="v"){var n=String(v).trim()===""?"":parseBRL(v);if(n!==""&&(isNaN(n)||n<0)){alert("Informe um valor valido.");salRender();return;}x.v=n===""?"":+n.toFixed(2);}
+  else x[k]=v;salRender();}
+function salDel(i){salEst.l.splice(i,1);salRender();}
+function salAdd(){var m=salEst.m,u=salEst.l.length?salEst.l[salEst.l.length-1].data:"";salEst.l.push({v:"",data:u&&u.slice(0,7)===m?fimMesStr(m):m+"-15",obs:""});salRender();}
+function salQuinz(){var m=salEst.m;salEst.l=salEst.l.filter(function(x){return x.data&&x.data.slice(0,7)!==m;}); // substitui os lancamentos do mes
+  salEst.l.push({v:"",data:m+"-15",obs:"1ª quinzena"},{v:"",data:fimMesStr(m),obs:"2ª quinzena"});salRender();}
+function salSalvar(){
+  var E=salEst;if(!E)return;
+  for(var i=0;i<E.l.length;i++){var x=E.l[i];if(x.v===""||x.v==null){alert("Informe o valor de todos os lancamentos (ou remova a linha vazia).");return;}if(!x.data){alert("Informe a data de vigencia de todos os lancamentos.");return;}}
+  var por={};E.l.forEach(function(x){var mm=x.data.slice(0,7);(por[mm]=por[mm]||[]).push({v:+x.v,data:x.data,obs:(x.obs||"").trim()});});
+  var meses=Object.keys(por);if(meses.indexOf(E.m)<0)meses.push(E.m);
+  DB.emp=DB.emp.map(function(e){
+    if(e.id!==E.id)return e;
+    var n=Object.assign({},e);n.mv=Object.assign({},n.mv||{});
+    meses.forEach(function(mm){
+      var d=Object.assign({},n.mv[mm]||{}),l=(por[mm]||[]).sort(function(a,b){return a.data.localeCompare(b.data);});
+      if(mm!==E.m&&!por[mm])return;
+      if(mm!==E.m)l=salLista(e,mm).filter(function(o){return !l.some(function(p){return p.data===o.data&&p.v===o.v;});}).concat(l).sort(function(a,b){return a.data.localeCompare(b.data);}); // outros meses: soma aos lancamentos que ja existiam
+      if(l.length){d.salL=l;d.sal=salSoma(l);}else{delete d.salL;delete d.sal;}
+      if(Object.keys(d).length)n.mv[mm]=d;else delete n.mv[mm];
+    });
+    mvSync(n);return n;
+  });
+  dbSave();balFechar();salEst=null;
+  if(document.getElementById(empId("elist")))filtEmp();
+  salFormInfo(E.id);
+}
+// no formulario Editar colaborador
+function salFormInfo(id){
+  var box=document.getElementById("esallanc"),inp=document.getElementById("esal");if(!box||!inp)return;
+  id=id||gv("eid");var e=id?DB.emp.find(function(x){return x.id===id;}):null,m=empMesSel(),l=e?salLista(e,m):[];
+  if(e&&gv("eid")===id&&l.length){inp.value=salSoma(l);inp.readOnly=true;inp.style.background="#f1f4f8";updSalCalc();}
+  else{inp.readOnly=false;inp.style.background="";}
+  box.innerHTML="<button type='button' class='btng btn-ic sal-bt' onclick='salLancForm()'><i class='ti ti-calendar-dollar'></i>"+(l.length?"Lançamentos com vigência ("+l.length+")":"Adicionar com vigência / mais de um valor")+"</button>"
+    +(l.length?"<div class='sal-chips'>"+l.map(function(x){return "<span>"+fmtBRL(x.v)+" &middot; "+fmtD(x.data)+(x.obs?" &middot; "+esc(x.obs):"")+"</span>";}).join("")+"</div>":"");
+}
+function salLancForm(){var id=gv("eid");if(!id){alert("Salve o cadastro do colaborador primeiro; depois abra Editar para lancar os valores com vigencia.");return;}salLanc(id,empMesSel());}
+// ═══ Cesta basica em massa (com edicao individual) ═══
+var cbEst=null;
+function abrirCestaMassa(){
+  var m=empMesSel(),l=DB.emp.filter(function(e){return empAtivoNoMes(e,m);}).sort(function(a,b){return (a.empresa||"").localeCompare(b.empresa||"")||a.nome.localeCompare(b.nome);});
+  cbEst={m:m,rows:l.map(function(e){var v=empView(e,m),cur=typeof v.cesta==="number"?v.cesta:null;return {id:e.id,nome:e.nome,cat:e.empresa||"",mei:isMEI(e),cur:cur,val:cur,chk:!isMEI(e)};}),q:""};
+  cbRender();
+}
+function cbRender(){
+  var E=cbEst;if(!E)return;
+  var q=(E.q||"").toLowerCase(),vis=E.rows.filter(function(r){return !q||(r.nome+" "+r.cat).toLowerCase().indexOf(q)>=0;});
+  var nChk=E.rows.filter(function(r){return r.chk;}).length,nMud=E.rows.filter(function(r){return r.val!==r.cur;}).length;
+  var tot=E.rows.reduce(function(a,r){return a+(+r.val||0);},0);
+  var html="<div class='cb-bar'><div class='fr' style='margin:0'><label class='lbl'>Valor da cesta (R$)</label><input type='text' inputmode='decimal' id='cb-v' placeholder='Ex: 312,00' style='width:140px' onkeydown=\"if(event.key==='Enter')cbPreencher()\"/></div>"
+    +"<label class='cb-op'><input type='checkbox' id='cb-vz'/>Só quem está sem valor</label>"
+    +"<button class='btnp btn-ic' onclick='cbPreencher()'><i class='ti ti-arrow-down'></i>Aplicar aos marcados ("+nChk+")</button>"
+    +"<button class='btng btn-ic' onclick='cbLimparMarcados()' title='Remove o valor dos marcados'><i class='ti ti-eraser'></i>Limpar marcados</button></div>"
+    +"<div class='cb-tb'><div class='bal-srch'><i class='ti ti-search'></i><input type='text' placeholder='Buscar nome ou categoria...' value='"+esc(E.q||"")+"' oninput='cbEst.q=this.value;cbRender();cbFoco()' id='cb-q'/></div>"
+    +"<span class='lk' onclick='cbMarcar(\"todos\")'>Marcar todos</span><span class='lk' onclick='cbMarcar(\"clt\")'>Só CLT</span><span class='lk' onclick='cbMarcar(\"nenhum\")'>Desmarcar</span>"
+    +"<span style='margin-left:auto;font-size:12px;color:#7a8592'>"+E.rows.length+" colaboradores &middot; total "+fmtBRL(tot)+"</span></div>"
+    +"<div class='etab-wrap' style='max-height:44vh'><table class='etab'><thead><tr><th style='cursor:default;width:34px'></th><th style='cursor:default'>COLABORADOR</th><th style='cursor:default'>CATEGORIA</th><th class='c' style='cursor:default;width:140px'>CESTA BÁSICA (R$)</th></tr></thead><tbody>"
+    +vis.map(function(r){var i=E.rows.indexOf(r),mud=r.val!==r.cur;
+      return "<tr"+(mud?" style='background:#fffbea'":"")+"><td class='c'><input type='checkbox' "+(r.chk?"checked":"")+" onchange='cbEst.rows["+i+"].chk=this.checked;cbRender()' style='width:auto'/></td>"
+        +"<td class='nm'>"+esc(r.nome)+(r.mei?" <span class='bdg' style='background:#f1e7f8;color:#7b3fa0'>MEI</span>":"")+"</td><td>"+esc(r.cat||"—")+"</td>"
+        +"<td class='in'><input type='text' inputmode='decimal' class='etab-sal cb-in' value='"+(r.val===null?"":fmtBRL(r.val))+"' placeholder='—' onfocus='brlFocus(this)' onblur='brlBlur(this)' onchange='cbSet("+i+",this.value)' onkeydown='salKey(event,this)' data-col='cb'"+(mud?" style='color:#b8820a;font-weight:800'":"")+"/></td></tr>";}).join("")
+    +"</tbody></table></div>"
+    +"<div class='hint'>Digite em uma linha para ajustar só aquele colaborador. Em amarelo: alterações ainda não salvas. Vazio = sem cesta no mês.</div>"
+    +"<div class='mdl-ft'><span style='margin-right:auto;font-size:12px;color:#8a5a00;font-weight:700'>"+(nMud?nMud+" alteração(ões) pendente(s)":"")+"</span><button class='btng' onclick='balFechar();cbEst=null'>Cancelar</button><button class='btnp btn-ic' onclick='cbSalvar()'"+(nMud?"":" disabled style='opacity:.5'")+"><i class='ti ti-device-floppy'></i>Salvar</button></div>";
+  var v0=document.getElementById("cb-v"),vv=v0?v0.value:"",vz=document.getElementById("cb-vz"),vzc=vz?vz.checked:false;
+  balModal("<i class='ti ti-basket'></i>Cesta básica em massa &middot; "+fmtM(E.m),html,760);
+  var v1=document.getElementById("cb-v");if(v1)v1.value=vv;var z1=document.getElementById("cb-vz");if(z1)z1.checked=vzc;
+}
+function cbFoco(){var q=document.getElementById("cb-q");if(q){q.focus();var n=q.value.length;q.setSelectionRange(n,n);}}
+function cbSet(i,t){var r=cbEst.rows[i];var n=String(t).trim()===""?null:parseBRL(t);if(n!==null&&(isNaN(n)||n<0)){alert("Informe um valor valido.");cbRender();return;}r.val=n===null?null:+n.toFixed(2);cbRender();}
+function cbMarcar(k){cbEst.rows.forEach(function(r){r.chk=k==="todos"?true:k==="clt"?!r.mei:false;});cbRender();}
+function cbPreencher(){var t=gv("cb-v").trim(),n=parseBRL(t);if(t===""||isNaN(n)||n<0){alert("Informe o valor da cesta basica.");return;}
+  var so=document.getElementById("cb-vz").checked,c=0;cbEst.rows.forEach(function(r){if(r.chk&&(!so||r.val===null)){r.val=+n.toFixed(2);c++;}});if(!c)alert("Nenhum colaborador marcado para aplicar.");cbRender();}
+function cbLimparMarcados(){cbEst.rows.forEach(function(r){if(r.chk)r.val=null;});cbRender();}
+function cbSalvar(){
+  var E=cbEst,m=E.m,mud={};E.rows.forEach(function(r){if(r.val!==r.cur)mud[r.id]=r.val;});
+  var n=0;
+  DB.emp=DB.emp.map(function(e){
+    if(!(e.id in mud))return e;
+    var x=Object.assign({},e);x.mv=Object.assign({},e.mv||{});var d=Object.assign({},x.mv[m]||{});
+    if(mud[e.id]===null)delete d.cesta;else d.cesta=mud[e.id];
+    if(Object.keys(d).length)x.mv[m]=d;else delete x.mv[m];
+    mvSync(x);n++;return x;
+  });
+  dbSave();balFechar();cbEst=null;filtEmp();if(typeof empMesInfo==="function")empMesInfo();
+  showSync("Cesta basica atualizada para "+n+" colaborador"+(n>1?"es":"")+" em "+fmtM(m),true);setTimeout(function(){var sb=document.getElementById("sync-bar");if(sb)sb.style.display="none";},2400);
+}
 </script>
 </body>
 </html>
