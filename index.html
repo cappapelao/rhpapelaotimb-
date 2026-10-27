@@ -5095,6 +5095,9 @@ function rMon(){
   var semGQ=meses.map(function(m){return quadro(m,function(e){return !(e.grupo&&idsQ[e.grupo]);});});
   if(semGQ.some(function(v){return v>0;}))aQuadroG.push({id:"_sem",lb:"Sem C.C. Infomódulus",cor:"#b0b8c1",data:semGQ});
   var aQuadro=meses.map(function(m){return quadro(m);}),aContr=meses.map(function(m){return contr(m).length;}),aDem=meses.map(function(m){return demit(m).length;});
+  function nMei(l,pj){return l.filter(function(e){return pj?isMEI(e):!isMEI(e);}).length;}
+  var aContrClt=meses.map(function(m){return nMei(contr(m),0);}),aContrPj=meses.map(function(m){return nMei(contr(m),1);});
+  var aDemClt=meses.map(function(m){return nMei(demit(m),0);}),aDemPj=meses.map(function(m){return nMei(demit(m),1);});
 
   var ativos=EMPV.filter(isAtivo).length,inativos=EMPV.length-ativos;
   var nClt=EMPV.filter(function(e){return isAtivo(e)&&!isMEI(e);}).length;
@@ -5113,6 +5116,7 @@ function rMon(){
     return{labels:lbs,values:lbs.map(function(k){return map[k];}),colors:lbs.map(function(k){var i=DB.motdem.findIndex(function(m){return m.nome===k;});return i<0?"#9aa3ad":MPAL[i%MPAL.length];})};
   }
   var bdMes=motBD(dMes),bdAno=motBD(dAno);
+  var bdClt=motBD(dAno.filter(function(e){return !isMEI(e);})),bdPj=motBD(dAno.filter(isMEI));
 
   // ABSENTEISMO = faltas / (colaboradores x dias uteis) x 100  (dias uteis = seg a sex; mes atual conta ate hoje)
   function diasUteis(m){
@@ -5213,7 +5217,8 @@ function rMon(){
 
 
     +"<div class='mon-g3'>"
-    +chartCard("Contratados x Demitidos - "+selAno,GRN,"ti-arrows-exchange","<canvas id='ch-mmov'></canvas>",200)
+    +chartCard("Contratados x Demitidos - "+selAno+"<span class='seg' id='mmov-seg' style='margin-left:auto;padding:2px;text-transform:none;letter-spacing:0'>"
+      +[["total","Total"],["clt","CLT"],["pj","PJ (MEI)"]].map(function(o){return "<button type='button' class='seg-b"+(monMovV===o[0]?" on":"")+"' data-k='"+o[0]+"' style='padding:.2rem .55rem;font-size:11px' onclick=\"setMonMov('"+o[0]+"')\">"+o[1]+"</button>";}).join("")+"</span>",GRN,"ti-arrows-exchange","<canvas id='ch-mmov'></canvas>",200)
     +chartCard("Absenteismo mensal e acumulado - "+selAno,"#d35400","ti-calendar-x","<canvas id='ch-mabs'></canvas>",200)
     +chartCard("Absenteismo por C.C. Senior","#d35400","ti-building",ccAbs.length
       ?"<div style='height:200px;overflow-y:auto'><div style='height:"+Math.max(200,ccAbs.length*34+40)+"px;position:relative'><canvas id='ch-mabscc'></canvas></div></div>"
@@ -5221,8 +5226,8 @@ function rMon(){
     +"</div>"
 
     +"<div class='mon-g3'>"
-    +chartCard("Motivos de saida - "+mlb,RED,"ti-chart-pie",bdMes.labels.length?"<div style='height:190px;position:relative'><canvas id='ch-mmotm'></canvas></div>":semDados("Sem demissoes em "+mlb))
-    +chartCard("Motivos de saida - "+selAno,RED,"ti-chart-donut",bdAno.labels.length?"<div style='height:190px;position:relative'><canvas id='ch-mmota'></canvas></div>":semDados("Sem demissoes em "+selAno))
+    +chartCard("Saidas CLT - "+selAno,RED,"ti-chart-pie",bdClt.labels.length?"<div style='height:190px;position:relative'><canvas id='ch-mmotm'></canvas></div>":semDados("Sem saidas CLT em "+selAno))
+    +chartCard("Saidas PJ (MEI) - "+selAno,RED,"ti-chart-pie",bdPj.labels.length?"<div style='height:190px;position:relative'><canvas id='ch-mmota'></canvas></div>":semDados("Sem saidas PJ (MEI) em "+selAno))
     +chartCard("Movimentacoes - "+mlb,B,"ti-list-details","<div style='height:190px;overflow-y:auto'>"+movHTML+"</div>")
     +"</div>"
 
@@ -5242,7 +5247,7 @@ function rMon(){
 
   window._monStats={aQuadroG:aQuadroG,selAno:selAno,selMes:selMes,mlb:mlb,meses:meses,lbl:lbl,ativos:ativos,inativos:inativos,qMes:qMes,
     nClt:nClt,nTerc:nTerc,cMes:cMes.length,dMes:dMes.length,cAno:cAno.length,dAno:dAno.length,turn:turn,absMes:absMes,absAno:absAno,absAnoF:absAnoF,duAno:duAno,
-    aQuadro:aQuadro,aContr:aContr,aDem:aDem,aAbs:aAbs,aAbsAcc:aAbsAcc,ccAbs:ccAbs,rankAbs:rankAbs,bdMes:bdMes,bdAno:bdAno,movs:movs};
+    aQuadro:aQuadro,aContr:aContr,aDem:aDem,aContrClt:aContrClt,aContrPj:aContrPj,aDemClt:aDemClt,aDemPj:aDemPj,bdClt:bdClt,bdPj:bdPj,aAbs:aAbs,aAbsAcc:aAbsAcc,ccAbs:ccAbs,rankAbs:rankAbs,bdMes:bdMes,bdAno:bdAno,movs:movs};
   var M=window._monStats;
   if(false)(function(ch){var cv=ch.canvas;
     cv.addEventListener("click",function(ev){var els=ch.getElementsAtEventForMode(ev,"nearest",{intersect:true},true);if(!els.length)return;
@@ -5252,8 +5257,8 @@ function rMon(){
   CH.mmov=new Chart(document.getElementById("ch-mmov"),monCfgMov(M,1));
   CH.mabs=new Chart(document.getElementById("ch-mabs"),monCfgAbs(M,1));
   var cvcc=document.getElementById("ch-mabscc");if(cvcc)CH.mabscc=new Chart(cvcc,monCfgAbsCC(M,1));
-  var e1=document.getElementById("ch-mmotm");if(e1)CH.mmotm=new Chart(e1,monCfgPie(bdMes,1));
-  var e2=document.getElementById("ch-mmota");if(e2)CH.mmota=new Chart(e2,monCfgPie(bdAno,1));
+  var e1=document.getElementById("ch-mmotm");if(e1)CH.mmotm=new Chart(e1,monCfgPie(bdClt,1));
+  var e2=document.getElementById("ch-mmota");if(e2)CH.mmota=new Chart(e2,monCfgPie(bdPj,1));
 }
 
 // ---- graficos do Monitoramento (tela e PDF; s = escala das fontes) ----
@@ -5359,11 +5364,18 @@ function monCfgQuadro(M,s){
               y1:{display:false,min:-mxT*1.25,max:mxT*1.3},
               x:monX(s)}})};
 }
+var monMovV="total";
+function monMovLb(){return monMovV==="clt"?"CLT":monMovV==="pj"?"PJ (MEI)":"Total";}
+function setMonMov(k){monMovV=k;
+  document.querySelectorAll("#mmov-seg .seg-b").forEach(function(b){b.classList.toggle("on",b.dataset.k===k);});
+  var M=window._monStats,cv=document.getElementById("ch-mmov");if(!M||!cv)return;
+  if(CH.mmov){try{CH.mmov.destroy();}catch(e){}}CH.mmov=new Chart(cv,monCfgMov(M,1));}
 function monCfgMov(M,s){
+  var aC=monMovV==="clt"?M.aContrClt:monMovV==="pj"?M.aContrPj:M.aContr,aD=monMovV==="clt"?M.aDemClt:monMovV==="pj"?M.aDemPj:M.aDem;
   return{type:"bar",plugins:relDL(),
     data:{labels:M.lbl,datasets:[
-      {label:"Contratados",data:M.aContr,backgroundColor:vGrad(GRN),hoverBackgroundColor:GRN,dlc:GRN,borderRadius:6*s,borderSkipped:false,maxBarThickness:36*s},
-      {label:"Demitidos",data:M.aDem,backgroundColor:vGrad(RED),hoverBackgroundColor:RED,dlc:RED,borderRadius:6*s,borderSkipped:false,maxBarThickness:36*s}]},
+      {label:"Contratados",data:aC,backgroundColor:vGrad(GRN),hoverBackgroundColor:GRN,dlc:GRN,borderRadius:6*s,borderSkipped:false,maxBarThickness:36*s},
+      {label:"Demitidos",data:aD,backgroundColor:vGrad(RED),hoverBackgroundColor:RED,dlc:RED,borderRadius:6*s,borderSkipped:false,maxBarThickness:36*s}]},
     options:Object.assign(monBase(s),{plugins:{legend:monLeg(s),datalabels:monDL(s)},
       scales:{y:{beginAtZero:true,grace:"15%",ticks:{precision:0,font:{size:11*s},color:"#7a838c"},grid:{color:"#f1f4f8"},border:{display:false}},x:monX(s)}})};
 }
@@ -6985,7 +6997,7 @@ function gerarMonitorPDF(){
   ks.forEach(function(k,i){K.kpi(mg+i*(kw+gap),y,kw,kh,k[0],k[1],k[2],k[3]);});
   y+=kh+4;
   var hw=(cw-gap)/2,ph=(K.H-12-y-gap)/2;
-  K.chartPanel(monCfgMov(M,1.5),mg,y,hw,ph,"Contratados x Demitidos por mês - "+M.selAno,C.grn);
+  K.chartPanel(monCfgMov(M,1.5),mg,y,hw,ph,"Contratados x Demitidos por mês - "+M.selAno+(monMovV!=="total"?" ("+monMovLb()+")":""),C.grn);
   K.chartPanel(monCfgAbs(M,1.5),mg+hw+gap,y,hw,ph,"Absenteísmo por mês e acumulado do ano - "+M.selAno,C.org);
   y+=ph+gap;
   K.chartPanel(M.ccAbs.length?monCfgAbsCC(M,1.35):null,mg,y,cw,ph,"Absenteísmo por C.C. Senior - "+M.mlb+" x "+M.selAno,C.org);
@@ -6994,8 +7006,8 @@ function gerarMonitorPDF(){
   doc.addPage();y=K.header();
   K.section("Motivos de saída e movimentações",y,C.red);y+=3.5;
   var tw=(cw-gap*2)/3,th=64;
-  K.chartPanel(monCfgPie(M.bdMes,1.5),mg,y,tw,th,"Motivos de saída - "+M.mlb,C.red);
-  K.chartPanel(monCfgPie(M.bdAno,1.5),mg+tw+gap,y,tw,th,"Motivos de saída - "+M.selAno,C.red);
+  K.chartPanel(M.bdClt.labels.length?monCfgPie(M.bdClt,1.5):null,mg,y,tw,th,"Saídas CLT - "+M.selAno,C.red);
+  K.chartPanel(M.bdPj.labels.length?monCfgPie(M.bdPj,1.5):null,mg+tw+gap,y,tw,th,"Saídas PJ (MEI) - "+M.selAno,C.red);
   var mx=mg+2*(tw+gap);
   K.panel(mx,y,tw,th);K.font(9,true);K.txt(C.b);doc.text("Movimentações - "+M.mlb,mx+4,y+6.5);
   doc.setDrawColor(C.line[0],C.line[1],C.line[2]);doc.setLineWidth(.25);doc.line(mx+4,y+8.8,mx+tw-4,y+8.8);
@@ -8270,20 +8282,93 @@ function balPdfModal(){
     +"<span><b style='display:flex;align-items:center;gap:5px'>"+(ic?"<i class='ti "+ic+"'></i>":"")+lb+"</b>"+(sub?"<small style='display:block;font-weight:500;color:#7a8592;margin-top:2px'>"+sub+"</small>":"")+"</span></label>";}
   balModal("<i class='ti ti-file-type-pdf'></i>Relatório PDF &middot; Balanceamento de Produção",
     "<div class='fr'><label class='lbl'>Layout</label><div class='pdf-opts'>"
-    +radio("balp-lay","tela","Visão da tela",true,"ti-layout-cards","Cartões por C.C. com os turnos, nomes, horas"+(balShowCusto?", custo":"")+" e resumo")
+    +radio("balp-lay","tela","Visão da tela",true,"ti-layout-cards","Idêntico à tela: mesmos C.C., colunas, caixas, resumo"+(balShowCusto?", custo":"")+" e legenda")
     +radio("balp-lay","tab","Tabelas",false,"ti-table","Resumos por turno e C.C. e lista de colaboradores")+"</div></div>"
     +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:0 12px'>"
     +"<div class='fr'><label class='lbl'>Orientação</label><div class='pdf-opts'>"+radio("balp-ori","landscape","Paisagem",true,"ti-rectangle")+radio("balp-ori","portrait","Retrato",false,"ti-rectangle-vertical")+"</div></div>"
     +"<div class='fr'><label class='lbl'>Papel</label><div class='pdf-opts'>"+radio("balp-pap","a4","A4",true)+radio("balp-pap","a3","A3")+"</div></div></div>"
-    +"<div class='fr' id='balp-cols-fr'><label class='lbl'>Cartões por linha na folha</label><div class='pdf-opts'>"+radio("balp-cols","auto","Automático",true,"ti-wand","o máximo de C.C. por folha")+radio("balp-cols","1","1")+radio("balp-cols","2","2")+radio("balp-cols","3","3")+"</div></div>"
-    +"<div class='fr' id='balp-cont-fr' style='display:none'><label class='lbl'>Conteúdo</label><div class='pdf-opts'>"+radio("balp-cont","completo","Resumos + colaboradores",true)+radio("balp-cont","resumo","Somente resumos")+"</div></div>"
+        +"<div class='fr' id='balp-cont-fr' style='display:none'><label class='lbl'>Conteúdo</label><div class='pdf-opts'>"+radio("balp-cont","completo","Resumos + colaboradores",true)+radio("balp-cont","resumo","Somente resumos")+"</div></div>"
     +"<div class='fr'><label style='display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer'><input type='checkbox' id='balp-nova' style='width:auto'/> Cada C.C. Infomódulus em uma nova página</label></div>"
     +"<div class='hint'><i class='ti ti-info-circle'></i> O relatório segue a tela: tipo, C.C. exibidos/ocultos, C.C. sem pessoas, custo, turnos compactados, tabela de resumo, caixas por turno e horas/mês ("+fmtH(balCfg().hPad)+").</div>"
     +"<div class='mdl-ft'><button class='btng' onclick='balFechar()'>Cancelar</button><button class='btnp btn-ic' onclick='gerarBalPDF()'><i class='ti ti-file-download'></i>Gerar PDF</button></div>",560);
 }
-function balPdfOpt(){var t=_radio("balp-lay")==="tab",f=document.getElementById("balp-cont-fr"),g=document.getElementById("balp-cols-fr");if(f)f.style.display=t?"":"none";if(g)g.style.display=t?"none":"";}
+function balPdfOpt(){var t=_radio("balp-lay")==="tab",f=document.getElementById("balp-cont-fr");if(f)f.style.display=t?"":"none";}
+function loadH2C(){
+  if(window.html2canvas)return Promise.resolve();
+  if(window._h2cP)return window._h2cP;
+  window._h2cP=new Promise(function(ok,fail){
+    var sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+    sc.onload=function(){ok();};sc.onerror=function(){window._h2cP=null;fail(new Error("html2canvas"));};
+    document.head.appendChild(sc);
+  });
+  return window._h2cP;
+}
+// PDF "Visao da tela": fotografa a tela do Balanceamento (caixas, cartoes de C.C. nas mesmas colunas e legenda)
 function gerarBalPDF(){
   if(_radio("balp-lay")==="tab")return gerarBalPDFTab();
+  if(!(window.jspdf&&window.jspdf.jsPDF)){alert("A biblioteca de PDF ainda esta carregando. Aguarde alguns segundos e tente novamente.");return;}
+  var pg=document.getElementById("p-balanc"),grid=pg&&pg.querySelector(".bal-grid");
+  if(!grid||!grid.querySelector(".bal-cc")){alert("Nenhum C.C. Infomódulus para o relatório com os filtros da tela.");return;}
+  var ori=_radio("balp-ori")||"landscape",pap=_radio("balp-pap")||"a4";
+  var nova=!!(document.getElementById("balp-nova")&&document.getElementById("balp-nova").checked);
+  var btn=document.querySelector(".mdl-ft .btnp"),btnH=btn?btn.innerHTML:"";
+  if(btn){btn.disabled=true;btn.innerHTML="<i class='ti ti-loader-2'></i>Gerando...";}
+  function fim(){if(btn){btn.disabled=false;btn.innerHTML=btnH;}}
+  loadH2C().then(function(){
+    function prep(cd){
+      var st=cd.createElement("style");
+      st.textContent=".bal-drop{max-height:none!important;overflow:visible!important}.bal-cc{overflow:visible!important}.bal-cc.drag,.bal-cc.ins-a,.bal-cc.ins-d{opacity:1!important;box-shadow:none!important}";
+      cd.head.appendChild(st);
+    }
+    function snap(el,extra){
+      return window.html2canvas(el,{scale:2,backgroundColor:"#ffffff",logging:false,useCORS:true,
+        onclone:function(cd){prep(cd);if(extra)extra(cd);}});
+    }
+    var kEl=pg.querySelector(".bal-kpis"),lEl=pg.querySelector(".bal-leg"),rects=[];
+    var gridW=grid.getBoundingClientRect().width;
+    var pK=kEl?snap(kEl):Promise.resolve(null);
+    var pL=lEl?snap(lEl):Promise.resolve(null);
+    var pG=snap(grid,function(cd){
+      var g=cd.querySelector("#p-balanc .bal-grid");if(!g)return;var gr=g.getBoundingClientRect();
+      Array.prototype.forEach.call(g.querySelectorAll(".bal-mcol"),function(col,ci){
+        Array.prototype.forEach.call(col.querySelectorAll(".bal-cc"),function(c){var r=c.getBoundingClientRect();
+          rects.push({col:ci,x:r.left-gr.left,y:r.top-gr.top,w:r.width,h:r.height});});
+      });
+      rects.nCols=g.querySelectorAll(".bal-mcol").length||1;
+    });
+    return Promise.all([pK,pG,pL]).then(function(res){
+      var cK=res[0],cG=res[1],cL=res[2],ex=cG.width/gridW;
+      var tipoLb=balTipoF==="proprio"?"Pessoal próprio":balTipoF==="terceiro"?"Terceirizado":"Todos os tipos";
+      var D=balDados(),c=D.c;
+      var K=mkPdfKit("Balanceamento de Produção",tipoLb+"  |  "+D.cards.length+" C.C.  |  "+D.G._tot.p+" colaboradores  |  Horas padrão "+fmtH(c.hPad)+"/mês",ori,pap),doc=K.doc,cw=K.cw,mg=K.mg;
+      var LIM=K.H-12,TOPN=K.BANDH+6,y=K.header();
+      function crop(cv,x,yy,w,h){var o=document.createElement("canvas");o.width=Math.max(1,Math.round(w));o.height=Math.max(1,Math.round(h));
+        var cx=o.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,o.width,o.height);cx.drawImage(cv,Math.round(x),Math.round(yy),o.width,o.height,0,0,o.width,o.height);return o.toDataURL("image/jpeg",.93);}
+      function img(cv,w){var h=w*cv.height/cv.width,max=LIM-TOPN;if(h>max){w=w*max/h;h=max;}return {d:cv.toDataURL("image/jpeg",.93),w:w,h:h};}
+      function novaPag(){doc.addPage();K.header();return TOPN;}
+      if(cK){var ik=img(cK,cw);if(y+ik.h>LIM)y=novaPag();doc.addImage(ik.d,"JPEG",mg+(cw-ik.w)/2,y,ik.w,ik.h);y+=ik.h+4;}
+      // cartoes nas mesmas colunas da tela, na ordem de cima para baixo
+      var N=nova?1:rects.nCols||1,gapPx=12,mmPx=nova?cw/(rects.length?Math.max.apply(null,rects.map(function(r){return r.w;})):gridW):cw/gridW,gapMm=gapPx*mmPx;
+      var colW=nova?cw:(cw-gapMm*(N-1))/N,colY=[];for(var i=0;i<N;i++)colY.push(y);
+      var ord=rects.slice().sort(function(a,b){return a.y-b.y||a.col-b.col;}),primeiro=true;
+      ord.forEach(function(r){
+        var ci=nova?0:r.col,w=r.w*mmPx,h=r.h*mmPx,max=LIM-TOPN;
+        if(h>max){w=w*max/h;h=max;}
+        if(nova){if(!primeiro){colY=[novaPag()];}}
+        else if(colY[ci]+h>LIM){var t=novaPag();for(var k=0;k<N;k++)colY[k]=t;}
+        var x=mg+(nova?0:ci*(colW+gapMm))+((nova?cw:colW)-w)/2;
+        doc.addImage(crop(cG,r.x*ex,r.y*ex,r.w*ex,r.h*ex),"JPEG",x,colY[ci],w,h);
+        colY[ci]+=h+gapMm;primeiro=false;
+      });
+      y=Math.max.apply(null,colY)+2;
+      if(cL){var il=img(cL,cw);if(y+il.h>LIM)y=novaPag();doc.addImage(il.d,"JPEG",mg,y,il.w,il.h);}
+      K.finalizar("balanceamento-producao-"+pap+"-"+(ori==="portrait"?"retrato":"paisagem")+"-"+hoje()+".pdf");
+      fim();balFechar();
+    });
+  }).catch(function(e){console.error(e);fim();
+    if(confirm("Não foi possível fotografar a tela (verifique a internet). Gerar no layout padrão?"))gerarBalPDFVet();});
+}
+function gerarBalPDFVet(){
   if(!(window.jspdf&&window.jspdf.jsPDF)){alert("A biblioteca de PDF ainda esta carregando. Aguarde alguns segundos e tente novamente.");return;}
   var ori=_radio("balp-ori")||"landscape",pap=_radio("balp-pap")||"a4";
   var nova=!!(document.getElementById("balp-nova")&&document.getElementById("balp-nova").checked);
