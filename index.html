@@ -8611,11 +8611,11 @@ function gerarBalPDFTab(){
     {h:"DIF.",k:"dp",p:.8,al:"c",cor:function(r){return r._dpc;}},
     {h:"HORAS PREVISTAS",k:"h",p:1.2,al:"r",b:true,cor:function(r){return r._hc;}},{h:"META HORAS",k:"mh",p:1.2,al:"r"},
     {h:"DIF. HORAS",k:"dh",p:1.1,al:"r",cor:function(r){return r._dhc;}},{h:"% ATEND. HORAS",k:"at",p:1,al:"r"},
-    sc?{h:"CUSTO MENSAL",k:"cu",p:1.3,al:"r",cor:function(){return C.b;}}:null]);
-  function resRow(lb,p,mp,h,mh,cu,tc,tot){
+    {h:"SALÁRIO BASE",k:"sa",p:1.25,al:"r"},{h:"ENCARGOS",k:"en",p:1.2,al:"r"},{h:"VALOR TOTAL",k:"cu",p:1.3,al:"r",b:true,cor:function(){return C.b;}}]);
+  function resRow(lb,p,mp,h,mh,cu,tc,tot,sa){sa=sa||0;
     return {t:lb,p:p,mp:typeof mp==="number"?mp:"—",dp:dif(p,mp),_dpc:difCor(p,mp),_pc:difCor(p,mp,C.txt),
       h:fmtH(h),mh:typeof mh==="number"?fmtH(mh):"—",dh:dif(h,mh,true),_dhc:difCor(h,mh),_hc:difCor(h,mh,C.txt),
-      at:typeof mh==="number"&&mh>0?pct1(h/mh*100):"—",cu:fmtBRL(cu||0),_tc:tc,_total:!!tot,_grand:!!tot};
+      at:typeof mh==="number"&&mh>0?pct1(h/mh*100):"—",sa:fmtBRL(sa),en:fmtBRL((cu||0)-sa),cu:fmtBRL(cu||0),_tc:tc,_total:!!tot,_grand:!!tot};
   }
   y=K.header();
   K.section("Indicadores gerais",y);y+=3.5;
@@ -8631,23 +8631,23 @@ function gerarBalPDFTab(){
   ks.forEach(function(k,i){var r=Math.floor(i/nk),c=i%nk;K.kpi(mg+c*(kw+gap),y+r*(kh+gap),kw,kh,k[0],k[1],k[2],k[3]);});
   y+=Math.ceil(ks.length/nk)*(kh+gap)+5;
   K.section("Resumo por turno",y);y+=3;
-  var rt=T.map(function(t){return resRow(t,G[t].p,G[t].mp,G[t].h,G[t].mh,G[t].cu,rgb(S.corT[t]));});
-  rt.push(resRow("TOTAL",tt.p,tt.mp,tt.h,tt.mh,tt.cu,null,true));
+  var rt=T.map(function(t){return resRow(t,G[t].p,G[t].mp,G[t].h,G[t].mh,G[t].cu,rgb(S.corT[t]),false,G[t].sa);});
+  rt.push(resRow("TOTAL",tt.p,tt.mp,tt.h,tt.mh,tt.cu,null,true,tt.sa));
   y=K.table(y,resCols,rt,{rh:rh,fs:fs,titulo:"Resumo por turno"})+7;
   var CI=S.lista.map(function(g){
-    var ps=S.por[g.id]||[],o={g:g,t:{},p:ps.length,h:0,cu:0,mp:null,mh:null};
+    var ps=S.por[g.id]||[],o={g:g,t:{},p:ps.length,h:0,cu:0,sa:0,mp:null,mh:null};
     T.forEach(function(t){
       var pt=ps.filter(function(e){return balTurno(e)===t;}).sort(function(a,b){return a.nome.localeCompare(b.nome);});
-      var m=g.metas&&g.metas[t]||{},ht=pt.reduce(function(a,e){return a+balHoras(e,S.c);},0),ct=pt.reduce(function(a,e){return a+(S.cu[e.id]||0);},0);
-      o.t[t]={ps:pt,h:ht,cu:ct,mp:m.p,mh:m.h};o.h+=ht;o.cu+=ct;
+      var m=g.metas&&g.metas[t]||{},ht=pt.reduce(function(a,e){return a+balHoras(e,S.c);},0),ct=pt.reduce(function(a,e){return a+(S.cu[e.id]||0);},0),st=pt.reduce(function(a,e){return a+(S.sa[e.id]||0);},0);
+      o.t[t]={ps:pt,h:ht,cu:ct,sa:st,mp:m.p,mh:m.h};o.h+=ht;o.cu+=ct;o.sa+=st;
       if(typeof m.p==="number")o.mp=(o.mp||0)+m.p;if(typeof m.h==="number")o.mh=(o.mh||0)+m.h;
     });
     return o;
   });
   espaco(24);
   K.section("Resumo por C.C. Infomódulus",y);y+=3;
-  var rc=CI.map(function(o){return resRow(o.g.nome,o.p,o.mp,o.h,o.mh,o.cu,null);});
-  rc.push(resRow("TOTAL",tt.p,tt.mp,tt.h,tt.mh,tt.cu,null,true));
+  var rc=CI.map(function(o){return resRow(o.g.nome,o.p,o.mp,o.h,o.mh,o.cu,null,false,o.sa);});
+  rc.push(resRow("TOTAL",tt.p,tt.mp,tt.h,tt.mh,tt.cu,null,true,tt.sa));
   y=K.table(y,resCols.map(function(c,i){return i===0?Object.assign({},c,{h:"C.C. INFOMÓDULUS"}):c;}),rc,{rh:rh,fs:fs,titulo:"Resumo por C.C. Infomódulus"})+7;
   if(cont==="completo"){
     var detCols=W([{h:"TURNO",k:"t",p:1.2,b:true,cor:function(r){return r._tc||C.txt;}},{h:"COLABORADOR",k:"n",p:2.6,b:true,cor:function(){return C.ink;}},
@@ -8658,8 +8658,8 @@ function gerarBalPDFTab(){
       var cor=o.g.sem?C.mut:o.g.tipo==="terceiro"?C.pur:C.b;
       K.section(o.g.nome+"  ·  "+o.p+" colaborador"+(o.p!==1?"es":"")+"  ·  "+fmtH(o.h)+(sc?"  ·  "+fmtBRL(o.cu):""),y,cor);y+=3;
       var rr=T.filter(function(t){var x=o.t[t];return x.ps.length||typeof x.mp==="number"||typeof x.mh==="number";})
-        .map(function(t){var x=o.t[t];return resRow(t,x.ps.length,x.mp,x.h,x.mh,x.cu,rgb(S.corT[t]));});
-      rr.push(resRow("TOTAL",o.p,o.mp,o.h,o.mh,o.cu,null,true));
+        .map(function(t){var x=o.t[t];return resRow(t,x.ps.length,x.mp,x.h,x.mh,x.cu,rgb(S.corT[t]),false,x.sa);});
+      rr.push(resRow("TOTAL",o.p,o.mp,o.h,o.mh,o.cu,null,true,o.sa));
       y=K.table(y,resCols,rr,{rh:rh,fs:fs,titulo:o.g.nome,cor:cor})+4;
       var lin=[];
       T.forEach(function(t){
@@ -8672,7 +8672,7 @@ function gerarBalPDFTab(){
   }
   espaco(12);
   K.font(6.8);K.txt(C.mut);
-  doc.text(doc.splitTextToSize("Horas previstas por colaborador no mês = padrão ("+fmtH(S.c.hPad)+"), padrão do turno ou valor individual (em azul). Realizado x meta: vermelho = acima da meta, verde = dentro da meta."+(sc?" Custo = custo empresa mensal de "+fmtM(curMes())+".":"")+" C.C. ocultos na tela não entram no relatório. Considera colaboradores ativos e não afastados.",cw),mg,y+2);
+  doc.text(doc.splitTextToSize("Horas previstas por colaborador no mês = padrão ("+fmtH(S.c.hPad)+"), padrão do turno ou valor individual (em azul). Realizado x meta: vermelho = acima da meta, verde = dentro da meta."+" Valores de "+fmtM(curMes())+": salário base + encargos (INSS, FGTS, férias, 13º e benefícios) = valor total (custo empresa)."+" C.C. ocultos na tela não entram no relatório. Considera colaboradores ativos e não afastados.",cw),mg,y+2);
   K.finalizar("balanceamento-producao-"+pap+"-"+(ori==="portrait"?"retrato":"paisagem")+"-"+hoje()+".pdf");
   balFechar();
 }
