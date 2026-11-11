@@ -5969,10 +5969,13 @@ function pcCalc(m){
   var inCl=days.map(function(dy){return inatTp(dy.ds,"clt");}),inPj=days.map(function(dy){return inatTp(dy.ds,"pj");});
   var inat=linha("inat","Inativos","inat",days.map(function(dy){return inatTp(dy.ds);}),true);
   rows.push(inat);
-  var clt=days.map(function(dy,i){return inCl[i]+catRows.filter(function(x){return x.tipo==="clt";}).reduce(function(a,x){return a+x.vals[i];},0);});
+  // colaboradores ocultos na tela "Total registrados CLT" saem do total
+  var ocTc={};pcpOcList("tclt").forEach(function(id){ocTc[id]=1;});
+  var ocCl=days.map(function(dy){return DB.emp.filter(function(e){return ocTc[e.id]&&!e.pcFora&&pcConta(e,dy.ds)&&(tipoCat[pcCatNome(e)]||"clt")==="clt";}).length;});
+  var clt=days.map(function(dy,i){return inCl[i]-ocCl[i]+catRows.filter(function(x){return x.tipo==="clt";}).reduce(function(a,x){return a+x.vals[i];},0);});
   var cpj=days.map(function(dy,i){return clt[i]+inPj[i]+catRows.filter(function(x){return x.tipo==="pj";}).reduce(function(a,x){return a+x.vals[i];},0);});
   var semI=cpj.map(function(v,i){return v-inat.vals[i];});
-  rows.push({key:"tclt",label:"TOTAL REGISTRADOS CLT",kind:"tot",vals:clt,bold:true,add:inCl});
+  rows.push({key:"tclt",label:"TOTAL REGISTRADOS CLT",kind:"tot",vals:clt,bold:true,add:inCl,oc:ocCl});
   rows.push({key:"tpj",label:"TOTAL REGISTRADOS + TERCEIRIZADOS PJ",kind:"tot",vals:cpj,bold:true,add:inPj});
   rows.push({key:"tsi",label:"TOTAL REGISTRADOS + TERCEIRIZADOS PJ - INATIVOS",kind:"tot",vals:semI,bold:true,big:true});
   // ausencias: faltas lancadas no dia + afastados no dia
@@ -6453,7 +6456,7 @@ function pcXLSX(C,ori){
         var L=colL(i+2),cell=row.getCell(i+2),v=r.vals[i],f=null;
         function R(k){return L+rowN[k];}
         if(r.kind==="sub"){var mem=catKeys.filter(function(x){return x.sub===r.key.slice(4);});f=mem.map(function(x){return R(x.key);}).join("+")||"0";}
-        else if(r.key==="tclt"){var a=catKeys.filter(function(x){return x.tipo==="clt";});f=(a.length?a.map(function(x){return R(x.key);}).join("+"):"0")+(r.add&&r.add[i]?"+"+r.add[i]:"");}
+        else if(r.key==="tclt"){var a=catKeys.filter(function(x){return x.tipo==="clt";});f=(a.length?a.map(function(x){return R(x.key);}).join("+"):"0")+(r.add&&r.add[i]?"+"+r.add[i]:"")+(r.oc&&r.oc[i]?"-"+r.oc[i]:"");}
         else if(r.key==="tpj"){var b=catKeys.filter(function(x){return x.tipo==="pj";});f=R("tclt")+(b.length?"+"+b.map(function(x){return R(x.key);}).join("+"):"")+(r.add&&r.add[i]?"+"+r.add[i]:"");}
         else if(r.key==="tsi")f=R("tpj")+"-"+R("inat");
         else if(r.key==="npc")f=R("tsi")+"-"+R("aus");
@@ -8885,8 +8888,8 @@ function pcpLista(key,ds){
     return {e:e,st:st};
   }).sort(function(a,b){return pcCatNome(a.e).localeCompare(pcCatNome(b.e))||a.e.nome.localeCompare(b.e.nome);});
 }
-function pcPessoas(key,d){pcpEst={key:key,d:+d,mod:{},q:"",verOc:false};pcpRender();}
-// Ocultar colaborador SO na lista desta tela (ex.: Total registrados CLT). Nao muda os numeros da analise.
+function pcPessoas(key,d){pcpEst={key:key,d:+d,mod:{},q:"",verOc:true};pcpRender();}
+// Ocultar colaborador na tela Total registrados CLT: continua na lista (riscado) e sai do total da analise.
 var PCP_OC_KEYS=["tclt"];
 function pcpOcTem(key){return PCP_OC_KEYS.indexOf(key)>=0;}
 function pcpOcList(key){var c=pcGet("cfg");return (c&&c.pcpOc&&c.pcpOc[key])||[];}
@@ -8896,7 +8899,7 @@ function pcpOcultar(id,on){
   var d=pcDoc("cfg",{cats:[],dias:{}});d.pcpOc=Object.assign({},d.pcpOc||{});
   var l=(d.pcpOc[E.key]||[]).filter(function(x){return x!==id;});if(on)l.push(id);
   if(l.length)d.pcpOc[E.key]=l;else delete d.pcpOc[E.key];
-  dbSave();pcpRender();
+  dbSave();pcpRender();if(pg==="percap")rPercap();
 }
 function pcpVerOc(){if(pcpEst){pcpEst.verOc=!pcpEst.verOc;pcpRender();}}
 function pcpFechar(forcar){
@@ -8916,10 +8919,12 @@ function pcpRender(){
   if(E.key.indexOf("qt:")===0){var qp=E.key.slice(3).split("|"),qr=pcqResumo(ds).rows.find(function(r){return r.nome===qp[0];});
     lb=(qp[0]==="_tot"?"Industriais Diretos - Total":qr?qr.lb:qp[0])+" · "+(qp[1]==="CLT"?"CLT":qp[1]==="_tot"?"CLT + terceirizados":qp[1]);}
   var L=pcpLista(E.key,ds),ed=pcpPodeEditar(),cm=curMes();
-  var vTab=row?row.vals[E.d-1]:null,vSys=row&&row.sys?row.sys[E.d-1]:L.length,editado=!!(row&&row.ed&&row.ed[E.d-1]);
+  var ocK={};if(pcpOcTem(E.key))pcpOcList(E.key).forEach(function(id){ocK[id]=1;});
+  var LC=L.filter(function(x){return !ocK[x.e.id];});
+  var vTab=row?row.vals[E.d-1]:null,vSys=row&&row.sys?row.sys[E.d-1]:LC.length,editado=!!(row&&row.ed&&row.ed[E.d-1]);
   var podeAj=!!(row&&row.edit&&row.key!=="prod")&&!(ACESSO&&permTela("percap")!=="editar");
-  var nPJ=L.filter(function(x){return empVinc(x.e)==="MEI";}).length,cu=L.reduce(function(a,x){return a+(custoNoMes(x.e,cm)||0);},0);
-  var nAf=L.filter(function(x){return x.st.some(function(s){return s[0]==="af"||s[0]==="fa"||s[0]==="in";});}).length;
+  var nPJ=LC.filter(function(x){return empVinc(x.e)==="MEI";}).length,cu=LC.reduce(function(a,x){return a+(custoNoMes(x.e,cm)||0);},0);
+  var nAf=LC.filter(function(x){return x.st.some(function(s){return s[0]==="af"||s[0]==="fa"||s[0]==="in";});}).length;
   var catsN=pcCats().filter(function(c){return c.nome!=="(Sem categoria)";}).map(function(c){return c.nome;});
   var ccs=ccOrd(),gs=gruposOrd(),hors={};DB.emp.forEach(function(e){if(e.horario)hors[e.horario]=1;});
   function opt(v,lb,sel){return "<option value='"+esc(v)+"'"+(v===sel?" selected":"")+">"+esc(lb)+"</option>";}
@@ -8947,7 +8952,7 @@ function pcpRender(){
       +"<td><select class='"+chg(e,"grupo")+"' onchange=\"pcpSet('"+e.id+"','grupo',this.value)\""+dis+">"+opt("","(Sem C.C. Infomódulus)",gSel)+gs.map(function(g){return opt(g.id,g.nome,gSel);}).join("")+"</select></td>"
       +"<td><input type='text' list='pcp-hors' class='"+chg(e,"horario")+"' value='"+esc(val(e,"horario"))+"' placeholder='—' onchange=\"pcpSet('"+e.id+"','horario',this.value.trim().toUpperCase())\""+dis+" style='min-width:110px'/></td>"
       +"<td>"+(pj?"<span class='pcp-st pj'>PJ</span> ":"")+x.st.map(function(s){return "<span class='pcp-st "+s[0]+"'>"+s[1]+"</span>";}).join(" ")+"</td>"
-      +(temOc?"<td class='c'><label class='pcp-oc' title='"+(oc?"Voltar a mostrar nesta tela":"Ocultar somente nesta tela (não muda os números da análise)")+"'><input type='checkbox'"+(oc?" checked":"")+(podeOc?"":" disabled")+" onchange=\"pcpOcultar('"+e.id+"',this.checked)\"/>"+(oc?"Oculto":"")+"</label></td>":"")
+      +(temOc?"<td class='c'><label class='pcp-oc' title='"+(oc?"Voltar a mostrar nesta tela":"Ocultar: continua na lista riscado e deixa de contar no total")+"'><input type='checkbox'"+(oc?" checked":"")+(podeOc?"":" disabled")+" onchange=\"pcpOcultar('"+e.id+"',this.checked)\"/>"+(oc?"Oculto":"")+"</label></td>":"")
       +"<td class='act'>"+(ed?"<button class='ibedt' title='Editar cadastro completo' onclick=\"pcpEditar('"+e.id+"')\"><i class='ti ti-edit'></i></button>":"")
       +(ed?"<button class='ibdel' title='Não contar no quadro da Análise per capita' onclick=\"pcpFora('"+e.id+"')\"><i class='ti ti-eye-off'></i></button>":"")
       +"<button class='ibdos' title='Dossiê do colaborador (PDF)' onclick=\"abrirDossie('"+e.id+"')\"><i class='ti ti-id-badge-2'></i></button></td></tr>";
@@ -8958,7 +8963,7 @@ function pcpRender(){
     +(podeAj?"<span style='flex:1'></span><input type='text' inputmode='numeric' id='pcp-aj' value='"+pcFmt(row,vTab)+"'/><button class='btnp' onclick='pcpAjuste(false)'>Salvar ajuste</button><button class='btng' onclick='pcpAjuste(true)'>Voltar ao sistema</button>":"")+"</div>";
   else if(podeAj)aj="<div class='pcp-aj info'><i class='ti ti-adjustments'></i><span>Precisa de outro número na análise deste dia sem mudar o cadastro?</span><span style='flex:1'></span>"
     +"<input type='text' inputmode='numeric' id='pcp-aj' value='"+pcFmt(row,vTab)+"'/><button class='btng' onclick='pcpAjuste(false)'>Ajustar valor do dia</button></div>";
-  else if(row&&vTab!==L.length&&row.kind!=="cat")aj="<div class='pcp-aj info'><i class='ti ti-info-circle'></i><span>O valor da análise (<b>"+pcFmt(row,vTab)+"</b>) considera ajustes manuais feitos em outras linhas deste dia.</span></div>";
+  else if(row&&vTab!==LC.length&&row.kind!=="cat")aj="<div class='pcp-aj info'><i class='ti ti-info-circle'></i><span>O valor da análise (<b>"+pcFmt(row,vTab)+"</b>) considera ajustes manuais feitos em outras linhas deste dia.</span></div>";
   var div=document.getElementById("md-pcp"),st=0;
   if(div){var w0=div.querySelector(".pcp-wrap");st=w0?w0.scrollTop:0;div.remove();}
   div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcp";div.style.zIndex="9500";
@@ -8969,8 +8974,8 @@ function pcpRender(){
     +"<button class='mdl-x' onclick='pcpFechar()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
     +"<div class='mdl-bd'>"
     +"<div class='pcp-kpis'>"
-    +"<div class='pcp-k'><span>Colaboradores</span><b>"+L.length+"</b><small>"+(L.length-nPJ)+" CLT &middot; "+nPJ+" PJ</small></div>"
-    +"<div class='pcp-k' style='--c:"+(editado?"#e6a817":"#1a7a4a")+"'><span>Valor na análise</span><b>"+(row?pcFmt(row,vTab):L.length)+"</b><small>"+(editado?"ajuste manual":"igual ao cadastro")+"</small></div>"
+    +"<div class='pcp-k'><span>Colaboradores</span><b>"+LC.length+"</b><small>"+(LC.length-nPJ)+" CLT &middot; "+nPJ+" PJ"+(nOc?" &middot; "+nOc+" oculto"+(nOc>1?"s":""):"")+"</small></div>"
+    +"<div class='pcp-k' style='--c:"+(editado?"#e6a817":"#1a7a4a")+"'><span>Valor na análise</span><b>"+(row?pcFmt(row,vTab):LC.length)+"</b><small>"+(editado?"ajuste manual":"igual ao cadastro")+"</small></div>"
     +"<div class='pcp-k' style='--c:#c0392b'><span>Inativos / ausentes</span><b>"+nAf+"</b><small>no dia "+String(E.d).padStart(2,"0")+"</small></div>"
     +"<div class='pcp-k' style='--c:#0A1F4A'><span>Custo mensal</span><b style='font-size:16px'>"+fmtBRL(cu)+"</b><small>custo empresa de "+fmtM(cm)+"</small></div></div>"
     +aj
