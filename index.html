@@ -5969,11 +5969,11 @@ function pcCalc(m){
   var inCl=days.map(function(dy){return inatTp(dy.ds,"clt");}),inPj=days.map(function(dy){return inatTp(dy.ds,"pj");});
   var inat=linha("inat","Inativos","inat",days.map(function(dy){return inatTp(dy.ds);}),true);
   rows.push(inat);
-  // colaboradores ocultos na tela "Total registrados CLT" saem do total
+  // colaboradores ocultos na tela "Total registrados CLT" saem so dessa linha (os demais totais nao mudam)
   var ocTc={};pcpOcList("tclt").forEach(function(id){ocTc[id]=1;});
   var ocCl=days.map(function(dy){return DB.emp.filter(function(e){return ocTc[e.id]&&!e.pcFora&&pcConta(e,dy.ds)&&(tipoCat[pcCatNome(e)]||"clt")==="clt";}).length;});
   var clt=days.map(function(dy,i){return inCl[i]-ocCl[i]+catRows.filter(function(x){return x.tipo==="clt";}).reduce(function(a,x){return a+x.vals[i];},0);});
-  var cpj=days.map(function(dy,i){return clt[i]+inPj[i]+catRows.filter(function(x){return x.tipo==="pj";}).reduce(function(a,x){return a+x.vals[i];},0);});
+  var cpj=days.map(function(dy,i){return clt[i]+ocCl[i]+inPj[i]+catRows.filter(function(x){return x.tipo==="pj";}).reduce(function(a,x){return a+x.vals[i];},0);});
   var semI=cpj.map(function(v,i){return v-inat.vals[i];});
   rows.push({key:"tclt",label:"TOTAL REGISTRADOS CLT",kind:"tot",vals:clt,bold:true,add:inCl,oc:ocCl});
   rows.push({key:"tpj",label:"TOTAL REGISTRADOS + TERCEIRIZADOS PJ",kind:"tot",vals:cpj,bold:true,add:inPj});
@@ -6457,7 +6457,7 @@ function pcXLSX(C,ori){
         function R(k){return L+rowN[k];}
         if(r.kind==="sub"){var mem=catKeys.filter(function(x){return x.sub===r.key.slice(4);});f=mem.map(function(x){return R(x.key);}).join("+")||"0";}
         else if(r.key==="tclt"){var a=catKeys.filter(function(x){return x.tipo==="clt";});f=(a.length?a.map(function(x){return R(x.key);}).join("+"):"0")+(r.add&&r.add[i]?"+"+r.add[i]:"")+(r.oc&&r.oc[i]?"-"+r.oc[i]:"");}
-        else if(r.key==="tpj"){var b=catKeys.filter(function(x){return x.tipo==="pj";});f=R("tclt")+(b.length?"+"+b.map(function(x){return R(x.key);}).join("+"):"")+(r.add&&r.add[i]?"+"+r.add[i]:"");}
+        else if(r.key==="tpj"){var b=catKeys.filter(function(x){return x.tipo==="pj";});var tc=C.rows.find(function(x){return x.key==="tclt";});f=R("tclt")+(tc&&tc.oc&&tc.oc[i]?"+"+tc.oc[i]:"")+(b.length?"+"+b.map(function(x){return R(x.key);}).join("+"):"")+(r.add&&r.add[i]?"+"+r.add[i]:"");}
         else if(r.key==="tsi")f=R("tpj")+"-"+R("inat");
         else if(r.key==="npc")f=R("tsi")+"-"+R("aus");
         else if(r.key==="pc")f="IF(AND(N("+R("prod")+")>0,"+R("npc")+">0),"+R("prod")+"/"+R("npc")+",\"\")";
