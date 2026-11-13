@@ -192,7 +192,7 @@ input:focus-visible,select:focus-visible{outline:none}
 
 /* Loading / Login */
 #loading-screen .lg-load{width:230px;height:auto;color:#fff}
-#lgw{min-height:100vh;background:var(--steel) var(--metal);align-items:center;justify-content:center;padding:1rem;position:relative}
+#lgw{min-height:100vh;background:var(--deep);align-items:center;justify-content:center;padding:1rem;position:relative}
 #lgw::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--deep),var(--blue))}
 .lg-card{background:#fff;border-radius:14px;width:360px;max-width:100%;padding:2.25rem 2.25rem 1.75rem;box-shadow:0 30px 80px rgba(0,0,0,.45);position:relative;z-index:1}
 .lg-brand{text-align:center;margin-bottom:1.75rem}
@@ -6032,7 +6032,7 @@ function rPercap(){
       var cl=dy.fer?"fer":dy.fim?"fds":"";if(dy.trab&&(dy.fim||dy.fer))cl+=" trab";
       return "<th class='pc-d "+cl+"' onclick=\"pcDiaModal('"+dy.ds+"')\" title='"+esc((dy.fer?"Feriado: "+dy.fer+" · ":"")+(dy.trab?"Dia trabalhado":"Nao trabalha")+" · clique para alterar")+"'><div>"+dy.d+"</div><small>"+DSEM[dy.dw]+"</small></th>";}).join("")
     +(uDia?"":"<th class='pc-tot'>MES</th>")+"</tr>";
-  var body=C.rows.map(function(r){
+  var body=C.rows.filter(function(r){return r.key!=="mdia";}).map(function(r){
     var cls="pc-r k-"+r.kind+(r.bold?" b":"")+(r.big?" big":"")+(r.red?" red":"");
     return "<tr class='"+cls+"'><td class='pc-lb'>"+(r.kind==="cat"&&!ro&&r.label!=="(Sem categoria)"?"<span class='pc-ednm' title='Editar nome' onclick='pcCatsModal()'><i class='ti ti-pencil'></i></span><span class='pc-ednm' title='Ocultar nesta tabela (não altera o Quadro de Funcionários; os totais continuam contando)' data-n='"+esc(r.label)+"' onclick='pcCatOcultar(this.dataset.n,\"T\")'><i class='ti ti-eye-off'></i></span>":"")+esc(r.label)+(r.sub2?"<small>"+esc(r.sub2)+"</small>":"")+(r.tipo==="fora"?" <span class='pc-tag'>nao soma</span>":r.tipo==="pj"?" <span class='pc-tag pj'>PJ</span>":"")+"</td>"
       +C.days.map(function(dy,i){if(!vis(i))return "";
@@ -6059,12 +6059,8 @@ function rPercap(){
     +"<button class='btng btn-ic' onclick=\"pcRelModal('xlsx')\"><i class='ti ti-file-spreadsheet'></i>Excel</button></div></div>"
     +"<div class='card' style='padding:.75rem .85rem'>"
     +"<div class='pc-bar'>"
-    +"<label>Meta per capita do mes (R$)<input type='text' inputmode='decimal' id='pc-meta' value='"+(C.meta!==null?fmtNum(C.meta):"")+"' placeholder='0,00' onchange='pcSetMeta()' "+(ro?"disabled":"")+"/></label>"
-    +"<label>Meta de produção do mês<input type='text' inputmode='decimal' id='pc-mprod' value='"+(C.metaProd!==null?C.metaProd.toLocaleString("pt-BR"):"")+"' placeholder='Ex: 480.000' title='Usada no TOTAL PER CAPITA: meta ÷ dias trabalhados ÷ total registrados + PJ - inativos' onchange='pcSetMeta()' "+(ro?"disabled":"")+"/></label>"
-    +"<label>Dias trabalhados<input type='text' inputmode='decimal' id='pc-dias' value='"+(typeof C.md.dias==="number"?fmtDias(C.md.dias):"")+"' placeholder='"+C.diasAuto+" (auto)' onchange='pcSetMeta()' "+(ro?"disabled":"")+"/></label>"
-    +"<div class='pc-kpi'><span>Meta dia per capita</span><b>"+(C.metaDia!==null?fmtBRL(C.metaDia):"—")+"</b></div>"
-    +"<div class='pc-kpi'><span>Media per capita no mes</span><b style='color:"+(C.rows.find(function(r){return r.key==="avg";}).tot!==null&&C.metaDia!==null&&C.rows.find(function(r){return r.key==="avg";}).tot>=C.metaDia?"#1a7a4a":"#c0392b")+"'>"+(function(){var t=C.rows.find(function(r){return r.key==="avg";}).tot;return t!==null?fmtBRL(t):"—";})()+"</b></div>"
-    +(uDia?"<div class='pc-kpi'><span>Per capita do dia "+String(dSel).padStart(2,"0")+"</span><b>"+(function(){var r=C.rows.find(function(x){return x.key==="pc";}),v=r.vals[dSel-1];return v!==null?fmtBRL(v):"—";})()+"</b></div>":"")+"<div class='pc-leg'><span class='lg fds'></span>Sabado/domingo<span class='lg fer'></span>Feriado<span class='lg trab'></span>Fim de semana/feriado trabalhado<span class='lg ed'></span>Valor editado</div></div>"
+    +"<button class='btng btn-ic' onclick='pcMetasModal()' title='Meta de produção e dias trabalhados por mês'><i class='ti ti-pencil'></i>Editar metas de produção</button>"
+    +"<div class='pc-leg'><span class='lg fds'></span>Sabado/domingo<span class='lg fer'></span>Feriado<span class='lg trab'></span>Fim de semana/feriado trabalhado<span class='lg ed'></span>Valor editado</div></div>"
     +"<div class='"+(uDia?"pcq-lay":"")+"'><div class='"+(uDia?"pcq-l":"")+"'>"
     +"<div class='xs-top'><div></div></div><div class='etab-wrap xs-wrap pc-wrap'><table class='pc-tab"+(uDia?" pc-um":"")+"'><thead>"+head+"</thead><tbody>"+body+"</tbody></table></div>"
     +"<div style='"+(uDia?"":"max-width:640px")+"'>"+pcqResumoHTML(C,dSel-1)+"</div>"
@@ -6092,14 +6088,60 @@ function pcSet(el){
 }
 function pcRerender(){var w=document.querySelector("#p-percap .xs-wrap"),sl=w?w.scrollLeft:0,st=w?w.scrollTop:0;rPercap();var w2=document.querySelector("#p-percap .xs-wrap");if(w2){w2.scrollLeft=sl;w2.scrollTop=st;}}
 function pcSetMeta(){
-  var md=pcDoc("m-"+pcMes(),{prod:{},ov:{}}),mt=gv("pc-meta").trim(),di=gv("pc-dias").trim(),mp=gv("pc-mprod").trim();
-  var vp=mp===""?null:parseBRL(mp);if(vp!==null&&(isNaN(vp)||vp<0)){alert("Informe uma meta de producao valida.");return;}
-  if(vp===null)delete md.metaProd;else md.metaProd=+vp.toFixed(2);
-  var vm=mt===""?null:parseBRL(mt),vd=di===""?null:parseBRL(di);
-  if((vm!==null&&(isNaN(vm)||vm<0))||(vd!==null&&(isNaN(vd)||vd<=0))){alert("Informe um valor valido.");return;}
+  var md=pcDoc("m-"+pcMes(),{prod:{},ov:{}}),mt=gv("pc-meta").trim();
+  var vm=mt===""?null:parseBRL(mt);
+  if(vm!==null&&(isNaN(vm)||vm<0)){alert("Informe um valor valido.");return;}
   if(vm===null)delete md.meta;else md.meta=+vm.toFixed(2);
-  if(vd===null)delete md.dias;else md.dias=vd;
   dbSave();pcRerender();
+}
+// Tabela de metas por mes: meta de producao (000.000) e dias trabalhados, jan a dez
+var pcMtAno=null,pcMtEd=false;
+function pcFmtInt(v){return (+v).toLocaleString("pt-BR",{maximumFractionDigits:0});}
+function pcParseInt(t){t=String(t||"").replace(/\s|R\$/g,"");if(t==="")return null;t=t.replace(/\./g,"").replace(",",".");var n=parseFloat(t);return isNaN(n)?NaN:Math.round(n);}
+function pcDiasAutoMes(m){var nd=+fimMesStr(m).slice(8),c=0;for(var i=1;i<=nd;i++){if(pcDiaInfo(m+"-"+String(i).padStart(2,"0")).trab)c++;}return c;}
+function pcMetasModal(ano,ed){
+  pcFechar("md-pcmt");
+  pcMtAno=ano||pcMtAno||pcMes().slice(0,4);pcMtEd=!!ed;
+  var y=pcMtAno,ro=!!ACESSO&&permTela("percap")!=="editar";if(ro)pcMtEd=false;
+  var a0=+curMes().slice(0,4),ys={};for(var k=a0-2;k<=a0+1;k++)ys[k]=1;ys[+y]=1;
+  var tm=0,td=0;
+  var lin=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map(function(nm,i){
+    var m=y+"-"+String(i+1).padStart(2,"0"),md=pcGet("m-"+m)||{},au=pcDiasAutoMes(m);
+    var mp=typeof md.metaProd==="number"&&md.metaProd>0?md.metaProd:null,di=typeof md.dias==="number"&&md.dias>0?md.dias:null;
+    tm+=mp||0;td+=di!==null?di:au;
+    if(pcMtEd)return "<tr><td>"+nm+"</td>"
+      +"<td class='r'><input type='text' inputmode='numeric' class='pcmt-mp' data-m='"+m+"' value='"+(mp!==null?pcFmtInt(mp):"")+"' placeholder='000.000' style='text-align:right' onfocus='this.select()' onblur=\"var n=pcParseInt(this.value);if(n!==null&&!isNaN(n))this.value=pcFmtInt(n);\"/></td>"
+      +"<td class='r'><input type='text' inputmode='decimal' class='pcmt-di' data-m='"+m+"' value='"+(di!==null?fmtDias(di):"")+"' placeholder='"+au+" (auto)' style='text-align:right' onfocus='this.select()'/></td></tr>";
+    return "<tr><td>"+nm+"</td><td class='r'>"+(mp!==null?pcFmtInt(mp):"<span style='color:#aab'>—</span>")+"</td><td class='r'>"+(di!==null?fmtDias(di):"<span style='color:#99a' title='Calculado pelo calendario'>"+au+" (auto)</span>")+"</td></tr>";
+  }).join("");
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcmt";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' style='width:520px'><div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-table'></i>Meta de produção e dias trabalhados</div>"
+    +"<button class='mdl-x' onclick=\"pcFechar('md-pcmt')\"><i class='ti ti-x'></i></button></div><div class='mdl-bd'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;gap:8px'><div class='mes-fil'><i class='ti ti-calendar'></i><select id='pcmt-ano' "+(pcMtEd?"disabled":"")+" onchange='pcMetasModal(this.value,false)'>"+Object.keys(ys).sort().map(function(a){return "<option"+(a===y?" selected":"")+">"+a+"</option>";}).join("")+"</select></div>"
+    +(ro||pcMtEd?"":"<button class='btng btn-ic' onclick=\"pcMetasModal(pcMtAno,true)\"><i class='ti ti-pencil'></i>Editar</button>")+"</div>"
+    +"<div class='etab-wrap'><table class='etab'><thead><tr><th style='cursor:default'>MÊS</th><th class='r' style='cursor:default'>META DE PRODUÇÃO DO MÊS</th><th class='r' style='cursor:default'>DIAS TRABALHADOS</th></tr></thead><tbody>"+lin
+    +"</tbody><tfoot><tr style='font-weight:700'><td>TOTAL "+y+"</td><td class='r'>"+pcFmtInt(tm)+"</td><td class='r'>"+fmtDias(td)+"</td></tr></tfoot></table></div>"
+    +"<div class='hint' style='margin-top:.5rem'>Dias trabalhados em branco = calculado pelo calendário (feriados e dias). Usados no TOTAL PER CAPITA: meta ÷ dias trabalhados ÷ total registrados + PJ - inativos.</div>"
+    +(pcMtEd?"<div class='mdl-ft'><button class='btng' onclick=\"pcMetasModal(pcMtAno,false)\">Cancelar</button><button class='btnp' onclick='pcMetasSalvar()'>Salvar</button></div>":"")
+    +"</div></div>";
+  document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcmt");});
+}
+function pcMetasSalvar(){
+  var mps=document.querySelectorAll("#md-pcmt .pcmt-mp"),dis=document.querySelectorAll("#md-pcmt .pcmt-di"),vals=[];
+  for(var i=0;i<mps.length;i++){
+    var m=mps[i].dataset.m,vp=pcParseInt(mps[i].value),t=dis[i].value.trim(),vd=t===""?null:parseBRL(t);
+    if(vp!==null&&(isNaN(vp)||vp<0)){alert("Meta de produção inválida em "+MOS[i]+".");mps[i].focus();return;}
+    if(vd!==null&&(isNaN(vd)||vd<=0||vd>31)){alert("Dias trabalhados inválido em "+MOS[i]+".");dis[i].focus();return;}
+    vals.push({m:m,vp:vp,vd:vd});
+  }
+  vals.forEach(function(x){
+    var md=pcGet("m-"+x.m);
+    if(!md&&x.vp===null&&x.vd===null)return;
+    md=md||pcDoc("m-"+x.m,{prod:{},ov:{}});
+    if(x.vp===null)delete md.metaProd;else md.metaProd=x.vp;
+    if(x.vd===null)delete md.dias;else md.dias=x.vd;
+  });
+  dbSave();pcMetasModal(pcMtAno,false);pcRerender();
 }
 // Dia: feriado e se trabalha
 function pcDiaModal(ds){
