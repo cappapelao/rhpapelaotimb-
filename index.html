@@ -6284,6 +6284,41 @@ function pcRelModal(fmt){
   document.body.appendChild(div);div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcrel");});
 }
 function pcGerar(fmt){var ori=_radio("pcr-ori")||"landscape",C=pcCalc(pcMes());if(fmt==="pdf"){if((_radio("pcr-lay")||"tela")==="tela")pcPDFTela(C,ori);else pcPDF(C,ori);}else pcXLSX(C,ori);}
+// Frases de RH motivacionais para o PDF da tela (muda conforme o dia do relatorio)
+var PC_FRASES=[
+ ["Os colaboradores são os primeiros clientes da empresa: cuide deles e eles cuidarão dos clientes.","Inspirado em Ian Hutchinson"],
+ ["Grandes resultados vêm de pessoas talentosas com liberdade para fazer o seu melhor.","Inspirado em Steve Jobs"],
+ ["O capital humano é o verdadeiro diferencial competitivo de uma organização.","Inspirado em Idalberto Chiavenato"],
+ ["O papel do líder é desenvolver talentos e preparar novas lideranças.","Inspirado em Abraham Lincoln"],
+ ["Pessoas motivadas transformam metas em resultados."],
+ ["Cada colaborador presente é parte essencial da produção do dia."],
+ ["Segurança em primeiro lugar: ninguém produz bem sem se sentir protegido."],
+ ["Equipe unida produz mais, erra menos e aprende junto."],
+ ["Reconhecer o esforço de hoje é investir no resultado de amanhã."],
+ ["Treinar pessoas é a forma mais segura de melhorar processos."],
+ ["Um bom ambiente de trabalho começa com respeito entre todos."],
+ ["Comunicação clara evita retrabalho e fortalece a equipe."],
+ ["A qualidade do produto começa na qualidade das relações de trabalho."],
+ ["Metas claras e acompanhadas todos os dias viram conquistas."],
+ ["Liderar é servir: o líder abre caminho para a equipe brilhar."],
+ ["Pequenas melhorias diárias geram grandes mudanças no ano."],
+ ["Presença e pontualidade são formas de respeito com o time."],
+ ["Quem se sente valorizado entrega o seu melhor."],
+ ["O conhecimento compartilhado multiplica a força da equipe."],
+ ["Feedback é presente: ajuda cada um a crescer."],
+ ["Organização no posto de trabalho é produtividade na prática."],
+ ["Cada peça bem feita leva o nome de toda a equipe."],
+ ["Desenvolver pessoas é a tarefa mais importante de quem lidera."],
+ ["Confiança se constrói com coerência, todos os dias."],
+ ["Ouvir quem está na linha de produção revela as melhores ideias."],
+ ["Resultados sustentáveis nascem de pessoas comprometidas."],
+ ["Cuidar da saúde e do bem-estar da equipe é cuidar da produção."],
+ ["Trabalho em equipe divide as tarefas e multiplica o sucesso."],
+ ["A disciplina de hoje é o resultado que comemoramos amanhã."],
+ ["Valorizar as pessoas é o primeiro passo para uma empresa forte."],
+ ["Juntos, cada dia de trabalho é um passo em direção à meta."]
+];
+function pcFraseDia(ds){var d=new Date(ds+"T12:00:00"),ini=new Date(d.getFullYear(),0,1,12),n=Math.round((d-ini)/864e5)+d.getFullYear();return PC_FRASES[n%PC_FRASES.length];}
 // PDF da tela completa (dia selecionado): indicadores, categorias, resumo por turno e quadro de funcionarios
 function pcPDFTela(C,ori){
   if(!(window.jspdf&&window.jspdf.jsPDF)){alert("As bibliotecas ainda estao carregando. Aguarde alguns segundos e tente novamente.");return;}
@@ -6342,13 +6377,25 @@ function pcPDFTela(C,ori){
     });
     return yy;
   }
+  // caixa com a frase do dia
+  function fraseBox(x,yy,w){
+    var f=pcFraseDia(ds),pad=3;
+    K.font(7.4,true);var ln=doc.splitTextToSize("\""+f[0]+"\"",w-pad*2-3);
+    var h=pad+3.6+ln.length*3.4+(f[1]?3.6:0)+pad-1;
+    if(yy+h>LIM)return yy;
+    K.fill([242,246,252]);doc.rect(x,yy,w,h,"F");K.fill(X.b);doc.rect(x,yy,1.4,h,"F");
+    K.font(5.8,true);K.txt(X.bl);doc.text("FRASE DO DIA",x+pad+1.5,yy+pad+1.2);
+    K.font(7.4,true);K.txt(X.ink);doc.text(ln,x+pad+1.5,yy+pad+5);
+    if(f[1]){K.font(5.8);K.txt(X.mut);doc.text(f[1],x+pad+1.5,yy+pad+5+ln.length*3.4);}
+    return yy+h;
+  }
   var yQ;
   if(ret){
     var w1=92,w2=cw-w1-5;
-    var a=catTabela(mg,y,w1),b=resTabela(mg+w1+5,y,w2);
+    var a=catTabela(mg,y,w1),b=resTabela(mg+w1+5,y,w2);b=fraseBox(mg+w1+5,b+5,w2);
     y=Math.max(a,b)+6;yQ={xL:mg,xR:mg+cw,yTop:y+6};
   }else{
-    var a2=catTabela(mg,y,LW);a2=resTabela(mg,a2+4,LW);
+    var a2=catTabela(mg,y,LW);a2=resTabela(mg,a2+4,LW);a2=fraseBox(mg,a2+6,LW);
     yQ={xL:mg+LW+5,xR:mg+cw,yTop:y+6};
   }
   // ---- quadro de funcionarios: mesma arrumacao da tela, ajustado para caber na pagina ----
