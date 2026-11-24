@@ -78,7 +78,7 @@ var _db = {
 };
 
 // Cada tabela em uma linha separada
-var COLECOES = ["emp","oc","pr","idx","cc","oc5","motivos","sensos","motdem","motafas","reaj","grupos","receita","folhafech","percap"];
+var COLECOES = ["emp","oc","pr","idx","cc","oc5","motivos","sensos","motdem","motafas","reaj","grupos","receita","folhafech","percap","orcrh"];
 
 window._fbLoad = function(){
   return _sb.from(TABELA).select("id,conteudo").in("id", COLECOES).then(function(r){
@@ -745,6 +745,35 @@ html[data-tema=azul] .topbar span{color:rgba(255,255,255,.75)}
 .pcp-ft .inf b{color:#8a5a00}
 .pcp-vz{padding:2rem;text-align:center;color:#9aa3ad;font-size:13px}
 .pcp-vz i{display:block;font-size:30px;margin-bottom:.4rem;color:#c5ccd6}
+
+/* ===== Orcamento RH ===== */
+.orc-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width:1200px){.orc-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.orc-wrap{max-height:70vh;overflow:auto}
+.orc-tab{border-collapse:separate;border-spacing:0;font-size:12px;width:100%;font-variant-numeric:tabular-nums}
+.orc-tab th{background:#00348F;color:#fff;font-size:10.5px;font-weight:800;padding:.4rem .5rem;text-align:right;white-space:nowrap;position:sticky;top:0;z-index:2}
+.orc-tab th.lb{text-align:left;left:0;z-index:3}
+.orc-tab th.tt{background:#0A1F4A}
+.orc-tab td{padding:.28rem .5rem;border-bottom:1px solid #eef1f6;text-align:right;white-space:nowrap;color:#333}
+.orc-tab td.lb{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:250px;max-width:330px;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#2a3542;border-right:2px solid #dbe3ee}
+.orc-tab td.tt{background:#e6edf8;font-weight:800;color:#00348F}
+.orc-tab tr.gh td{background:#0A1F4A0d;font-weight:800;color:#0A1F4A;font-size:12.5px;text-align:left;padding-top:.5rem}
+.orc-tab tr.gh td.lb{background:#edf1f8}
+.orc-tab tr.gh small{display:block;font-size:10px;color:#7a8592;font-weight:700}
+.orc-tab tr.gt td{background:#e6edf8;font-weight:800;color:#00348F}
+.orc-tab tr.gt.grand td{background:#c8d7ee}
+.orc-tab tr.o td.lb{color:#1E5BC6;font-weight:800}.orc-tab tr.r td.lb{color:#d35400;font-weight:800}.orc-tab tr.df td{font-weight:700}
+.orc-tab td.neg{color:#c0392b}.orc-tab td.pos{color:#1a7a4a}
+.orc-tab tr.add td{border-bottom:1px solid #eef1f6}.orc-tab tr.add span{color:#1E5BC6;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.orc-tab.ed td{padding:0}.orc-tab.ed td.lb,.orc-tab.ed td.tt,.orc-tab.ed tr.gt td,.orc-tab.ed tr.gh td{padding:.28rem .5rem}
+.orc-in{width:100%;min-width:86px;border:none;background:transparent;text-align:right;padding:.3rem .45rem;font-size:12px;font-variant-numeric:tabular-nums;border-radius:0}
+.orc-in:focus{outline:2px solid #1E5BC6;background:#fff;box-shadow:none}
+.orc-in:hover{background:#f5f8fd}
+.orc-ac{float:right;display:inline-flex;gap:6px;margin-left:6px;opacity:0;transition:opacity .15s}
+.orc-tab tr:hover .orc-ac{opacity:1}
+.orc-ac i{cursor:pointer;color:#8a94a0;font-size:13px}.orc-ac i:hover{color:#1E5BC6}.orc-ac .ti-trash:hover{color:#c0392b}
+.orc-bar{height:7px;background:#eef1f6;border-radius:4px;overflow:hidden}.orc-bar div{height:100%;border-radius:4px}
+.orc-tab.comp td.lb{min-width:300px}
 /* ===== Lancamento de faltas e atrasos ===== */
 .lc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.7rem;margin-bottom:1rem}
 .lc-k{background:#fff;border-radius:12px;padding:.7rem .9rem .7rem 1rem;box-shadow:0 1px 4px rgba(10,31,74,.07);position:relative;overflow:hidden}
@@ -1081,6 +1110,7 @@ html[data-tema=azul] .bal-leg{background:rgba(255,255,255,.95)}
       <button class="nb" id="nb-resumo" onclick="go('resumo')" title="Resumo dos Custos"><i class="ti ti-report-money" style="font-size:18px;flex-shrink:0"></i><span class="nl">Resumo dos Custos</span></button>
       <button class="nb" id="nb-folha" onclick="go('folha')" title="Custo Total da Folha"><i class="ti ti-table" style="font-size:18px;flex-shrink:0"></i><span class="nl">Custo Total da Folha</span></button>
       <button class="nb" id="nb-percap" onclick="go('percap')" title="Análise por Categoria"><i class="ti ti-chart-histogram" style="font-size:18px;flex-shrink:0"></i><span class="nl">Análise por Categoria</span></button>
+      <button class="nb" id="nb-orcrh" onclick="go('orcrh')" title="Orçamento RH"><i class="ti ti-report-money" style="font-size:18px;flex-shrink:0"></i><span class="nl">Orçamento RH</span></button>
       <div class="nb-sec"><span class="nl">Parâmetros</span></div>
       <button class="nb" id="nb-indices" onclick="go('indices')" title="Índices de Desconto"><i class="ti ti-adjustments" style="font-size:18px;flex-shrink:0"></i><span class="nl">Índices de Desconto</span></button>
       <button class="nb" id="nb-encargos" onclick="go('encargos')" title="Encargos INSS/FGTS"><i class="ti ti-receipt-tax" style="font-size:18px;flex-shrink:0"></i><span class="nl">Encargos INSS/FGTS</span></button>
@@ -1115,6 +1145,7 @@ html[data-tema=azul] .bal-leg{background:rgba(255,255,255,.95)}
     <div id="p-folha" class="page"></div>
     <div id="p-monitor" class="page active"></div>
     <div id="p-percap" class="page"></div>
+    <div id="p-orcrh" class="page"></div>
     <div id="p-5s" class="page"></div>
     <div id="p-lancamento" class="page"></div>
     <div id="p-premios" class="page"></div>
@@ -1138,7 +1169,7 @@ html[data-tema=azul] .bal-leg{background:rgba(255,255,255,.95)}
 // ═══════════════════════════════════════
 // DB GLOBAL
 // ═══════════════════════════════════════
-var DB={emp:[],oc:[],pr:[],idx:[],cc:[],oc5:[],motivos:[],sensos:[],motdem:[],motafas:[],reaj:[],grupos:[],receita:[],folhafech:[],percap:[]};
+var DB={emp:[],oc:[],pr:[],idx:[],cc:[],oc5:[],motivos:[],sensos:[],motdem:[],motafas:[],reaj:[],grupos:[],receita:[],folhafech:[],percap:[],orcrh:[]};
 var SAVE_TIMER=null;
 
 function dbLoad(){
@@ -1708,7 +1739,7 @@ function go(p){
   document.getElementById("nb-"+p).classList.add("on");
   pg=p;
   document.getElementById("main").classList.toggle("ro-mode",!!ACESSO&&permTela(p)==="ver");
-  ({dashboard:rDash,centros:rCC,vincularcc:rVcc,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,balanc:rBal,resumo:function(){empCtx='res';rResumo();},folha:rFolha,percap:rPercap,categorias:rCats,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,encargos:rEnc,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
+  ({dashboard:rDash,centros:rCC,vincularcc:rVcc,employees:function(){empCtx='cad';rEmp();},reajustes:rReaj,grupos:rGrupos,direcionar:rDir,balanc:rBal,resumo:function(){empCtx='res';rResumo();},folha:rFolha,percap:rPercap,orcrh:rOrc,categorias:rCats,monitor:rMon,"5s":r5S,lancamento:rLanc,premios:rPrem,indices:rIdx,encargos:rEnc,motivos:rMotivos,relatorio:rRel,calendario:rCal,backup:function(){BKP_LISTA=null;rBkp();},acessos:function(){ACS_LISTA=null;rAcessos();}})[p]();
 }
 // Oculta o subtitulo da secao quando nenhuma tela dela esta liberada
 function ajustarSecoesMenu(){
@@ -3695,6 +3726,7 @@ var TELAS=[
   {k:"resumo",lb:"Resumo dos Custos",ic:"ti-report-money",soVer:true},
   {k:"folha",lb:"Custo Total da Folha",ic:"ti-table"},
   {k:"percap",lb:"Análise por Categoria",ic:"ti-chart-histogram"},
+  {k:"orcrh",lb:"Orçamento RH",ic:"ti-report-money"},
   {k:"indices",lb:"Índices de Desconto",ic:"ti-adjustments"},
   {k:"motivos",lb:"Motivos",ic:"ti-tags"},
   {k:"acessos",lb:"Permissões de Usuários",ic:"ti-shield-lock"},
@@ -4266,7 +4298,7 @@ function rLanc(){
     +Object.keys(porFt).sort(function(a,b){return porFt[b]-porFt[a];}).map(function(k){return "<span class='lc-chip'><span class='d' style='background:"+RED+"'></span>"+esc(k)+" <b>"+porFt[k]+"</b></span>";}).join("")+"</div>":"";
   document.getElementById("p-lancamento").innerHTML=
     "<div class='pg-hd'><div><h1 class='h1'>Lançamento de Faltas e Atrasos</h1><div class='sub'>Faltas e atrasos dos colaboradores</div></div>"
-    +"<div style='display:flex;gap:8px;flex-wrap:wrap'>"+(permTela("lancamento")==="editar"?"<button class='btng btn-ic' onclick=\"abrirFTipo('param')\" title='Tipos de falta e se descontam do premio'><i class='ti ti-adjustments'></i>Parametros de descontos</button>":"")+"<button class='btnp btn-ic' onclick='novoLanc()'><i class='ti ti-plus'></i>Novo lancamento</button></div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap'>"+(permTela("lancamento")==="editar"?"<button class='btng btn-ic' onclick=\"abrirFTipo('param')\" title='Tipos de falta e se descontam do premio'><i class='ti ti-adjustments'></i>Parametros de descontos</button>":"")+"<button class='btng btn-ic' onclick='abrirLancPDF()'><i class='ti ti-file-download'></i>Relatorio PDF</button><button class='btnp btn-ic' onclick='novoLanc()'><i class='ti ti-plus'></i>Novo lancamento</button></div></div>"
     +kpis
     +"<div class='lc-card'>"
     +"<div class='lc-tb'><div class='tt'>Histórico <span>"+fil.length+"</span></div>"
@@ -4466,6 +4498,164 @@ function savLanc(){
     DB.oc.push(n);
   });
   dbSave();rLanc();
+}
+// ═══ RELATORIO PDF: LANCAMENTO DE FALTAS E ATRASOS ═══
+var lrpOri="landscape";
+function abrirLancPDF(){
+  fecharLancPDF();
+  var anos={},ha=hoje();anos[ha.slice(0,4)]=1;DB.oc.forEach(function(o){if(o.data)anos[o.data.slice(0,4)]=1;});
+  var sM=gv("lfm")||curMes(),sE=gv("lfe"),sT=gv("lft");
+  var anoOpts=Object.keys(anos).sort().reverse().map(function(a){return "<option value='"+a+"'"+(a===sM.slice(0,4)?" selected":"")+">"+a+"</option>";}).join("");
+  var mesOpts=MOS.map(function(m,i){var v=String(i+1).padStart(2,"0");return "<option value='"+v+"'"+(v===sM.slice(5,7)?" selected":"")+">"+m+"</option>";}).join("");
+  var empOpts="<option value=''>Todos os colaboradores</option>"+DB.emp.filter(vis).slice().sort(function(a,b){return a.nome.localeCompare(b.nome);}).map(function(e){return "<option value='"+e.id+"'"+(e.id===sE?" selected":"")+">"+esc(e.nome)+(isAtivo(e)?"":" (inativo)")+"</option>";}).join("");
+  var tpOpts="<option value=''>Faltas e atrasos</option>"+TIPOS.map(function(t){return "<option value='"+t.k+"'"+(t.k===sT?" selected":"")+">Somente "+t.lb.toLowerCase()+"s</option>";}).join("");
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-lancpdf";div.style.zIndex="9700";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:460px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-file-download'></i>Relatorio PDF - Faltas e Atrasos</div>"
+    +"<button class='mdl-x' onclick='fecharLancPDF()' aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'>"
+    +"<div class='fr'><label class='lbl'>Periodo</label><div class='seg seg-full' id='lrp-per'>"
+    +[["dia","Dia","ti-calendar"],["mes","Mes","ti-calendar-event"],["ano","Ano","ti-calendar-stats"]].map(function(o){return "<button type='button' class='seg-b"+(o[0]==="mes"?" on":"")+"' data-k='"+o[0]+"' onclick=\"lrpPer('"+o[0]+"')\"><i class='ti "+o[2]+"'></i>"+o[1]+"</button>";}).join("")+"</div></div>"
+    +"<div class='fr2'><div class='fr' id='lrp-wdia' style='display:none'><label class='lbl'>Dia</label><input type='date' id='lrp-dia' value='"+ha+"'/></div>"
+    +"<div class='fr' id='lrp-wmes'><label class='lbl'>Mes</label><select id='lrp-mes'>"+mesOpts+"</select></div>"
+    +"<div class='fr' id='lrp-wano'><label class='lbl'>Ano</label><select id='lrp-ano'>"+anoOpts+"</select></div></div>"
+    +"<div class='fr2'><div class='fr'><label class='lbl'>Vinculo</label><select id='lrp-vin' onchange='lrpVin()'><option value=''>CLT e MEI</option><option value='CLT'>Somente CLT</option><option value='MEI'>Somente MEI</option></select></div>"
+    +"<div class='fr'><label class='lbl'>Ocorrencias</label><select id='lrp-tp'>"+tpOpts+"</select></div></div>"
+    +"<label id='lrp-wsep' style='display:flex;align-items:center;gap:6px;font-size:12.5px;margin:-.2rem 0 .8rem;cursor:pointer'><input type='checkbox' id='lrp-sep' checked style='width:auto'/>Separar CLT e MEI em secoes</label>"
+    +"<div class='fr'><label class='lbl'>Colaborador</label><select id='lrp-emp'>"+empOpts+"</select></div>"
+    +"<div class='fr'><label class='lbl'>Orientacao</label><div class='seg seg-full' id='lrp-ori'>"
+    +"<button type='button' class='seg-b"+(lrpOri==="landscape"?" on":"")+"' data-k='landscape' onclick=\"lrpOriSet('landscape')\"><i class='ti ti-rectangle'></i>Paisagem</button>"
+    +"<button type='button' class='seg-b"+(lrpOri==="portrait"?" on":"")+"' data-k='portrait' onclick=\"lrpOriSet('portrait')\"><i class='ti ti-rectangle-vertical'></i>Retrato</button></div></div>"
+    +"<div class='mdl-ft'><button class='btng' onclick='fecharLancPDF()'>Cancelar</button>"
+    +"<button class='btnp btn-ic' onclick='gerarLancPDF()'><i class='ti ti-file-download'></i>Gerar PDF</button></div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)fecharLancPDF();});
+  div.dataset.per="mes";
+}
+function fecharLancPDF(){var m=document.getElementById("md-lancpdf");if(m)m.remove();}
+function lrpPer(k){
+  var m=document.getElementById("md-lancpdf");if(!m)return;m.dataset.per=k;
+  document.querySelectorAll("#lrp-per .seg-b").forEach(function(b){b.classList.toggle("on",b.dataset.k===k);});
+  document.getElementById("lrp-wdia").style.display=k==="dia"?"":"none";
+  document.getElementById("lrp-wmes").style.display=k==="mes"?"":"none";
+  document.getElementById("lrp-wano").style.display=k==="dia"?"none":"";
+}
+function lrpVin(){var w=document.getElementById("lrp-wsep");if(w)w.style.display=gv("lrp-vin")?"none":"flex";}
+function lrpOriSet(k){lrpOri=k;document.querySelectorAll("#lrp-ori .seg-b").forEach(function(b){b.classList.toggle("on",b.dataset.k===k);});}
+function gerarLancPDF(){
+  if(!(window.jspdf&&window.jspdf.jsPDF)){alert("A biblioteca de PDF ainda esta carregando. Aguarde alguns segundos e tente novamente.");return;}
+  var md=document.getElementById("md-lancpdf"),per=md?md.dataset.per:"mes";
+  var ano=gv("lrp-ano"),mes=gv("lrp-mes"),dia=gv("lrp-dia"),vin=gv("lrp-vin"),tp=gv("lrp-tp"),eid=gv("lrp-emp");
+  var sep=!vin&&document.getElementById("lrp-sep").checked;
+  if(per==="dia"&&!dia){alert("Informe o dia.");return;}
+  var perLb,okData;
+  if(per==="dia"){perLb="Dia "+fmtD(dia);okData=function(d){return d===dia;};}
+  else if(per==="mes"){perLb=fmtM(ano+"-"+mes);okData=function(d){return d.slice(0,7)===ano+"-"+mes;};}
+  else{perLb="Ano "+ano;okData=function(d){return d.slice(0,4)===ano;};}
+  var ocV=ocVisF();
+  var fil=DB.oc.filter(function(o){
+    if(o.tipo==="5s"||!o.data||!ocV(o)||!okData(o.data))return false;
+    if(tp&&o.tipo!==tp)return false;if(eid&&o.eid!==eid)return false;
+    if(vin){var e=DB.emp.find(function(x){return x.id===o.eid;});if(empVinc(e)!==vin)return false;}
+    return true;
+  }).sort(function(a,b){return a.data.localeCompare(b.data);});
+  if(!fil.length){alert("Nenhum lancamento no filtro selecionado.");return;}
+
+  var retrato=lrpOri==="portrait";
+  var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:retrato?"portrait":"landscape",compress:true});
+  var W=retrato?210:297,H=retrato?297:210,mg=12,cw=W-mg*2,BANDH=27;
+  var C={ink:[10,31,74],b:[0,52,143],red:[192,57,43],gld:[230,168,23],grn:[26,122,74],pur:[123,63,160],line:[226,231,238],txt:[60,60,60],mut:[140,140,140]};
+  function fill(c){doc.setFillColor(c[0],c[1],c[2]);}
+  function txt(c){doc.setTextColor(c[0],c[1],c[2]);}
+  function font(sz,b){doc.setFont("helvetica",b?"bold":"normal");doc.setFontSize(sz);}
+  var agora=new Date(),gerado=agora.toLocaleDateString("pt-BR")+" às "+agora.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  var empSel=eid?DB.emp.find(function(e){return e.id===eid;}):null;
+  var filtros="Período: "+perLb+"  |  "+(vin?"Somente "+vin:"CLT e MEI")+"  |  "+(tp?"Somente "+(tp==="falta"?"faltas":"atrasos"):"Faltas e atrasos")+(empSel?"  |  "+empSel.nome:"");
+  function header(){
+    fill([255,255,255]);doc.rect(0,0,W,BANDH,"F");
+    if(window._logoPNG){doc.addImage(window._logoPNG,"PNG",mg-1.5,6.5,30.8,14);}
+    font(retrato?12.5:15,true);txt(C.ink);doc.text("Relatório de Faltas e Atrasos",W-mg,11.5,{align:"right"});
+    font(retrato?7.5:8.5);txt([95,105,120]);doc.text(doc.splitTextToSize(filtros,W-mg*2-36)[0],W-mg,17.5,{align:"right"});
+    font(7);txt([150,158,170]);doc.text("Gerado em "+gerado,W-mg,22,{align:"right"});
+    doc.setDrawColor(C.line[0],C.line[1],C.line[2]);doc.setLineWidth(.4);doc.line(mg,BANDH,W-mg,BANDH);
+    return BANDH+7;
+  }
+  function section(t,y,c){fill(c||C.b);doc.rect(mg,y-3.1,2.2,2.2,"F");font(10,true);txt([45,45,45]);doc.text(t,mg+4.5,y);}
+  function kpi(x,y,w,h,lb,val,sub,c){
+    doc.setFillColor(255,255,255);doc.setDrawColor(C.line[0],C.line[1],C.line[2]);doc.setLineWidth(.35);doc.roundedRect(x,y,w,h,2,2,"FD");
+    fill(c);doc.rect(x,y,w,1.2,"F");
+    font(6.5,true);txt(C.mut);doc.text(lb.toUpperCase(),x+3,y+6.2);
+    font(12,true);txt(c);doc.text(String(val),x+3,y+12.8);
+    if(sub){font(6.5);txt(C.mut);doc.text(doc.splitTextToSize(sub,w-5)[0],x+3,y+17);}
+  }
+  function info(o){
+    var e=DB.emp.find(function(x){return x.id===o.eid;}),ti=TIPOS.find(function(t){return t.k===o.tipo;})||TIPOS[0];
+    var mot=o.motivo_id?DB.motivos.find(function(m){return m.id===o.motivo_id;}):null,ft=o.tipo==="falta"?ftInfo(o.ftipo):null,pc=ocPct(o);
+    var sub=[ft?ft.nome:"",mot?mot.nome:""].filter(function(x,i,a){return x&&a.indexOf(x)===i;}).join(" · ");
+    return {data:fmtD(o.data),nome:e?e.nome:"Colaborador removido",vin:empVinc(e),func:e&&e.func||"",tipo:ti.lb,sub:sub,obs:o.obs||"",desc:pc?"-"+pc+"%":"Sem desconto",_t:o.tipo,_eid:o.eid};
+  }
+  var base=[{k:"data",h:"Data",w:9},{k:"nome",h:"Colaborador",w:23,b:true},{k:"vin",h:"Vínculo",w:7,al:"c"},{k:"func",h:"Função",w:13},{k:"tipo",h:"Ocorrência",w:9},{k:"sub",h:"Tipo / Motivo",w:16},{k:"obs",h:"Observação",w:14},{k:"desc",h:"Desconto",w:9,al:"r"}];
+  var tot=base.reduce(function(a,c){return a+c.w;},0);
+  var cols=base.map(function(c){return Object.assign({},c,{w:c.w/tot*cw});});
+  cols[4].cor=function(r){return r._t==="falta"?C.red:[184,134,11];};
+  cols[7].cor=function(r){return r.desc==="Sem desconto"?C.grn:C.red;};
+  var rh=5.6;
+  function head(y){
+    fill(C.b);doc.rect(mg,y,cw,rh+.6,"F");font(7.2,true);txt([255,255,255]);
+    var cx=mg;cols.forEach(function(c){doc.text(c.h,c.al==="r"?cx+c.w-2:c.al==="c"?cx+c.w/2:cx+2,y+rh/2+1.6,{align:c.al==="r"?"right":c.al==="c"?"center":"left"});cx+=c.w;});
+    return y+rh+.6;
+  }
+  function table(y,rows,titulo,cor){
+    y=head(y);
+    rows.forEach(function(r,i){
+      if(y+rh>H-14){doc.addPage();y=header();section(titulo+" (continuação)",y,cor);y=head(y+3);}
+      if(r._total){fill([226,236,246]);doc.rect(mg,y,cw,rh+.4,"F");}
+      else if(i%2===1){fill([248,250,252]);doc.rect(mg,y,cw,rh,"F");}
+      var cx=mg;
+      cols.forEach(function(c){
+        var v=r[c.k];v=v===undefined||v===null?"":String(v);
+        font(7,r._total||c.b);
+        while(v.length>3&&doc.getTextWidth(v)>c.w-3)v=v.slice(0,-2);
+        txt(r._total?C.b:(c.cor&&!r._total?c.cor(r):C.txt));
+        doc.text(v,c.al==="r"?cx+c.w-2:c.al==="c"?cx+c.w/2:cx+2,y+rh/2+1.5,{align:c.al==="r"?"right":c.al==="c"?"center":"left"});
+        cx+=c.w;
+      });
+      y+=r._total?rh+.4:rh;
+    });
+    doc.setDrawColor(C.line[0],C.line[1],C.line[2]);doc.setLineWidth(.25);doc.line(mg,y,mg+cw,y);
+    return y;
+  }
+  function totalRow(rows){
+    var f=rows.filter(function(r){return r._t==="falta";}).length,a=rows.length-f,p={};rows.forEach(function(r){p[r._eid]=1;});
+    return {_total:true,data:"Total",nome:rows.length+" lançamento"+(rows.length!==1?"s":"")+" · "+Object.keys(p).length+" colab.",tipo:"",sub:f+" falta"+(f!==1?"s":"")+" · "+a+" atraso"+(a!==1?"s":"")};
+  }
+
+  var rows=fil.map(info);
+  var y=header();
+  var nF=rows.filter(function(r){return r._t==="falta";}).length,nA=rows.length-nF,pes={};rows.forEach(function(r){pes[r._eid]=1;});
+  var nClt=rows.filter(function(r){return r.vin==="CLT";}).length,nMei=rows.length-nClt,sD=rows.filter(function(r){return r.desc==="Sem desconto";}).length;
+  var ks=[["Lançamentos",rows.length,perLb,C.b],["Faltas",nF,rows.length?Math.round(nF/rows.length*100)+"% dos lançamentos":"",C.red],["Atrasos",nA,rows.length?Math.round(nA/rows.length*100)+"% dos lançamentos":"",C.gld],
+    ["Colaboradores",Object.keys(pes).length,"com ocorrência",C.pur],["CLT / MEI",nClt+" / "+nMei,"lançamentos por vínculo",[30,91,198]],["Sem desconto",sD,"não descontam do prêmio",C.grn]];
+  var kg=3,kw=(cw-kg*(ks.length-1))/ks.length;
+  if(retrato){kw=(cw-kg*2)/3;ks.forEach(function(k,i){kpi(mg+(i%3)*(kw+kg),y+Math.floor(i/3)*22,kw,19,k[0],k[1],k[2],k[3]);});y+=44+5;}
+  else{ks.forEach(function(k,i){kpi(mg+i*(kw+kg),y,kw,19,k[0],k[1],k[2],k[3]);});y+=19+9;}
+
+  var grupos=sep?[["CLT",rows.filter(function(r){return r.vin==="CLT";}),C.b],["MEI",rows.filter(function(r){return r.vin==="MEI";}),C.pur]].filter(function(g){return g[1].length;})
+    :[[vin||"",rows,C.b]];
+  grupos.forEach(function(g,gi){
+    var tt="Lançamentos"+(g[0]?" - "+g[0]:"")+" ("+g[1].length+")";
+    if(gi>0)y+=7;
+    if(y+20>H-14){doc.addPage();y=header();}
+    section(tt,y,g[2]);
+    y=table(y+3,g[1].concat([totalRow(g[1])]),tt,g[2]);
+  });
+
+  var np=doc.getNumberOfPages();
+  for(var i=1;i<=np;i++){doc.setPage(i);font(7);txt([160,166,176]);doc.text("Página "+i+" de "+np,W-mg,H-6,{align:"right"});doc.text("Lançamento de Faltas e Atrasos",mg,H-6);}
+  var nmArq=per==="dia"?dia:per==="mes"?ano+"-"+mes:ano;
+  doc.save("faltas-atrasos-"+nmArq+(vin?"-"+vin.toLowerCase():"")+".pdf");
+  fecharLancPDF();
 }
 function lancBusca(q){q=(q||"").toLowerCase().trim();var dia=null,vis=false;
   document.querySelectorAll("#p-lancamento .lc-list > div").forEach(function(el){
@@ -5310,6 +5500,9 @@ function rMon(){
     });
     return{e:e,f:f,du:du,pct:du>0?f/du*100:0};
   }).filter(function(x){return x.f>0;}).sort(function(a,b){return b.pct-a.pct||b.f-a.f;});
+  // colaboradores ocultados manualmente na tabela de absenteismo (campo absOcul no cadastro)
+  var rankAbsOcul=rankAbs.filter(function(x){return x.e.absOcul;});
+  rankAbs=rankAbs.filter(function(x){return !x.e.absOcul;});
   var ccAbs=DB.cc.map(function(c){var r=absent(selMes,c.id);r.lb=c.cod+" - "+c.desc;r.ano=absentAno(c.id);return r;});
   var semCC=absent(selMes,"");semCC.ano=absentAno("");if(semCC.hc>0||semCC.ano.faltas>0){semCC.lb="Sem C.C. Senior";ccAbs.push(semCC);}
   ccAbs=ccAbs.filter(function(r){return r.hc>0||r.ano.pct>0;}).sort(function(a,b){return b.ano.pct-a.ano.pct||b.pct-a.pct;});
@@ -5378,8 +5571,15 @@ function rMon(){
     +chartCard("Movimentacoes - "+mlb,B,"ti-list-details","<div style='height:190px;overflow-y:auto'>"+movHTML+"</div>")
     +"</div>"
 
-    +chartCard("Absenteismo do ano por colaborador - "+selAno+" <span style='color:#999;font-weight:500;text-transform:none'>("+rankAbs.length+" com faltas)</span>","#a04000","ti-calendar-stats",
-      rankAbs.length===0?semDados("Nenhuma falta em "+selAno):
+    +chartCard("Absenteismo do ano por colaborador - "+selAno+" <span style='color:#999;font-weight:500;text-transform:none'>("+rankAbs.length+" com faltas)</span>"
+      +(rankAbsOcul.length?"<button type='button' class='btng btn-ic' onclick='absOculTog()' style='margin-left:auto;padding:.2rem .6rem;font-size:11px;text-transform:none;letter-spacing:0'><i class='ti ti-eye-off'></i>Ocultos ("+rankAbsOcul.length+")</button>":""),"#a04000","ti-calendar-stats",
+      (rankAbsOcul.length?"<div id='abs-ocul' style='display:"+(window._absOculOpen?"block":"none")+";background:#faf6f3;border:1px dashed #e8d5c8;border-radius:8px;padding:.5rem .7rem;margin-bottom:.6rem'>"
+        +"<div style='font-size:11px;font-weight:800;color:#a04000;text-transform:uppercase;letter-spacing:.4px;margin-bottom:.35rem'>Colaboradores ocultos</div>"
+        +"<div style='display:flex;flex-wrap:wrap;gap:6px'>"
+        +rankAbsOcul.map(function(x){return "<span style='display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e8d5c8;border-radius:14px;padding:.2rem .3rem .2rem .65rem;font-size:11.5px;font-weight:700;color:#555'>"+esc(x.e.nome)+" <span style='color:#999;font-weight:500'>"+pctF(x.pct)+"</span>"
+          +"<button type='button' onclick=\"absOcultar('"+x.e.id+"',false)\" title='Mostrar novamente na tabela' style='border:none;background:#a04000;color:#fff;border-radius:10px;padding:.1rem .45rem;font-size:11px;display:inline-flex;align-items:center;gap:3px'><i class='ti ti-eye'></i>Mostrar</button></span>";}).join("")
+        +"</div></div>":"")
+      +(rankAbs.length===0?semDados(rankAbsOcul.length?"Todos os colaboradores com faltas estao ocultos":"Nenhuma falta em "+selAno):
       "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0 1.5rem;max-height:240px;overflow-y:auto'>"
       +rankAbs.map(function(x,i){
         var mx=rankAbs[0].pct||1,w=Math.max(3,x.pct/mx*100),cor=i<3?"#a04000":"#d35400";
@@ -5388,8 +5588,9 @@ function rMon(){
           +"<span style='font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:38%'>"+esc(x.e.nome)+"</span>"
           +"<div style='flex:1;height:5px;background:#f3ebe5;border-radius:3px;overflow:hidden'><div style='width:"+w+"%;height:100%;border-radius:3px;background:linear-gradient(90deg,#f0a77a,"+cor+")'></div></div>"
           +"<span style='font-size:10.5px;color:#999;flex-shrink:0'>"+x.f+"/"+x.du+"</span>"
-          +"<span style='font-weight:800;color:"+cor+";font-size:12px;flex-shrink:0;width:48px;text-align:right'>"+pctF(x.pct)+"</span></div>";
-      }).join("")+"</div>")
+          +"<span style='font-weight:800;color:"+cor+";font-size:12px;flex-shrink:0;width:48px;text-align:right'>"+pctF(x.pct)+"</span>"
+          +"<button type='button' onclick=\"absOcultar('"+x.e.id+"',true)\" title='Ocultar desta tabela' style='border:none;background:none;color:#b8a89c;padding:0 2px;font-size:14px;flex-shrink:0;line-height:1'><i class='ti ti-eye-off'></i></button></div>";
+      }).join("")+"</div>"))
     +"<div class='hint' style='margin-top:.5rem'>Absenteismo = faltas &divide; (colaboradores no mes &times; dias uteis seg-sex) &times; 100. No mes atual, conta os dias ate hoje.</div>";
 
   window._monStats={aQuadroG:aQuadroG,selAno:selAno,selMes:selMes,mlb:mlb,meses:meses,lbl:lbl,ativos:ativos,inativos:inativos,qMes:qMes,
@@ -5421,6 +5622,12 @@ function monOcultos(){try{return JSON.parse(localStorage.getItem("timbo_mon_grp_
 function setMonOcultos(a){try{localStorage.setItem("timbo_mon_grp_ocultos",JSON.stringify(a));}catch(e){}}
 function monGVis(M){var o=monOcultos();return (M.aQuadroG||[]).filter(function(g){return o.indexOf(g.id)<0;});}
 function togMonGrupo(id,ev){if(ev)ev.stopPropagation();var o=monOcultos(),i=o.indexOf(id);if(i>=0)o.splice(i,1);else o.push(id);setMonOcultos(o);rMon();}
+// Ocultar / mostrar colaborador na tabela "Absenteismo do ano por colaborador"
+function absOcultar(id,on){
+  DB.emp=DB.emp.map(function(x){if(x.id!==id)return x;var n=Object.assign({},x);if(on)n.absOcul=true;else delete n.absOcul;return n;});
+  dbSave();rMon();
+}
+function absOculTog(){window._absOculOpen=!window._absOculOpen;var el=document.getElementById("abs-ocul");if(el)el.style.display=window._absOculOpen?"block":"none";}
 function rMonBoxes(){
   var M=window._monStats,el=document.getElementById("mq-boxes");if(!M||!el)return;
   var ix=M.meses.indexOf(M.selMes);if(ix<0)ix=M.meses.length-1;
@@ -6025,6 +6232,7 @@ function pcSetModo(md){pcModo=md;rPercap();}
 function pcSelDia(d){pcDiaV=+d;rPercap();}
 function pcNavDia(s){var m=pcMes(),nd=+fimMesStr(m).slice(8);pcDiaV=Math.max(1,Math.min(nd,pcDiaSel(m,nd)+s));rPercap();}
 function rPercap(){
+  if(window._logoPNG&&!window._pcLogo){window._pcLogo=new Image();window._pcLogo.src=window._logoPNG;}
   var m=pcMes(),C=pcCalc(m),ro=!!ACESSO&&permTela("percap")!=="editar";
   var nd=C.days.length,uDia=pcModo==="dia",dSel=pcDiaSel(m,nd),vis=function(i){return !uDia||i===dSel-1;};
   var a0=+curMes().slice(0,4),ys={};ys[a0-1]=1;ys[a0]=1;ys[a0+1]=1;ys[+m.slice(0,4)]=1;
@@ -6055,6 +6263,9 @@ function rPercap(){
     +"<select id='pc-ano' onchange='pcSetMes()'>"+Object.keys(ys).sort().map(function(y){return "<option"+(y===m.slice(0,4)?" selected":"")+">"+y+"</option>";}).join("")+"</select></div>"
     +"<div class='seg'><button class='seg-b"+(uDia?" on":"")+"' onclick=\"pcSetModo('dia')\" title='Mostrar somente um dia'><i class='ti ti-calendar-event'></i>Um dia</button><button class='seg-b"+(uDia?"":" on")+"' onclick=\"pcSetModo('mes')\" title='Mostrar todos os dias e a coluna do mes'><i class='ti ti-calendar-month'></i>Mes inteiro</button></div>"+pcOcBtn("T")+(uDia?"<div class='mes-fil'><button class='pc-nav' title='Dia anterior' onclick='pcNavDia(-1)'"+(dSel<=1?" disabled":"")+"><i class='ti ti-chevron-left'></i></button><select id='pc-dia' onchange='pcSelDia(this.value)'>"+C.days.map(function(dy){return "<option value='"+dy.d+"'"+(dy.d===dSel?" selected":"")+">Dia "+String(dy.d).padStart(2,"0")+" - "+DSEM[dy.dw]+(dy.fer?" (feriado)":"")+"</option>";}).join("")+"</select><button class='pc-nav' title='Proximo dia' onclick='pcNavDia(1)'"+(dSel>=nd?" disabled":"")+"><i class='ti ti-chevron-right'></i></button></div>":"")+"<button class='btng btn-ic' onclick='pcCatsModal()'><i class='ti ti-list-details'></i>Categorias</button>"
     +"<button class='btng btn-ic' onclick='pcFerModal()'><i class='ti ti-calendar-event'></i>Feriados e dias</button>"
+    +"<button class='btng btn-ic' onclick='pcResImprimir()' title='Imprimir o resumo (Total registrados ate Total per capita) do filtro da tela'><i class='ti ti-printer'></i>Imprimir</button>"
+    +"<button class='btng btn-ic' onclick='pcResPdfModal()' title='PDF do resumo (paisagem ou retrato)'><i class='ti ti-file-type-pdf'></i>Relatório Per Capita</button>"
+    +"<button class='btng btn-ic' onclick='pcResWhats()' title='Enviar o resumo pelo WhatsApp (imagem em anexo)' style='color:#128C7E'><i class='ti ti-brand-whatsapp'></i>WhatsApp</button>"
     +"<button class='btng btn-ic' onclick=\"pcRelModal('pdf')\"><i class='ti ti-file-type-pdf'></i>PDF</button>"
     +"<button class='btng btn-ic' onclick=\"pcRelModal('xlsx')\"><i class='ti ti-file-spreadsheet'></i>Excel</button></div></div>"
     +"<div class='card' style='padding:.75rem .85rem'>"
@@ -6068,6 +6279,418 @@ function rPercap(){
     +"<div class='hint' style='margin-top:.6rem'>Categoria = campo Categoria do Cadastro (colaboradores com vinculo no dia, sem os inativos). Inativos = inatividade vigente no dia (aparecem so na linha Inativos e na caixa de inativos do quadro, e entram nos totais de registrados). Colaboradores marcados como \"Nao contar no quadro\" ficam fora de toda a analise. Ausencias = faltas lancadas no dia + afastados. "
     +"<b>Clique em um número da tabela</b> para ver os colaboradores do dia e alterar categoria, C.C. Senior, C.C. Infomódulus e horário (ou ajustar o valor do dia). N° para producao = Total - Inativos - Ausencias. Producao per capita = Producao do dia &divide; N°. Meta dia = Meta do mes &divide; dias trabalhados. Clique no dia do cabecalho para marcar feriado ou dia trabalhado. Valor editado: apague para voltar ao valor do sistema.</div></div>";
   setTimeout(xsSync,0);
+}
+// ═══ RELATORIO PER CAPITA (PDF paisagem ou retrato do resumo da tela) ═══
+function pcResPdfModal(){
+  pcFechar("md-pcrespdf");
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcrespdf";div.style.zIndex="9500";
+  function radio(v,lb,on,ic){return "<label class='pdf-opt'><input type='radio' name='pcrp-ori' value='"+v+"'"+(on?" checked":"")+"/><i class='ti "+ic+"'></i>"+lb+"</label>";}
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:420px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-file-type-pdf'></i>RELATÓRIO PER CAPITA</div>"
+    +"<button class='mdl-x' onclick=\"pcFechar('md-pcrespdf')\" aria-label='Fechar'><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'><div class='fr'><label class='lbl'>Orientação</label><div class='pdf-opts'>"+radio("landscape","Paisagem",true,"ti-rectangle")+radio("portrait","Retrato",false,"ti-rectangle-vertical")+"</div></div>"
+    +"<div class='hint'>Mesmo resumo da imagem do WhatsApp (Total registrados CLT até Total per capita), seguindo o filtro da tela: "+esc(pcResDados().per)+".</div>"
+    +"<div class='mdl-ft'><button class='btng' onclick=\"pcFechar('md-pcrespdf')\">Cancelar</button><button class='btnp btn-ic' onclick='pcResPDF()'><i class='ti ti-file-download'></i>Gerar PDF</button></div></div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcrespdf");});
+}
+function pcResPDF(){
+  if(!(window.jspdf&&window.jspdf.jsPDF)){alert("A biblioteca de PDF ainda esta carregando. Aguarde alguns segundos e tente novamente.");return;}
+  var ori=_radio("pcrp-ori")||"landscape",D=pcResDados();
+  var K=mkPdfKit("RELATÓRIO PER CAPITA",D.per,ori,"a4"),doc=K.doc;
+  var y=K.header()+2,tw=ori==="portrait"?K.cw:Math.min(K.cw,190),x=(K.W-tw)/2,lw=tw*0.7;
+  var hasW=D.rows.map(function(r){return r.r.sub2?12:9.5;}),tot=hasW.reduce(function(a,b){return a+b;},0);
+  if(ori!=="portrait"&&tot>K.H-y-16){var f=(K.H-y-16)/tot;hasW=hasW.map(function(h){return h*f;});}
+  doc.setFillColor(0,52,143);doc.rect(x,y,tw,7,"F");
+  K.font(8,true);doc.setTextColor(255,255,255);doc.text("INDICADOR",x+4,y+4.7);doc.text(D.per.split(" (")[0].toUpperCase(),x+lw+(tw-lw)/2,y+4.7,{align:"center"});
+  y+=7;
+  D.rows.forEach(function(it,i){
+    var r=it.r,h=hasW[i];
+    var bg=r.kind==="prod"?[255,248,225]:r.kind==="pc"?[238,248,242]:r.kind==="meta"?[246,242,251]:r.kind==="aus"?[255,255,255]:[242,246,252];
+    var co=r.red?[192,57,43]:r.kind==="pc"?[20,92,57]:[10,31,74];
+    doc.setFillColor(bg[0],bg[1],bg[2]);doc.rect(x,y,tw,h,"F");
+    doc.setDrawColor(222,228,236);doc.setLineWidth(.25);doc.line(x,y+h,x+tw,y+h);doc.line(x+lw,y,x+lw,y+h);
+    K.font(r.big?10:9.2,true);doc.setTextColor(co[0],co[1],co[2]);
+    var ls=doc.splitTextToSize(r.label,lw-8).slice(0,2),y0=r.sub2?y+4.6:y+h/2+1.3-(ls.length-1)*1.9;
+    doc.text(ls,x+4,y0,{lineHeightFactor:1.15});
+    if(r.sub2){K.font(7);doc.setTextColor(138,148,160);doc.text(r.sub2,x+4,y0+(ls.length-1)*3.9+4.3);}
+    K.font(r.big?10.5:10,!r.red);doc.setTextColor(co[0],co[1],co[2]);
+    doc.text(it.v||"—",x+lw+(tw-lw)/2,y+h/2+1.4,{align:"center"});
+    y+=h;
+  });
+  K.finalizar("RELATORIO PER CAPITA - "+D.arq.replace("per-capita-","")+" - "+(ori==="portrait"?"retrato":"paisagem")+".pdf");
+  pcFechar("md-pcrespdf");
+}
+
+// ═══════════════════════════════════════
+// ORCAMENTO RH - Orcado x Realizado (valores digitados por mes)
+// DB.orcrh: [{id:"AAAA", grupos:[{id,nome,desc,itens:[{id,nome,o:[12],r:[12]}]}]}]
+// ═══════════════════════════════════════
+var ORC_SEED=[{"id":"g1","nome":"RECRUTAMENTO E SELEÇÃO","desc":"CUSTOS COM MARKETING","itens":[{"id":"i1_4","nome":"Anúncio de Vagas / Patrocinado Instagram e Facebook","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,280.01,432.15,296.75,252.75,262.94,792.0,664.73,0.0,0.0,null,null]},{"id":"i1_5","nome":"Agência Misturebas","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,null,null]},{"id":"i1_6","nome":"People Capital Humano","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[3500.0,1500.0,0.0,0.0,0.0,1500.0,0.0,0.0,0.0,0.0,null,null]},{"id":"i1_7","nome":"Prêmio Indicação","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,150.0,0.0,350,0.0,0.0,0.0,0.0,0.0,150.0,null,null]},{"id":"i1_8","nome":"Anúncio de Vagas: Rádio","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,null,null]}]},{"id":"g2","nome":"EVENTOS DE PESSOAL","desc":"CUSTOS COM DATAS COMEMORATIVAS","itens":[{"id":"i2_16","nome":"Boas Vindas (Janeiro)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[218.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_17","nome":"Aniversário Tempo de Empresa","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[1500,500.0,0.0,1500.0,0.0,0.0,1500.0,2500.0,500.0,500.0,0.0,null]},{"id":"i2_18","nome":"Dia do Picolé na Empresa","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,375.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_19","nome":"Dia da Mulher (36 unidades)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,821.52,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_20","nome":"Páscoa","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,3727.75,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_21","nome":"Dia das Mães (30 unidades)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,379.45,379.45,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_22","nome":"Festa Junina","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,null]},{"id":"i2_23","nome":"Dia do Homem","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,185.9,0.0,0.0,0.0,0.0,null]},{"id":"i2_24","nome":"Dia dos Pais","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,3501.0,0.0,0.0,0.0,0.0,null]},{"id":"i2_25","nome":"SIPAT","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1428.0,0.0,0.0,null]},{"id":"i2_26","nome":"Desfile 12 de Outubro","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,null]},{"id":"i2_27","nome":"Camisas Outubro Rosa (50%)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,382.5,0.0,0.0,null]},{"id":"i2_28","nome":"Cestas de Natal","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,null]},{"id":"i2_29","nome":"Café Treinamentos / Reuniões / Eventos","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[71.0,144.25,71,398.25,67.25,149.5,241.25,0.0,195.0,147.5,0.0,null]},{"id":"i2_30","nome":"Coroa de Flores (funeral)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,1520,0.0,300,370.0,0.0,0.0,0.0,0.0,0.0,0.0,null]},{"id":"i2_31","nome":"Núcleo de RH","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[150.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_32","nome":"Manual do Colaborador","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_33","nome":"Squeeze Garrafinhas","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_34","nome":"MousePads","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i2_35","nome":"Canetas Brinde","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]}]},{"id":"g3","nome":"BENEFÍCIOS E ENCARGOS TRABALHISTAS","desc":"CUSTOS COM BENEFICIOS","itens":[{"id":"i3_43","nome":"Vale Alimentação","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[18664,36300.0,38100.0,35700,34500.0,30600.0,32448.0,33384.0,33072.0,32239.0,null,null]},{"id":"i3_44","nome":"Prêmio Assiduidade","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[20182.71,20826.71,21252.97,20431.97,20287.97,20157.97,19543.78,19930.78,20576.78,20043.02,null,null]},{"id":"i3_45","nome":"Prêmio Supervisores","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[2000.0,1200,2000.0,0.0,0.0,0.0,0.0,0.0,0.0,1900.0,null,null]},{"id":"i3_46","nome":"Refeitório Nutramais","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[39646.71,39260.07,44141.4,39679.51,40560.88,43741.83,42924.2,41472.6,44629.6,43821.7,null,null]},{"id":"i3_47","nome":"Flambo Restaurante (Horas Extras)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[1104,2494,3024,1184,898,1718,3986,5410.16,5003.78,4897.9,null,null]},{"id":"i3_48","nome":"Assistência Médica e Ocupacional (Ocupare)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[5770.7,6653.86,6309.08,5835.55,5893.0,5402.73,5103.84,4789.95,0.0,0.0,null,null]},{"id":"i3_49","nome":"Raio X Matrix Medicina","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,120.0,228.84,305.12,160.0,0.0,0.0,0.0,null,null]},{"id":"i3_50","nome":"Convênio Psicológico","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,367.0,367.0,367.0,467,967,367,367.0,367.0,367.0,null,null]},{"id":"i3_51","nome":"Unimed","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[3758.84,2429.4,2888.16,2885.1,2883.32,3198.17,3081.31,3672.15,3839.47,4289.84,null,null]},{"id":"i3_52","nome":"Abono Anual (Maio)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,63741.67,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i3_53","nome":"Prêmio de Produtividade","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,12936.52,0.0,0.0,10203.14,0.0,0.0,0.0,0.0,0.0,null,null]},{"id":"i3_54","nome":"Bônus Anual","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[48725.16,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i3_55","nome":"Transporte: Rio dos Cedros","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[900,960,940,800,820,960,960,960.0,960.0,960.0,null,null]},{"id":"i3_56","nome":"Transporte: Camila","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[5700,5700.0,5700.0,5700.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i3_57","nome":"Transporte: Mobili","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,1820.0,1820.0,1820.0,1820.0,1820.0,1820.0,null,null]},{"id":"i3_58","nome":"Transporte: Ônibus","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[93.1,63.12,86.29,83.17,83.17,0.0,14.94,0.0,0.0,0.0,null,null]},{"id":"i3_59","nome":"Uniformes","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,3941.6,5685.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i3_60","nome":"Coletes","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i3_61","nome":"Campanha de Vacinação SESI","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,2560.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i3_62","nome":"Isotônico","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]}]},{"id":"g4","nome":"TREINAMENTO E DESENVOLVIMENTO","desc":"CUSTOS COM TREINAMENTOS","itens":[{"id":"i4_70","nome":"Treinamento Brigadistas de Emergência","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,525.0,0.0,0.0,0.0,300.0,0.0,525.0,0.0,0.0,null,null]},{"id":"i4_71","nome":"Auxílio Educação / Faculdade","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[460.43,125.43,125.43,125.43,125.43,125.43,125.43,125.43,125.43,125.43,null,null]},{"id":"i4_72","nome":"Curso Técnico Papel e Celulose: SENAI","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,820.68,1910.31,1089.63,1089.63,1089.63,1089.63,1089.63,1089.63,1089.63,null,null]},{"id":"i4_73","nome":"Curso DIRF Meta","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,420.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i4_74","nome":"CONCARH","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,1690.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},{"id":"i4_75","nome":"Empilhadeira (NR11)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,500.0,0.0,0.0,1300.0,0.0,400.0,0.0,0.0,null,null]},{"id":"i4_76","nome":"Eletricidade ( nr10)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,570.0,0.0,0.0,null,null]}]},{"id":"g5","nome":"EQUIPE E FOLHA DE PAGAMENTO","desc":"CUSTOS SALÁRIOS","itens":[{"id":"i5_88","nome":"Líquido Salários","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[310810.47,314884.06,343051.04,330024.95,312932.92,279191.46,320465.37,330058.29,0.0,null,null,null]},{"id":"i5_89","nome":"FGTS","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[34075.12,30407.83,33090.49,30743.02,29871.58,28263.84,42677.95,30468.26,0.0,null,null,null]},{"id":"i5_90","nome":"INSS (Parte Empresa)","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[133476.31,122753.41,133243.7,131918.46,137844.94,118875.88,138061.64,141971.66,0.0,null,null,null]},{"id":"i5_91","nome":"Horas Extras PF","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[4860.17,10492,6834.76,11650.5,2643,6515.5,14100,31196.0,0.0,null,null,null]},{"id":"i5_92","nome":"Sindicato Patronal SINPESC","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[726.0,726.0,726.0,726.0,726.0,726.0,726.0,726.0,726.0,726.0,726.0,726.0]}]},{"id":"g6","nome":"TECNOLOGIAS","desc":"CUSTOS SETOR TÉCNOLOGIA TI","itens":[{"id":"i6_99","nome":"Software de Folha de Pagamento","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[433.8,461.45,461.45,461.45,461.45,480.41,480.41,480.41,480.41,480.41,null,null]},{"id":"i6_100","nome":"Sistema de Gestão de Ponto","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[347.74,365.93,365.93,365.93,365.93,365.93,365.93,365.93,365.93,365.93,null,null]},{"id":"i6_101","nome":"Atualizações Sistema Senior","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[440.0,0.0,0.0,0.0,0.0,0.0,0.0,750.0,0.0,0.0,null,null]},{"id":"i6_102","nome":"Cartões de Acesso","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,null,null]},{"id":"i6_103","nome":"Melhoria - Contabilização Folha","o":[null,null,null,null,null,null,null,null,null,null,null,null],"r":[0.0,0.0,3450.0,3450.0,0.0,0.0,0.0,0.0,0.0,0.0,null,null]}]}];
+var orcAno=null,orcModo="real";
+var MOSL=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+function orcRO(){return !!ACESSO&&permTela("orcrh")!=="editar";}
+function orcDoc(a){return (DB.orcrh||[]).find(function(x){return x.id===a;})||null;}
+function orcAnos(){var s={},a0=+curMes().slice(0,4);s[a0]=1;(DB.orcrh||[]).forEach(function(d){s[d.id]=1;});return Object.keys(s).sort();}
+function orcSeed(){
+  if(!DB.orcrh)DB.orcrh=[];
+  if(DB.orcrh.length)return false;
+  DB.orcrh.push({id:"2026",grupos:JSON.parse(JSON.stringify(ORC_SEED))});
+  return true;
+}
+function orcN(v,dec){if(v===null||v===undefined||v==="")return "";return (+v).toLocaleString("pt-BR",{minimumFractionDigits:dec===0?0:2,maximumFractionDigits:dec===0?0:2});}
+function orcSum(a){return (a||[]).reduce(function(s,v){return s+(+v||0);},0);}
+function orcTem(a){return (a||[]).some(function(v){return v!==null&&v!==undefined;});}
+// Aceita 1.234,56 / 1234.56 / =143,42+136,59 / =7000/2
+function orcParse(t){
+  t=String(t||"").replace(/\s|R\$/g,"");if(t==="")return null;
+  if(t.charAt(0)==="=")t=t.slice(1);
+  t=t.replace(/\d[\d.,]*/g,function(n){
+    if(n.indexOf(",")>=0)return n.replace(/\./g,"").replace(",",".");
+    if(/^\d{1,3}(\.\d{3})+$/.test(n))return n.replace(/\./g,"");
+    return n;
+  });
+  if(!/^[0-9+\-*/().]+$/.test(t))return NaN;
+  // calculo sem eval (o CSP da pagina bloqueia eval/Function)
+  var p=0;
+  function num(){var m=/^\d*\.?\d+|^\d+\./.exec(t.slice(p));if(!m)throw 0;p+=m[0].length;return parseFloat(m[0]);}
+  function fat(){var c=t.charAt(p);if(c==="-"){p++;return -fat();}if(c==="+"){p++;return fat();}
+    if(c==="("){p++;var v=expr();if(t.charAt(p)!==")")throw 0;p++;return v;}return num();}
+  function term(){var v=fat();while(t.charAt(p)==="*"||t.charAt(p)==="/"){var o=t.charAt(p++),b=fat();v=o==="*"?v*b:v/b;}return v;}
+  function expr(){var v=term();while(t.charAt(p)==="+"||t.charAt(p)==="-"){var o=t.charAt(p++),b=term();v=o==="+"?v+b:v-b;}return v;}
+  try{var v=expr();if(p!==t.length)return NaN;return isFinite(v)?Math.round(v*100)/100:NaN;}catch(e){return NaN;}
+}
+function orcTotais(d){
+  var o=[],r=[];for(var i=0;i<12;i++){o.push(0);r.push(0);}
+  (d?d.grupos:[]).forEach(function(g){g.itens.forEach(function(it){for(var i=0;i<12;i++){o[i]+=+it.o[i]||0;r[i]+=+it.r[i]||0;}});});
+  return {o:o,r:r};
+}
+function orcGrpTot(g,k){var t=[];for(var i=0;i<12;i++)t.push(g.itens.reduce(function(a,it){return a+(+it[k][i]||0);},0));return t;}
+function rOrc(){
+  var ro=orcRO();
+  if(orcSeed()&&!ro)dbSave();
+  var anos=orcAnos();if(!orcAno||anos.indexOf(orcAno)<0)orcAno=orcDoc(curMes().slice(0,4))?curMes().slice(0,4):anos[anos.length-1];
+  var d=orcDoc(orcAno),T=orcTotais(d),tO=orcSum(T.o),tR=orcSum(T.r);
+  var mAt=orcAno===curMes().slice(0,4)?+curMes().slice(5):(orcAno<curMes().slice(0,4)?12:0);
+  var oAte=orcSum(T.o.slice(0,mAt)),rAte=orcSum(T.r.slice(0,mAt));
+  function kpi(lb,v,c,sub){return "<div class='mon-kpi' style='--c:"+c+"'><div class='k-l'>"+lb+"</div><div class='k-v'>"+v+"</div><div class='k-s'>"+sub+"</div></div>";}
+  var dif=tO-tR;
+  var kpis="<div class='mon-kpis orc-kpis'>"
+    +kpi("Orçado no ano","R$ "+orcN(tO),"#1E5BC6",orcAno)
+    +kpi("Realizado no ano","R$ "+orcN(tR),"#d35400",orcAno)
+    +kpi("Diferença (orçado - realizado)","R$ "+orcN(dif),dif<0?"#c0392b":"#1a7a4a",tO?(dif<0?"acima do orçado":"dentro do orçado"):"sem orçado lançado")
+    +kpi("% executado",tO?(tR/tO*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%":"—","#7b3fa0","realizado ÷ orçado")
+    +kpi("Orçado até o mês","R$ "+orcN(oAte),"#00348F",mAt?"jan a "+MOS[mAt-1].toLowerCase():"—")
+    +kpi("Realizado até o mês","R$ "+orcN(rAte),"#a04000",oAte?(rAte/oAte*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"% do orçado":"—")
+    +"</div>";
+  var mh=MOS.map(function(m){return "<th>"+m.toUpperCase()+"</th>";}).join("");
+  // Valores totais por mes
+  var res="<div class='card' style='padding:.75rem .85rem;margin-bottom:.8rem'><div class='mon-tt' style='color:#00348F'><i class='ti ti-sum'></i>Valores totais - "+orcAno+"</div>"
+    +"<div class='etab-wrap'><table class='orc-tab'><thead><tr><th class='lb'>DESPESAS</th>"+mh+"<th class='tt'>TOTAL</th></tr></thead><tbody>"
+    +"<tr class='o'><td class='lb'>Despesas planejadas (orçado)</td>"+T.o.map(function(v){return "<td>"+orcN(v)+"</td>";}).join("")+"<td class='tt'>"+orcN(tO)+"</td></tr>"
+    +"<tr class='r'><td class='lb'>Despesas reais (realizado)</td>"+T.r.map(function(v){return "<td>"+orcN(v)+"</td>";}).join("")+"<td class='tt'>"+orcN(tR)+"</td></tr>"
+    +"<tr class='df'><td class='lb'>Diferença (orçado - realizado)</td>"+T.o.map(function(v,i){var x=v-T.r[i];return "<td class='"+(x<0?"neg":"pos")+"'>"+orcN(x)+"</td>";}).join("")+"<td class='tt "+(dif<0?"neg":"pos")+"'>"+orcN(dif)+"</td></tr>"
+    +"</tbody></table></div></div>";
+  // Tabela principal
+  var corpo="";
+  if(!d||!d.grupos.length)corpo="<div class='empty'><i class='ti ti-report-money'></i>Nenhum grupo em "+orcAno+". "+(ro?"":"Clique em Novo grupo ou copie de outro ano.")+"</div>";
+  else if(orcModo==="comp"){
+    corpo="<div class='etab-wrap'><table class='orc-tab comp'><thead><tr><th class='lb'>ITEM</th><th>ORÇADO</th><th>REALIZADO</th><th>DIFERENÇA</th><th>% EXECUTADO</th><th style='min-width:160px'></th></tr></thead><tbody>"
+      +d.grupos.map(function(g){
+        var go=orcSum(orcGrpTot(g,"o")),gr=orcSum(orcGrpTot(g,"r"));
+        function lin(nm,o,r,cls){var x=o-r,p=o?r/o*100:null,w=p===null?0:Math.min(100,p);
+          return "<tr class='"+(cls||"")+"'><td class='lb'>"+nm+"</td><td>"+orcN(o)+"</td><td>"+orcN(r)+"</td><td class='"+(x<0?"neg":"pos")+"'>"+orcN(x)+"</td><td>"+(p===null?"—":p.toLocaleString("pt-BR",{maximumFractionDigits:1})+"%")+"</td>"
+            +"<td><div class='orc-bar'><div style='width:"+w+"%;background:"+(p!==null&&p>100?"#c0392b":"#1E5BC6")+"'></div></div></td></tr>";}
+        return "<tr class='gh'><td colspan='6'>"+esc(g.nome)+(g.desc?"<small>"+esc(g.desc)+"</small>":"")+"</td></tr>"
+          +g.itens.map(function(it){return lin(esc(it.nome),orcSum(it.o),orcSum(it.r));}).join("")
+          +lin("TOTAL "+esc(g.nome),go,gr,"gt");
+      }).join("")
+      +"<tr class='gt grand'><td class='lb'>TOTAL GERAL</td><td>"+orcN(tO)+"</td><td>"+orcN(tR)+"</td><td class='"+(dif<0?"neg":"pos")+"'>"+orcN(dif)+"</td><td>"+(tO?(tR/tO*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%":"—")+"</td><td></td></tr>"
+      +"</tbody></table></div>";
+  }else{
+    var k=orcModo==="orc"?"o":"r";
+    corpo="<div class='etab-wrap orc-wrap'><table class='orc-tab ed'><thead><tr><th class='lb'>ITEM</th>"+mh+"<th class='tt'>TOTAL</th></tr></thead><tbody>"
+      +d.grupos.map(function(g,gi){
+        var gt=orcGrpTot(g,k);
+        return "<tr class='gh'><td class='lb'>"+(ro?"":"<span class='orc-ac'><i class='ti ti-pencil' title='Renomear grupo' onclick=\"orcGrpEd('"+g.id+"')\"></i><i class='ti ti-arrow-up' title='Subir grupo' onclick=\"orcGrpMov('"+g.id+"',-1)\"></i><i class='ti ti-trash' title='Excluir grupo' onclick=\"orcGrpDel('"+g.id+"')\"></i></span>")
+            +esc(g.nome)+(g.desc?"<small>"+esc(g.desc)+"</small>":"")+"</td><td colspan='13'></td></tr>"
+          +g.itens.map(function(it){
+            return "<tr><td class='lb'>"+(ro?"":"<span class='orc-ac'><i class='ti ti-pencil' title='Renomear item' onclick=\"orcItEd('"+g.id+"','"+it.id+"')\"></i><i class='ti ti-trash' title='Excluir item' onclick=\"orcItDel('"+g.id+"','"+it.id+"')\"></i></span>")+"<span title='"+esc(it.nome)+"'>"+esc(it.nome)+"</span></td>"
+              +it[k].map(function(v,m){
+                if(ro)return "<td>"+orcN(v)+"</td>";
+                return "<td><input class='orc-in' value='"+orcN(v)+"' data-g='"+g.id+"' data-i='"+it.id+"' data-m='"+m+"' onfocus='this.select()' onchange='orcSet(this)' onkeydown='orcKey(event,this)' title='"+esc(it.nome)+" · "+MOSL[m]+" (aceita =100+50)'/></td>";
+              }).join("")+"<td class='tt'>"+orcN(orcSum(it[k]))+"</td></tr>";
+          }).join("")
+          +(ro?"":"<tr class='add'><td class='lb' colspan='14'><span onclick=\"orcItNovo('"+g.id+"')\"><i class='ti ti-plus'></i>Adicionar item em "+esc(g.nome)+"</span></td></tr>")
+          +"<tr class='gt'><td class='lb'>TOTAL</td>"+gt.map(function(v){return "<td>"+orcN(v)+"</td>";}).join("")+"<td class='tt'>"+orcN(orcSum(gt))+"</td></tr>";
+      }).join("")+"</tbody></table></div>";
+  }
+  var anoOpts=anos.map(function(a){return "<option"+(a===orcAno?" selected":"")+">"+a+"</option>";}).join("");
+  document.getElementById("p-orcrh").innerHTML=
+    "<div class='pg-hd'><div><h1 class='h1'>Orçamento RH</h1><div class='sub'>Orçado x realizado por mês &middot; valores digitados manualmente</div></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
+    +"<div class='mes-fil'><i class='ti ti-calendar'></i><select id='orc-ano' onchange='orcAno=this.value;rOrc()'>"+anoOpts+"</select></div>"
+    +"<div class='seg'>"+[["orc","Orçado","ti-pencil-dollar"],["real","Realizado","ti-receipt"],["comp","Orçado x Realizado","ti-arrows-diff"]].map(function(o){return "<button class='seg-b"+(orcModo===o[0]?" on":"")+"' onclick=\"orcModo='"+o[0]+"';rOrc()\"><i class='ti "+o[2]+"'></i>"+o[1]+"</button>";}).join("")+"</div>"
+    +(ro?"":"<button class='btng btn-ic' onclick='orcCopiarModal()'><i class='ti ti-copy'></i>Copiar para outro ano</button>")
+    +"<button class='btng btn-ic' onclick='orcPdfModal()'><i class='ti ti-file-type-pdf'></i>Relatório PDF</button>"
+    +(ro?"":"<button class='btnp btn-ic' onclick='orcGrpNovo()'><i class='ti ti-plus'></i>Novo grupo</button>")
+    +"</div></div>"
+    +kpis+res
+    +"<div class='card' style='padding:.75rem .85rem'><div class='mon-tt' style='color:"+(orcModo==="orc"?"#1E5BC6":orcModo==="real"?"#d35400":"#7b3fa0")+"'><i class='ti ti-list-details'></i>"
+    +(orcModo==="orc"?"Orçado":orcModo==="real"?"Realizado":"Orçado x Realizado")+" - "+orcAno+"</div>"+corpo
+    +"<div class='hint' style='margin-top:.5rem'>Digite os valores mês a mês (aceita contas como =7000/2 ou =143,42+136,59). Diferença = orçado - realizado: positivo (verde) ficou abaixo do orçado, negativo (vermelho) passou do orçado.</div></div>";
+}
+function orcRerender(){var w=document.querySelector("#p-orcrh .orc-wrap"),sl=w?w.scrollLeft:0,st=window.scrollY,mn=document.getElementById("main"),ms=mn?mn.scrollTop:0;rOrc();var w2=document.querySelector("#p-orcrh .orc-wrap");if(w2)w2.scrollLeft=sl;if(mn)mn.scrollTop=ms;window.scrollTo(0,st);}
+function orcAcha(gid,iid){var d=orcDoc(orcAno);if(!d)return {};var g=d.grupos.find(function(x){return x.id===gid;});return {d:d,g:g,it:g&&iid?g.itens.find(function(x){return x.id===iid;}):null};}
+var orcNext=null;
+function orcSet(el){
+  var v=orcParse(el.value);
+  if(v!==null&&isNaN(v)){alert("Valor inválido: "+el.value);orcNext=null;orcRerender();return;}
+  var A=orcAcha(el.dataset.g,el.dataset.i);if(!A.it)return;
+  A.it[orcModo==="orc"?"o":"r"][+el.dataset.m]=v;
+  dbSave();
+  setTimeout(function(){
+    var ae=document.activeElement,foco=orcNext||(ae&&ae.classList&&ae.classList.contains("orc-in")?[ae.dataset.i,ae.dataset.m]:null);orcNext=null;
+    orcRerender();
+    if(foco){var n=document.querySelector("#p-orcrh .orc-in[data-i='"+foco[0]+"'][data-m='"+foco[1]+"']");if(n){n.focus();n.select();}}
+  },0);
+}
+// Enter / setas: vai para a celula seguinte (a troca de foco grava o valor digitado)
+function orcKey(ev,el){
+  var k=ev.key,all=Array.prototype.slice.call(document.querySelectorAll("#p-orcrh .orc-in")),m=+el.dataset.m,nx=null;
+  var rows=[];all.forEach(function(x){if(rows.indexOf(x.dataset.i)<0)rows.push(x.dataset.i);});
+  var ri=rows.indexOf(el.dataset.i);
+  if(k==="Enter"||k==="ArrowDown"||k==="ArrowUp"){var j=ri+(k==="ArrowUp"?-1:1);nx=rows[j]?[rows[j],m]:(k==="Enter"?[el.dataset.i,m]:null);}
+  else if(k==="ArrowRight"&&el.selectionStart===el.value.length&&m<11)nx=[el.dataset.i,m+1];
+  else if(k==="ArrowLeft"&&el.selectionStart===0&&m>0)nx=[el.dataset.i,m-1];
+  if(!nx)return;
+  ev.preventDefault();
+  orcNext=nx;
+  var alvo=all.find(function(x){return x.dataset.i===nx[0]&&+x.dataset.m===nx[1];});
+  if(alvo&&alvo!==el){alvo.focus();alvo.select();}else el.blur();
+  setTimeout(function(){orcNext=null;},50);
+}
+function orcNovoAno(a){if(!DB.orcrh)DB.orcrh=[];var d=orcDoc(a);if(!d){d={id:a,grupos:[]};DB.orcrh.push(d);}return d;}
+function orcGrpNovo(){
+  var nm=prompt("Nome do grupo (ex: RECRUTAMENTO E SELEÇÃO):");if(!nm||!nm.trim())return;
+  var ds=prompt("Descrição (opcional, ex: CUSTOS COM MARKETING):","")||"";
+  orcNovoAno(orcAno).grupos.push({id:uid(),nome:nm.trim().toUpperCase(),desc:ds.trim().toUpperCase(),itens:[]});
+  dbSave();rOrc();
+}
+function orcGrpEd(gid){
+  var A=orcAcha(gid);if(!A.g)return;
+  var nm=prompt("Nome do grupo:",A.g.nome);if(nm===null||!nm.trim())return;
+  var ds=prompt("Descrição:",A.g.desc||"");if(ds===null)ds=A.g.desc||"";
+  A.g.nome=nm.trim();A.g.desc=ds.trim();dbSave();rOrc();
+}
+function orcGrpMov(gid,dx){var d=orcDoc(orcAno),i=d.grupos.findIndex(function(x){return x.id===gid;}),j=i+dx;if(i<0||j<0||j>=d.grupos.length)return;var t=d.grupos[i];d.grupos[i]=d.grupos[j];d.grupos[j]=t;dbSave();rOrc();}
+function orcGrpDel(gid){
+  var A=orcAcha(gid);if(!A.g)return;
+  if(!confirm("Excluir o grupo "+A.g.nome+" de "+orcAno+" com "+A.g.itens.length+" item(ns) e todos os valores?"))return;
+  A.d.grupos=A.d.grupos.filter(function(x){return x.id!==gid;});dbSave();rOrc();
+}
+function orcItNovo(gid){
+  var A=orcAcha(gid);if(!A.g)return;
+  var nm=prompt("Nome do item em "+A.g.nome+":");if(!nm||!nm.trim())return;
+  var z=[];for(var i=0;i<12;i++)z.push(null);
+  A.g.itens.push({id:uid(),nome:nm.trim(),o:z.slice(),r:z.slice()});dbSave();rOrc();
+}
+function orcItEd(gid,iid){var A=orcAcha(gid,iid);if(!A.it)return;var nm=prompt("Nome do item:",A.it.nome);if(nm===null||!nm.trim())return;A.it.nome=nm.trim();dbSave();rOrc();}
+function orcItDel(gid,iid){
+  var A=orcAcha(gid,iid);if(!A.it)return;
+  if(!confirm("Excluir o item "+A.it.nome+" de "+orcAno+" (orçado e realizado)?"))return;
+  A.g.itens=A.g.itens.filter(function(x){return x.id!==iid;});dbSave();rOrc();
+}
+// Copiar para outro ano
+function orcCopiarModal(){
+  pcFechar("md-orccp");
+  var a=+orcAno,ops="";for(var y=a-2;y<=a+3;y++){if(String(y)!==orcAno)ops+="<option"+(y===a+1?" selected":"")+">"+y+"</option>";}
+  function radio(v,lb,on,sub){return "<label class='pdf-opt' style='width:100%'><input type='radio' name='orccp-mod' value='"+v+"'"+(on?" checked":"")+"/><span><b>"+lb+"</b>"+(sub?"<br><small style='color:#8a94a0'>"+sub+"</small>":"")+"</span></label>";}
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-orccp";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:480px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-copy'></i>Copiar orçamento de "+orcAno+"</div><button class='mdl-x' onclick=\"pcFechar('md-orccp')\"><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'><div class='fr'><label class='lbl'>Copiar para o ano</label><select id='orccp-ano'>"+ops+"</select></div>"
+    +"<div class='fr'><label class='lbl'>O que copiar</label><div class='pdf-opts'>"
+    +radio("rorc","Realizado de "+orcAno+" como Orçado",true,"O realizado vira o orçado do novo ano; realizado em branco")
+    +radio("orc","Orçado de "+orcAno,false,"Mesmo orçado; realizado em branco")
+    +radio("tudo","Orçado e Realizado",false,"Cópia completa")
+    +radio("itens","Somente os grupos e itens",false,"Todos os valores em branco")+"</div></div>"
+    +"<div class='hint'>Se o ano de destino já tiver orçamento, ele será substituído.</div>"
+    +"<div class='mdl-ft'><button class='btng' onclick=\"pcFechar('md-orccp')\">Cancelar</button><button class='btnp btn-ic' onclick='orcCopiar()'><i class='ti ti-copy'></i>Copiar</button></div></div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-orccp");});
+}
+function orcCopiar(){
+  var dest=gv("orccp-ano"),mod=_radio("orccp-mod")||"rorc",src=orcDoc(orcAno);if(!dest||!src)return;
+  if(orcDoc(dest)&&!confirm("O ano "+dest+" já tem orçamento. Substituir pelos dados copiados de "+orcAno+"?"))return;
+  var nul=[];for(var i=0;i<12;i++)nul.push(null);
+  var grupos=src.grupos.map(function(g){return {id:uid(),nome:g.nome,desc:g.desc,itens:g.itens.map(function(it){
+    var o=mod==="rorc"?it.r.slice():mod==="orc"||mod==="tudo"?it.o.slice():nul.slice();
+    var r=mod==="tudo"?it.r.slice():nul.slice();
+    return {id:uid(),nome:it.nome,o:o,r:r};})};});
+  DB.orcrh=(DB.orcrh||[]).filter(function(x){return x.id!==dest;});
+  DB.orcrh.push({id:dest,grupos:grupos});
+  dbSave();pcFechar("md-orccp");orcAno=dest;if(mod==="rorc")orcModo="orc";rOrc();
+}
+// Relatorio PDF
+function orcPdfModal(){
+  pcFechar("md-orcpdf");
+  function radio(nm,v,lb,on,ic){return "<label class='pdf-opt'><input type='radio' name='"+nm+"' value='"+v+"'"+(on?" checked":"")+"/>"+(ic?"<i class='ti "+ic+"'></i>":"")+lb+"</label>";}
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-orcpdf";div.style.zIndex="9500";
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:480px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-file-type-pdf'></i>Relatório Orçamento RH - "+orcAno+"</div><button class='mdl-x' onclick=\"pcFechar('md-orcpdf')\"><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'><div class='fr'><label class='lbl'>Conteúdo</label><div class='pdf-opts'>"
+    +radio("orcp-ct","comp","Orçado x Realizado (por item)",orcModo==="comp")+radio("orcp-ct","orc","Orçado mensal",orcModo==="orc")+radio("orcp-ct","real","Realizado mensal",orcModo==="real")+radio("orcp-ct","todos","Completo (os três)",false)+"</div></div>"
+    +"<div class='fr'><label class='lbl'>Orientação</label><div class='pdf-opts'>"+radio("orcp-ori","landscape","Paisagem",true,"ti-rectangle")+radio("orcp-ori","portrait","Retrato",false,"ti-rectangle-vertical")+"</div></div>"
+    +"<div class='hint'>Todos trazem os indicadores e os valores totais por mês (orçado, realizado e diferença). No retrato as tabelas mensais saem sem centavos para caber na página.</div>"
+    +"<div class='mdl-ft'><button class='btng' onclick=\"pcFechar('md-orcpdf')\">Cancelar</button><button class='btnp btn-ic' onclick='orcPDF()'><i class='ti ti-file-download'></i>Gerar PDF</button></div></div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-orcpdf");});
+}
+function orcPDF(){
+  if(!(window.jspdf&&window.jspdf.jsPDF)){alert("A biblioteca de PDF ainda esta carregando. Aguarde alguns segundos e tente novamente.");return;}
+  var ct=_radio("orcp-ct")||"comp",ori=_radio("orcp-ori")||"landscape",ret=ori==="portrait";
+  var d=orcDoc(orcAno);if(!d||!d.grupos.length){alert("Nenhum dado em "+orcAno+".");return;}
+  var lbCt={comp:"Orçado x Realizado",orc:"Orçado mensal",real:"Realizado mensal",todos:"Completo"}[ct];
+  var K=mkPdfKit("Orçamento RH - "+orcAno,lbCt+"  |  valores em R$",ori,"a4"),doc=K.doc,C=K.C,cw=K.cw;
+  var T=orcTotais(d),tO=orcSum(T.o),tR=orcSum(T.r),dif=tO-tR;
+  var dec=ret?0:2,y=K.header();
+  // indicadores
+  var ks=[["Orçado no ano","R$ "+orcN(tO),"",C.bl],["Realizado no ano","R$ "+orcN(tR),"",C.org],["Diferença","R$ "+orcN(dif),dif<0?"acima do orçado":"dentro do orçado",dif<0?C.red:C.grn],["% executado",tO?(tR/tO*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%":"—","realizado ÷ orçado",C.pur]];
+  var kg=3,kw=(cw-kg*3)/4;ks.forEach(function(k,i){K.kpi(K.mg+i*(kw+kg),y,kw,19,k[0],k[1],k[2],k[3]);});y+=19+8;
+  var lbW=ret?50:70,mw=(cw-lbW)/13,fsM=ret?5.4:6.6;
+  var mcols=[{k:"lb",h:"",w:lbW,b:true}].concat(MOS.map(function(m,i){return {k:"m"+i,h:m.toUpperCase(),w:mw,al:"r"};})).concat([{k:"t",h:"TOTAL",w:mw,al:"r",b:true}]);
+  function linM(lb,arr,extra){var r=Object.assign({lb:lb},extra||{});arr.forEach(function(v,i){r["m"+i]=v===null||v===undefined?"":orcN(v,dec);});r.t=orcN(orcSum(arr),dec);return r;}
+  function secao(t,c,need){if(y+(need||22)>K.H-14){doc.addPage();y=K.header();}K.section(t,y,c);y+=3;}
+  secao("Valores totais por mês",C.b);
+  mcols[0].h="DESPESAS";
+  var dfA=T.o.map(function(v,i){return v-T.r[i];});
+  y=K.table(y,mcols,[linM("Planejadas (orçado)",T.o),linM("Reais (realizado)",T.r),linM("Diferença",dfA,{_hl:true})],{fs:fsM,titulo:"Valores totais por mês"})+8;
+  function mensal(k,tit,cor){
+    mcols[0].h="ITEM";
+    var rows=[];
+    d.grupos.forEach(function(g){
+      rows.push({lb:g.nome,_bg:[232,238,248],_cor:C.ink});
+      g.itens.forEach(function(it){rows.push(linM("  "+it.nome,it[k]));});
+      rows.push(linM("TOTAL "+g.nome,orcGrpTot(g,k),{_total:true}));
+    });
+    rows.push(linM("TOTAL GERAL",k==="o"?T.o:T.r,{_total:true,_grand:true}));
+    secao(tit+" - "+orcAno,cor,30);
+    y=K.table(y,mcols,rows,{fs:fsM,titulo:tit+" - "+orcAno,cor:cor})+8;
+  }
+  function comp(){
+    var lw=ret?70:110,ow=(cw-lw)/4;
+    var cols=[{k:"lb",h:"ITEM",w:lw,b:true},{k:"o",h:"ORÇADO",w:ow,al:"r"},{k:"r",h:"REALIZADO",w:ow,al:"r"},{k:"d",h:"DIFERENÇA",w:ow,al:"r",cor:function(r){return r._neg?C.red:C.grn;}},{k:"p",h:"% EXECUTADO",w:ow,al:"r"}];
+    function l(lb,o,r,ex){var x=o-r;return Object.assign({lb:lb,o:orcN(o),r:orcN(r),d:orcN(x),_neg:x<0,p:o?(r/o*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%":"—"},ex||{});}
+    var rows=[];
+    d.grupos.forEach(function(g){
+      rows.push({lb:g.nome+(g.desc?" - "+g.desc:""),_bg:[232,238,248],_cor:C.ink});
+      g.itens.forEach(function(it){rows.push(l("  "+it.nome,orcSum(it.o),orcSum(it.r)));});
+      rows.push(l("TOTAL "+g.nome,orcSum(orcGrpTot(g,"o")),orcSum(orcGrpTot(g,"r")),{_total:true}));
+    });
+    rows.push(l("TOTAL GERAL",tO,tR,{_total:true,_grand:true}));
+    secao("Orçado x Realizado por item - "+orcAno,C.pur,30);
+    y=K.table(y,cols,rows,{fs:ret?6.8:7.2,titulo:"Orçado x Realizado por item - "+orcAno,cor:C.pur})+8;
+  }
+  if(ct==="comp"||ct==="todos")comp();
+  if(ct==="orc"||ct==="todos")mensal("o","Orçado mensal",C.bl);
+  if(ct==="real"||ct==="todos")mensal("r","Realizado mensal",C.org);
+  K.finalizar("orcamento-rh-"+orcAno+"-"+ct+"-"+(ret?"retrato":"paisagem")+".pdf");
+  pcFechar("md-orcpdf");
+}
+// ═══ RESUMO PER CAPITA: IMPRESSAO E ENVIO PELO WHATSAPP ═══
+// Numero que recebe o resumo (55 + DDD + numero, so digitos)
+var PC_WHATS="5547332814500";
+var PC_RES_KEYS=["tclt","tpj","tsi","aus","npc","prod","pc","avg","mtot"];
+// Monta a imagem somente com o bloco Total registrados CLT ... Total per capita, seguindo o filtro da tela (um dia ou mes inteiro)
+function pcResDados(){
+  var m=pcMes(),C=pcCalc(m),nd=C.days.length,uDia=pcModo==="dia",dSel=pcDiaSel(m,nd),dy=C.days[dSel-1];
+  var per=uDia&&dy?"Dia "+fmtD(dy.ds)+" ("+DSEM[dy.dw]+")":"Mês "+fmtM(m)+" (média dos dias trabalhados)";
+  var rows=PC_RES_KEYS.map(function(k){var r=C.rows.find(function(x){return x.key===k;});if(!r)return null;
+    var v=uDia?pcFmt(r,r.vals[dSel-1]):pcFmtTot(r,r.tot);return {r:r,v:v};}).filter(Boolean);
+  return {per:per,rows:rows,arq:"per-capita-"+(uDia&&dy?dy.ds:m)};
+}
+function pcResCanvas(D){
+  var S=2,W=560,LW=390,pad=14,hdH=74;
+  var F="Barlow, 'Segoe UI', Arial, sans-serif";
+  var mc=document.createElement("canvas").getContext("2d");
+  // quebra o nome da linha em ate 2 linhas quando nao cabe
+  D.rows.forEach(function(x){var r=x.r;mc.font=(r.bold||r.red?"800 ":"600 ")+(r.big?"14.5px ":"13.5px ")+F;
+    var ws=r.label.split(" "),l1="",i=0;
+    while(i<ws.length&&mc.measureText((l1?l1+" ":"")+ws[i]).width<=LW-pad*2){l1+=(l1?" ":"")+ws[i];i++;}
+    x.ln=i>=ws.length?[r.label]:[l1,ws.slice(i).join(" ")];});
+  var hs=D.rows.map(function(x){return (x.r.sub2?46:x.r.big?40:34)+(x.ln.length>1?17:0);});
+  var H=hdH+hs.reduce(function(a,b){return a+b;},0)+34;
+  var cv=document.createElement("canvas");cv.width=W*S;cv.height=H*S;
+  var g=cv.getContext("2d");g.scale(S,S);
+  g.fillStyle="#ffffff";g.fillRect(0,0,W,H);
+  var lg=window._pcLogo;
+  if(lg&&lg.complete&&lg.naturalWidth){g.drawImage(lg,pad-4,10,92,42);}
+  g.textAlign="right";g.fillStyle="#0A1F4A";g.font="800 17px "+F;g.fillText("Análise da Produção Per Capita",W-pad,30);
+  g.fillStyle="#5f6978";g.font="600 12.5px "+F;g.fillText(D.per,W-pad,49);
+  g.fillStyle="#00348F";g.fillRect(0,hdH-10,W,3);
+  var y=hdH;
+  D.rows.forEach(function(x,i){
+    var r=x.r,h=hs[i];
+    var bg=r.kind==="prod"?"#fff8e1":r.kind==="pc"?"#eef8f2":r.kind==="meta"?"#f6f2fb":r.kind==="aus"?"#ffffff":"#f2f6fc";
+    var co=r.red?"#c0392b":r.kind==="pc"?"#145c39":"#0A1F4A";
+    g.fillStyle=bg;g.fillRect(0,y,W,h);
+    g.fillStyle="#e3e8ef";g.fillRect(0,y+h-1,W,1);g.fillRect(LW,y,2,h);
+    g.textAlign="left";g.fillStyle=co;g.font=(r.bold||r.red?"800 ":"600 ")+(r.big?"14.5px ":"13.5px ")+F;
+    var n=x.ln.length,y0=r.sub2?y+20:y+h/2+5-(n-1)*8.5;
+    x.ln.forEach(function(t,j){g.fillText(t,pad,y0+j*17);});
+    if(r.sub2){g.fillStyle="#8a94a0";g.font="600 10.5px "+F;g.fillText(r.sub2,pad,y0+(n-1)*17+16);}
+    g.textAlign="center";g.fillStyle=co;g.font=(r.red?"600 ":"800 ")+(r.big?"15px ":"14px ")+F;
+    g.fillText(x.v||"—",LW+(W-LW)/2,y+h/2+5);
+    y+=h;
+  });
+  var ag=new Date();
+  g.textAlign="right";g.fillStyle="#9aa3af";g.font="600 10px "+F;
+  g.fillText("Gerado em "+ag.toLocaleDateString("pt-BR")+" às "+ag.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),W-pad,y+21);
+  return cv;
+}
+function pcResBlob(cv){
+  var d=cv.toDataURL("image/png"),b=atob(d.split(",")[1]),u=new Uint8Array(b.length);
+  for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+  return new Blob([u],{type:"image/png"});
+}
+function pcResImprimir(){
+  var D=pcResDados(),cv=pcResCanvas(D),src=cv.toDataURL("image/png");
+  var old=document.getElementById("pc-res-print");if(old)old.remove();
+  var fr=document.createElement("iframe");fr.id="pc-res-print";
+  fr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(fr);
+  var dd=fr.contentWindow.document;
+  dd.open();dd.write("<!DOCTYPE html><html><head><title>Producao Per Capita - "+esc(D.per)+"</title><style>@page{size:A4 portrait;margin:12mm}html,body{margin:0}img{width:140mm;max-width:100%;display:block;margin:0 auto}</style></head><body><img id='im' src='"+src+"'/></body></html>");dd.close();
+  var im=dd.getElementById("im");
+  function go(){try{fr.contentWindow.focus();fr.contentWindow.print();}catch(e){}}
+  if(im.complete)setTimeout(go,50);else im.onload=go;
+}
+function pcResWhats(){
+  var D=pcResDados(),cv=pcResCanvas(D),blob=pcResBlob(cv),nome=D.arq+".png";
+  var txt="Análise da Produção Per Capita - "+D.per;
+  var mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var file=null;try{file=new File([blob],nome,{type:"image/png"});}catch(e){}
+  // Celular: abre o compartilhamento do aparelho com a imagem anexada (escolha o WhatsApp e o contato)
+  if(mobile&&file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],text:txt}).catch(function(){});
+    return;
+  }
+  // Computador: copia a imagem, baixa uma copia e abre a conversa do numero no WhatsApp
+  var copiou=false;
+  try{if(navigator.clipboard&&window.ClipboardItem){navigator.clipboard.write([new ClipboardItem({"image/png":blob})]).then(function(){},function(){});copiou=true;}}catch(e){}
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+  window.open("https://wa.me/"+PC_WHATS+"?text="+encodeURIComponent(txt),"_blank");
+  pcResAviso(copiou);
+}
+function pcResAviso(copiou){
+  var o=document.getElementById("pc-res-av");if(o)o.remove();
+  var d=document.createElement("div");d.id="pc-res-av";
+  d.style.cssText="position:fixed;right:18px;bottom:18px;z-index:9900;max-width:360px;background:#0A1F4A;color:#fff;border-radius:10px;padding:.8rem 1rem;font-size:12.5px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.25)";
+  d.innerHTML="<b style='display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:3px'><i class='ti ti-brand-whatsapp' style='color:#25D366;font-size:17px'></i>WhatsApp aberto</b>"
+    +(copiou?"A imagem foi copiada. Na conversa, pressione <b>Ctrl+V</b> para anexar e envie.":"Na conversa, clique no clipe e anexe a imagem baixada.")
+    +" Uma cópia também foi baixada no computador.";
+  document.body.appendChild(d);setTimeout(function(){d.remove();},9000);
 }
 function pcSetMes(){pcMesV=gv("pc-ano")+"-"+gv("pc-mes");pcDiaV=null;rPercap();}
 function pcKey(ev,el){
