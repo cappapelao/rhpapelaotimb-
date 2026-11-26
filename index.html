@@ -879,6 +879,14 @@ html[data-tema=azul] .topbar span{color:rgba(255,255,255,.75)}
 .nb-bdg:empty{display:none}
 #sb.col .nb-bdg{display:none}
 html[data-tema=azul] #sbnav .nb.on{background:rgba(255,255,255,.16);box-shadow:inset 3px 0 0 #7fb0ff}
+
+/* WhatsApp: janela de envio */
+.wa-step{display:flex;gap:.6rem;align-items:flex-start;font-size:12.5px;color:#3a4552;margin-bottom:.45rem;line-height:1.45}
+.wa-step>b{width:22px;height:22px;border-radius:50%;background:#25D366;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wa-step kbd{background:#f1f4f8;border:1px solid #d5dbe4;border-bottom-width:2px;border-radius:4px;padding:0 .35rem;font-size:11.5px;font-weight:700;font-family:inherit}
+.wa-btn{width:100%;margin-top:.4rem;border:none;border-radius:11px;padding:.75rem 1rem;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;box-shadow:0 4px 14px rgba(18,140,126,.35);cursor:pointer}
+.wa-btn i{font-size:20px}.wa-btn small{width:100%;text-align:center;font-weight:600;opacity:.85;font-size:11px}
+.wa-btn:disabled{opacity:.7}
 /* ===== Faltas e Atrasos do Mes ===== */
 .fa-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:.8rem}
 @media (max-width:1100px){.fa-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -7175,33 +7183,60 @@ function pcResImprimir(){
   function go(){try{fr.contentWindow.focus();fr.contentWindow.print();}catch(e){}}
   if(im.complete)setTimeout(go,50);else im.onload=go;
 }
+// Envio pelo WhatsApp: o WhatsApp nao aceita anexo por link, entao a imagem vai pela area de transferencia (Ctrl+V)
+// ou pelo compartilhamento do aparelho. A janela mostra a previa e conduz os passos.
 function pcResWhats(){
-  var D=pcResDados(),cv=pcResCanvas(D),blob=pcResBlob(cv),nome=D.arq+".png";
+  var D=pcResDados(),cv=pcResCanvas(D),blob=pcResBlob(cv),nome=D.arq+".png",src=cv.toDataURL("image/png");
   var txt="Análise da Produção Per Capita - "+D.per;
-  var mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   var file=null;try{file=new File([blob],nome,{type:"image/png"});}catch(e){}
-  // Celular: abre o compartilhamento do aparelho com a imagem anexada (escolha o WhatsApp e o contato)
-  if(mobile&&file&&navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file],text:txt}).catch(function(){});
-    return;
-  }
-  // Computador: copia a imagem, baixa uma copia e abre a conversa do numero no WhatsApp
-  var copiou=false;
-  try{if(navigator.clipboard&&window.ClipboardItem){navigator.clipboard.write([new ClipboardItem({"image/png":blob})]).then(function(){},function(){});copiou=true;}}catch(e){}
-  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
-  window.open("https://wa.me/"+PC_WHATS+"?text="+encodeURIComponent(txt),"_blank");
-  pcResAviso(copiou);
+  var podeShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}));
+  var mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  window._pcWa={blob:blob,file:file,nome:nome,txt:txt};
+  pcFechar("md-pcwa");
+  var div=document.createElement("div");div.className="mdl-bg open";div.id="md-pcwa";div.style.zIndex="9600";
+  var fone=PC_WHATS.replace(/^55(\d{2})(\d{4,5})(\d{4})$/,"($1) $2-$3");
+  div.innerHTML="<div class='mdl' role='dialog' aria-modal='true' style='width:560px'>"
+    +"<div class='mdl-hd'><div class='mdl-tt'><i class='ti ti-brand-whatsapp' style='color:#25D366'></i>Enviar pelo WhatsApp - "+esc(fone)+"</div><button class='mdl-x' onclick=\"pcFechar('md-pcwa')\"><i class='ti ti-x'></i></button></div>"
+    +"<div class='mdl-bd'>"
+    +"<div style='border:1px solid #e3e8ef;border-radius:10px;overflow:hidden;max-height:260px;overflow-y:auto;margin-bottom:.8rem;background:#f7f9fc'><img src='"+src+"' style='width:100%;display:block'/></div>"
+    +(mobile&&podeShare
+      ?"<button class='wa-btn' onclick='pcWaShare()'><i class='ti ti-share'></i>Compartilhar imagem<small>escolha o WhatsApp e o contato "+esc(fone)+"</small></button>"
+      :"<div class='wa-step'><b>1</b><div>Clique no botão verde: a imagem é copiada e a conversa do WhatsApp abre.</div></div>"
+        +"<div class='wa-step'><b>2</b><div>Na conversa, clique na caixa de mensagem e pressione <kbd>Ctrl</kbd> + <kbd>V</kbd>. A imagem aparece para envio.</div></div>"
+        +"<div class='wa-step'><b>3</b><div>Pressione <kbd>Enter</kbd> para enviar.</div></div>"
+        +"<button class='wa-btn' id='wa-main' onclick='pcWaCopiarAbrir()'><i class='ti ti-brand-whatsapp'></i>Copiar imagem e abrir WhatsApp</button>")
+    +"<div id='wa-msg' class='hint' style='margin-top:.5rem;min-height:1em'></div>"
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:.4rem'>"
+    +"<button class='btng btn-ic' onclick='pcWaCopiar()'><i class='ti ti-copy'></i>Só copiar a imagem</button>"
+    +"<button class='btng btn-ic' onclick='pcWaBaixar()'><i class='ti ti-download'></i>Baixar imagem</button>"
+    +"<button class='btng btn-ic' onclick='pcWaAbrir()'><i class='ti ti-external-link'></i>Só abrir a conversa</button>"
+    +(!mobile&&podeShare?"<button class='btng btn-ic' onclick='pcWaShare()' title='Usa o compartilhamento do Windows (precisa do WhatsApp para computador instalado)'><i class='ti ti-share'></i>Compartilhar (Windows)</button>":"")
+    +"</div>"
+    +"<div class='hint' style='margin-top:.7rem'>O WhatsApp não permite que um site anexe arquivos sozinho; por isso a imagem vai pela área de transferência (Ctrl+V). Se colar não funcionar, use <b>Baixar imagem</b> e anexe pelo clipe da conversa.</div>"
+    +"</div></div>";
+  document.body.appendChild(div);
+  div.addEventListener("mousedown",function(ev){if(ev.target===div)pcFechar("md-pcwa");});
 }
-function pcResAviso(copiou){
-  var o=document.getElementById("pc-res-av");if(o)o.remove();
-  var d=document.createElement("div");d.id="pc-res-av";
-  d.style.cssText="position:fixed;right:18px;bottom:18px;z-index:9900;max-width:360px;background:#0A1F4A;color:#fff;border-radius:10px;padding:.8rem 1rem;font-size:12.5px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.25)";
-  d.innerHTML="<b style='display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:3px'><i class='ti ti-brand-whatsapp' style='color:#25D366;font-size:17px'></i>WhatsApp aberto</b>"
-    +(copiou?"A imagem foi copiada. Na conversa, pressione <b>Ctrl+V</b> para anexar e envie.":"Na conversa, clique no clipe e anexe a imagem baixada.")
-    +" Uma cópia também foi baixada no computador.";
-  document.body.appendChild(d);setTimeout(function(){d.remove();},9000);
+function pcWaMsg(t,ok){var m=document.getElementById("wa-msg");if(m){m.innerHTML=t;m.style.color=ok?"#1a7a4a":"#c0392b";m.style.fontWeight="700";}}
+// copia a imagem e so depois abre a conversa (abrir antes tira o foco da pagina e o navegador recusa a copia)
+function pcWaCopiar(){
+  var W=window._pcWa;
+  if(!(navigator.clipboard&&window.ClipboardItem)){pcWaMsg("Este navegador não permite copiar imagem. Use Baixar imagem e anexe pelo clipe.",false);return Promise.resolve(false);}
+  return navigator.clipboard.write([new ClipboardItem({"image/png":W.blob})]).then(function(){
+    pcWaMsg("<i class='ti ti-check'></i> Imagem copiada. Na conversa, pressione Ctrl+V.",true);return true;
+  },function(){pcWaMsg("O navegador não deixou copiar a imagem. Use Baixar imagem e anexe pelo clipe da conversa.",false);return false;});
 }
+function pcWaAbrir(){window.open("https://wa.me/"+PC_WHATS+"?text="+encodeURIComponent(window._pcWa.txt),"_blank");}
+function pcWaCopiarAbrir(){
+  var b=document.getElementById("wa-main");if(b)b.disabled=true;
+  pcWaCopiar().then(function(ok){
+    if(!ok)pcWaBaixar();
+    pcWaAbrir();
+    if(b){b.disabled=false;b.innerHTML="<i class='ti ti-check'></i>Copiado. Agora cole na conversa (Ctrl+V)";}
+  });
+}
+function pcWaBaixar(){var W=window._pcWa,a=document.createElement("a");a.href=URL.createObjectURL(W.blob);a.download=W.nome;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);}
+function pcWaShare(){var W=window._pcWa;navigator.share({files:[W.file],text:W.txt}).catch(function(e){if(e&&e.name!=="AbortError")pcWaMsg("Não foi possível compartilhar. Use Copiar ou Baixar imagem.",false);});}
 function pcSetMes(){pcMesV=gv("pc-ano")+"-"+gv("pc-mes");pcDiaV=null;rPercap();}
 function pcKey(ev,el){
   var dx=ev.key==="Enter"||ev.key==="ArrowDown"?"d":ev.key==="ArrowUp"?"u":ev.key==="ArrowRight"&&el.selectionStart===el.value.length?"r":ev.key==="ArrowLeft"&&el.selectionStart===0?"l":"";if(!dx)return;
